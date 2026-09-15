@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LST Peg Monitor</title>
+<meta name="description" content="stETH / wstETH / cbETH 脱锚监测：兑付锚直接读代币合约，市价多源交叉确认。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --ground:#f4f5f7; --panel:#fff; --panel-2:#eef0f4; --line:#d9dde4; --line-soft:#e7eaef;
+  --ink:#121821; --ink-2:#4c5766; --ink-3:#77818f;
+  --accent:#4263eb; --cat-1:#4263eb; --cat-2:#b45309; --cat-3:#0e9488;
+  --ok:#0f7a55; --ok-bg:#e3f3ec; --watch:#8a6100; --watch-bg:#f8eed6;
+  --alert:#a8480f; --alert-bg:#fbe8dc; --crisis:#ab2318; --crisis-bg:#fbe2df;
+  --dead:#77818f; --dead-bg:#e9ecf1;
+  --shadow:0 1px 2px rgba(18,24,33,.06), 0 6px 18px -12px rgba(18,24,33,.28);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --ground:#0c1016; --panel:#141a22; --panel-2:#1c232d; --line:#2a333f; --line-soft:#212932;
+  --ink:#e7edf5; --ink-2:#a3aebd; --ink-3:#778393;
+  --accent:#7b93f5; --cat-1:#7b93f5; --cat-2:#e0912f; --cat-3:#2cc0ae;
+  --ok:#4ac38f; --ok-bg:#10281f; --watch:#d6a83c; --watch-bg:#2b2413;
+  --alert:#e08a54; --alert-bg:#2e1d12; --crisis:#f0736a; --crisis-bg:#331614;
+  --dead:#778393; --dead-bg:#1c232d;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --ground:#0c1016; --panel:#141a22; --panel-2:#1c232d; --line:#2a333f; --line-soft:#212932;
+  --ink:#e7edf5; --ink-2:#a3aebd; --ink-3:#778393;
+  --accent:#7b93f5; --cat-1:#7b93f5; --cat-2:#e0912f; --cat-3:#2cc0ae;
+  --ok:#4ac38f; --ok-bg:#10281f; --watch:#d6a83c; --watch-bg:#2b2413;
+  --alert:#e08a54; --alert-bg:#2e1d12; --crisis:#f0736a; --crisis-bg:#331614;
+  --dead:#778393; --dead-bg:#1c232d;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--ground); color:var(--ink); font-size:15px; line-height:1.55;
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+img{max-width:100%}
+[hidden]{display:none!important}
+.wrap{max-width:860px;margin:0 auto;padding-inline:16px;padding-block:0 40px}
+.num{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+
+header.mast{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;
+  background:color-mix(in srgb,var(--ground) 88%,transparent);backdrop-filter:saturate(1.6) blur(10px);
+  border-bottom:1px solid var(--line-soft);margin-inline:-16px;padding-inline:16px}
+.mast-in{display:flex;align-items:center;gap:12px;padding-block:12px;flex-wrap:wrap}
+.mast h1{font-size:16px;font-weight:600;margin:0;letter-spacing:-.01em;white-space:nowrap}
+.mast .sub{font-size:11.5px;color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase;font-weight:500}
+.mast-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.clock{font-size:12px;color:var(--ink-2);font-family:"IBM Plex Mono",monospace}
+button.refresh{font:inherit;font-size:12.5px;font-weight:500;color:var(--ink);background:var(--panel);
+  border:1px solid var(--line);border-radius:7px;padding:5px 11px;cursor:pointer;display:flex;align-items:center;gap:6px}
+button.refresh:hover{background:var(--panel-2)}
+button.refresh:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.refresh[disabled]{opacity:.55;cursor:default}
+.spin{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--accent);border-top-color:transparent;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:2.4s}}
+
+.verdict{display:flex;gap:14px;align-items:flex-start;border:1px solid var(--line);border-left-width:4px;
+  border-radius:10px;background:var(--panel);box-shadow:var(--shadow);padding:14px 16px;margin-top:18px}
+.verdict .vmain{flex:1;min-width:0}
+.vtitle{font-size:15px;font-weight:600;margin:0 0 3px;letter-spacing:-.01em}
+.vnote{font-size:13px;color:var(--ink-2);margin:0}
+.verdict.s-ok{border-left-color:var(--ok)} .verdict.s-ok .vtitle{color:var(--ok)}
+.verdict.s-watch{border-left-color:var(--watch)} .verdict.s-watch .vtitle{color:var(--watch)}
+.verdict.s-alert{border-left-color:var(--alert)} .verdict.s-alert .vtitle{color:var(--alert)}
+.verdict.s-crisis{border-left-color:var(--crisis)} .verdict.s-crisis .vtitle{color:var(--crisis)}
+.verdict.s-dead{border-left-color:var(--dead)} .verdict.s-dead .vtitle{color:var(--ink-2)}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);
+  margin-top:16px;overflow:hidden}
+.card-head{display:flex;align-items:center;gap:10px;padding:14px 16px 0;flex-wrap:wrap}
+.tick{font-size:17px;font-weight:700;letter-spacing:-.02em}
+.anchor-kind{font-size:11px;color:var(--ink-3);border:1px solid var(--line);border-radius:999px;padding:1px 8px}
+.pill{margin-left:auto;font-size:11.5px;font-weight:600;letter-spacing:.04em;border-radius:999px;
+  padding:3px 10px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.p-ok{color:var(--ok);background:var(--ok-bg)} .p-watch{color:var(--watch);background:var(--watch-bg)}
+.p-alert{color:var(--alert);background:var(--alert-bg)} .p-crisis{color:var(--crisis);background:var(--crisis-bg)}
+.p-dead{color:var(--ink-2);background:var(--dead-bg)}
+
+.headline{display:flex;align-items:baseline;gap:10px;padding:6px 16px 0;flex-wrap:wrap}
+.big{font-size:40px;font-weight:600;line-height:1.05;letter-spacing:-.03em}
+.big.v-ok{color:var(--ok)} .big.v-watch{color:var(--watch)} .big.v-alert{color:var(--alert)}
+.big.v-crisis{color:var(--crisis)} .big.v-dead{color:var(--ink-3)}
+.big-unit{font-size:14px;color:var(--ink-3);font-weight:500}
+.hnote{font-size:12px;color:var(--ink-3);margin-left:auto;text-align:right;line-height:1.45}
+.why{font-size:11.5px;color:var(--ink-3)}
+
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line-soft);
+  margin:14px 0 0;border-block:1px solid var(--line-soft)}
+.kpi{background:var(--panel);padding:10px 16px}
+.kpi dt{font-size:10.5px;color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase;font-weight:500;margin:0 0 2px}
+.kpi dd{margin:0;font-size:15px;font-weight:500}
+.kpi .sm{font-size:11px;color:var(--ink-3);font-weight:400;display:block;line-height:1.35}
+@media (max-width:640px){.kpis{grid-template-columns:1fr 1fr}}
+
+.sect{padding:14px 16px}
+.sect+.sect{border-top:1px solid var(--line-soft)}
+.sect h3{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);font-weight:600;
+  margin:0 0 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sect h3 .cnt{color:var(--ink-2);letter-spacing:0;text-transform:none;font-weight:400;font-size:11px}
+
+.tw{overflow-x:auto;margin-inline:-16px;padding-inline:16px}
+table.src{border-collapse:collapse;width:100%;font-size:13px;min-width:430px}
+table.src th{text-align:left;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);
+  font-weight:600;padding:0 10px 6px 0;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+table.src td{padding:6px 10px 6px 0;border-bottom:1px solid var(--line-soft);vertical-align:top}
+table.src tr:last-child td{border-bottom:0}
+table.src td.r,table.src th.r{text-align:right;padding-right:0}
+.venue{font-weight:500}
+.vmeta{display:block;font-size:11px;color:var(--ink-3);line-height:1.35}
+.tag{font-size:10px;padding:1px 6px;border-radius:4px;background:var(--panel-2);color:var(--ink-2);white-space:nowrap}
+.tag.onchain{background:color-mix(in srgb,var(--cat-1) 14%,transparent);color:var(--cat-1)}
+.tag.oracle{background:color-mix(in srgb,var(--cat-3) 16%,transparent);color:var(--cat-3)}
+.tag.cex{background:color-mix(in srgb,var(--cat-2) 16%,transparent);color:var(--cat-2)}
+.flag-out{color:var(--alert);font-size:11px;font-weight:600}
+.flag-stale{color:var(--watch);font-size:11px;font-weight:600}
+.flag-fail{color:var(--ink-3);font-size:11px}
+.ok-tick{color:var(--ok);font-size:11px;font-weight:600}
+
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-2);margin-top:8px}
+.legend i{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:-1px}
+.legend .ln{width:14px;height:2px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:3px}
+
+details.meth{margin-top:22px;border:1px solid var(--line);border-radius:10px;background:var(--panel);box-shadow:var(--shadow)}
+details.meth summary{cursor:pointer;padding:12px 16px;font-size:13.5px;font-weight:600;list-style:none;
+  display:flex;align-items:center;gap:8px}
+details.meth summary::-webkit-details-marker{display:none}
+details.meth summary::after{content:"＋";margin-left:auto;color:var(--ink-3);font-weight:400}
+details.meth[open] summary::after{content:"－"}
+details.meth summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:10px}
+.meth-body{padding:12px 16px 16px;font-size:13px;color:var(--ink-2);border-top:1px solid var(--line-soft)}
+.meth-body h4{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin:16px 0 6px;font-weight:600}
+.meth-body h4:first-child{margin-top:0}
+.meth-body p{margin:0 0 8px} .meth-body ul{margin:0 0 8px;padding-left:18px} .meth-body li{margin-bottom:4px}
+.meth-body code{font-family:"IBM Plex Mono",monospace;font-size:11.5px;background:var(--panel-2);padding:1px 5px;border-radius:4px;word-break:break-all}
+.thr{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12.5px;align-items:baseline}
+.thr b{font-weight:600}
+footer{margin-top:24px;padding-top:14px;border-top:1px solid var(--line-soft);font-size:11.5px;
+  color:var(--ink-3);text-align:center;line-height:1.7}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <div class="mast-in">
+      <h1>LST Peg Monitor</h1>
+      <span class="sub">多源交叉确认</span>
+      <div class="mast-right">
+        <span class="clock" id="clock">读取中…</span>
+        <button class="refresh" id="refresh" type="button"><span id="spin" class="spin" hidden></span><span id="rlabel">刷新</span></button>
+      </div>
+    </div>
+  </header>
+
+  <div class="verdict s-dead" id="verdict">
+    <div class="vmain">
+      <p class="vtitle" id="vtitle">正在读取链上兑付率与各市场报价…</p>
+      <p class="vnote" id="vnote">兑付锚直接读代币合约，市价取多个互相独立的场所，中位数后再算脱锚。</p>
+    </div>
+  </div>
+
+  <div id="cards"></div>
+
+  <details class="meth">
+    <summary>口径与方法</summary>
+    <div class="meth-body">
+      <h4>Peg 怎么算</h4>
+      <p>脱锚 = 市价 ÷ 兑付锚 − 1，单位 bps（1 bps = 0.01%）。负数 = 折价。</p>
+      <ul>
+        <li><b>stETH</b> — 兑付锚固定 1.0000 ETH。Lido 提现队列按 1:1 结算，但合约里有 <code>maxShareRate</code> 封顶，极端亏损下可能低于 1:1（历史上未发生）；排队期间的质押收益在结算时销毁。</li>
+        <li><b>wstETH</b> — 兑付锚 = <code>stEthPerToken()</code>，每枚 wstETH 背后的 stETH（≈ETH）数量，链上实时读。</li>
+        <li><b>cbETH</b> — 兑付锚 = <code>exchangeRate()</code>，由 Coinbase 预言机<b>每 24 小时（16:00 UTC）</b>写入一次，是阶梯函数；且 cbETH 没有链上赎回，只能在 Coinbase 场内兑付。</li>
+      </ul>
+      <h4>为什么不盯单一 DEX</h4>
+      <p>单个池子的价格可以被一笔交易推动，也可能因为预言机卡住而假性稳定。这里每个代币同时取<b>链上池子的可执行报价</b>、<b>预言机喂价</b>、<b>中心化交易所盘口</b>和<b>独立聚合器</b>，逐个算脱锚后：</p>
+      <ul>
+        <li>取<b>中位数</b>作共识，不用均值（均值会被一个离群源拖走）；</li>
+        <li>用 <b>MAD</b>（绝对中位差）判离群：偏离中位数超过 3×1.4826×MAD 且超过设定下限的源标为 outlier，剔出共识但仍显示；</li>
+        <li><b>源间分歧</b> = 参与共识的源之间的极差。分歧本身就是信号，通常先于真正的脱锚拉大；</li>
+        <li>预言机超过心跳时间未更新则标 stale，不参与共识。</li>
+      </ul>
+      <h4>退出折价曲线 / 可退出规模</h4>
+      <p>中间价好看不代表跑得掉。曲线是在<b>单个链上池子</b>里实际卖出 1 / 10 / 100 / 1000 枚得到的执行价（Curve <code>get_dy</code>、Uniswap v3 <code>QuoterV2</code>），换算成相对兑付锚的 bps；这不是跨场所聚合路由，所以只反映该池自身深度。「可退出规模」= 还能在设定 bps 以内成交的最大档位。真正的挤兑先体现在大额那一端。</p>
+      <h4>状态阈值</h4>
+      <div class="thr" id="thr-list"></div>
+      <h4>合约地址</h4>
+      <ul id="addrs"></ul>
+      <h4>已知的坑</h4>
+      <ul>
+        <li>Curve 池的 coin 顺序每轮<b>实时 <code>coins(0)</code> 验证</b>，不写死 —— 顺序反了会静默返回倒数，看起来只像几个 bps 的误差。</li>
+        <li>主网上 Chainlink 没有 wstETH/stETH、cbETH/ETH 的<b>兑换率</b>喂价（只在 L2），所以兑付锚一律读代币合约，预言机只用在市价那一腿 —— 两腿来源独立反而是对的。</li>
+        <li>Balancer 已从来源里剔除：2025-11 v2 可组合稳定池被利用约 1.28 亿美元（受影响的正是含 wstETH/osETH 的池），DAO 正在走关停流程。</li>
+        <li>公开 RPC 单次批量请求过大时会直接断开，所以 eth_call 按小批发送；取不到的源显示「不可用」，不会静默补数。</li>
+      </ul>
+    </div>
+  </details>
+
+  <footer>
+    阈值与来源权重由我自己设定，这不是投资建议。<br>
+    数值在浏览器里直接向公开节点与各家公开 API 取得，不经过中间服务器。
+  </footer>
+</div>
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
