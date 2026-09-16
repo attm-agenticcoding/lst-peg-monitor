@@ -293,7 +293,7 @@ function depthChart(tok) {
   svg.appendChild(el("text", { x:M.l-8, y:M.t-5, "text-anchor":"end", fill:"var(--ink-3)",
     "font-size":"9.5", "font-family":"inherit" }, "bps"));
 
-  for (const s of tok.depth) {
+  tok.depth.forEach((s, si) => {
     const path = [];
     s.pts.forEach((pt) => {
       const i = SZ.indexOf(pt.size); if (i < 0) return;
@@ -318,9 +318,10 @@ function depthChart(tok) {
       }
     });
     const last = path.filter(q => !q.out).pop();
-    if (last) svg.appendChild(el("text", { x:last.x-7, y:last.y-9, "text-anchor":"end", fill:"var(--ink-2)",
+    if (last) svg.appendChild(el("text", { x:last.x-7, y:Math.max(last.y - 9 - si * 13, M.t + 9),
+      "text-anchor":"end", fill: tok.depth.length > 1 ? s.color : "var(--ink-2)",
       "font-size":"10.5", "font-weight":"600", "font-family":"IBM Plex Mono, monospace" }, bps(last.b, 0)));
-  }
+  });
   return svg;
 }
 
@@ -369,7 +370,7 @@ function spark(series) {
   const svg = el("svg", { viewBox:`0 0 ${W} ${H}`, width:"100%", height:"auto", role:"img",
     "aria-label":"共识脱锚历史" });
   svg.style.display = "block";
-  if (!series || series.length < 2) return null;
+  if (!series || series.length < 4) return null;
   const vs = series.map(p => p.v);
   let lo = Math.min(...vs, 0), hi = Math.max(...vs, 0);
   const p2 = Math.max((hi - lo) * 0.2, 2); lo -= p2; hi += p2;
@@ -455,7 +456,7 @@ function render(tokens, hist) {
     card.querySelector("[data-strip]").appendChild(dotStrip(t));
     card.querySelector("[data-depth]").appendChild(depthChart(t));
     const h = hist && hist[t.sym];
-    if (h && h.length > 1) {
+    if (h && h.length >= 4) {
       const sv = spark(h);
       if (sv) { card.querySelector("[data-spark]").appendChild(sv); card.querySelector("[data-hist]").hidden = false; }
     }
