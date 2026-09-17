@@ -2,7 +2,11 @@ name: snapshot
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    # 避开 :00 / :30 —— 绝大多数公共仓库的 cron 都挤在整点和半点，而 GitHub 的
+    # schedule 事件是 best-effort：队列拥堵时直接丢弃，不补跑、不报错、不留 run 记录。
+    # 错开到 :07 / :37 是目前唯一能在仓库侧提高实际触发率的手段。
+    # 想要真正稳定的节奏，得从外部打 workflow_dispatch，别指望 cron。
+    - cron: "7,37 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -23,20 +27,30 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: run engine tests
-        run: node tests/engine.test.js
+      # 显式固定 node：原先靠 runner 自带版本，会跟着镜像漂
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
+      # 取数排在单测之前 —— 单测挂掉不该连带把数据采集一起停掉
       - name: take snapshot
         run: python3 scripts/snapshot.py
 
       - name: commit data
         run: |
-          if [ -n "$(git status --porcelain data)" ]; then
-            git config user.name  "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add data
-            git commit -m "data: snapshot $(date -u +%Y-%m-%dT%H:%MZ)"
-            git push
-          else
-            echo "no change"
-          fi
+          if [ -z "$(git status --porcelain data)" ]; then echo "no change"; exit 0; fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          git commit -m "data: snapshot $(date -u +%Y-%m-%dT%H:%MZ)"
+          for i in 1 2 3; do
+            git push && exit 0
+            echo "push 失败，rebase 后重试 ($i/3)"
+            git pull --rebase --autostash origin main || true
+            sleep 5
+          done
+          exit 1
+
+      # 数据落盘之后再跑单测：失败照样把这次 run 标红，但不会造成数据断档
+      - name: run engine tests
+        run: node tests/engine.test.js

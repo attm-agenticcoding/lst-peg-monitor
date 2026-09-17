@@ -203,9 +203,9 @@ function buildTokens(d) {
   /* ---- wstETH ---- */
   const ws = [];
   if (uW1 != null) ws.push(src(U.wstETH.label, "QuoterV2 · 卖出 1 枚", "onchain", uW1));
-  if (cA1 != null && d.navWst) ws.push(src("Curve 换算", "stETH 执行价 × stEthPerToken", "onchain", cA1 * d.navWst));
-  if (fS && d.navWst) ws.push(src("Chainlink 换算", "stETH/ETH 喂价 × stEthPerToken", "oracle", fS.price * d.navWst, { stale:fS.stale }));
-  if (d.OK.ok && d.navWst) ws.push(src("OKX 换算", "STETH-ETH 中间价 × stEthPerToken", "cex", d.OK.v.price * d.navWst));
+  if (cA1 != null && d.navWst) ws.push(src("Curve 换算", "stETH 执行价 × stEthPerToken", "onchain", cA1 * d.navWst, { derived:true }));
+  if (fS && d.navWst) ws.push(src("Chainlink 换算", "stETH/ETH 喂价 × stEthPerToken", "oracle", fS.price * d.navWst, { stale:fS.stale, derived:true }));
+  if (d.OK.ok && d.navWst) ws.push(src("OKX 换算", "STETH-ETH 中间价 × stEthPerToken", "cex", d.OK.v.price * d.navWst, { derived:true }));
   const l2 = httpSrc(d.L, "wstETH", "DefiLlama", v => `USD ÷ WETH · conf ${v.conf ?? "—"}`, "agg"); if (l2) ws.push(l2);
   const g2 = httpSrc(d.G, "wstETH", "CoinGecko", () => "vs_currency=eth", "agg"); if (g2) ws.push(g2);
 
@@ -237,7 +237,8 @@ function buildTokens(d) {
 
 function analyse(tok) {
   const th = CFG.thresholds;
-  const agg = E.aggregate(tok.srcs, tok.nav, { absFloor: th.outlierAbsFloor, minKeep: 2 });
+  const agg = E.aggregate(tok.srcs, tok.nav,
+    { absFloor: th.outlierAbsFloor, minKeep: 2, consensusKinds: th.consensusKinds });
   Object.assign(tok, agg);
   tok.exit = E.exitProfile(tok.depth, tok.nav, CFG.sizes, { cleanBps: th.cleanExitBps });
   Object.assign(tok, E.classify(agg, tok.exit, th));
@@ -427,7 +428,7 @@ function render(tokens, hist) {
       <div class="headline">
         <span class="big num v-${t.status}">${bps(t.consensus)}</span>
         <span class="big-unit">bps · 共识脱锚</span>
-        <span class="hnote">${t.confirms} 源交叉确认<br><span class="why">${esc(t.why)}</span></span>
+        <span class="hnote">${t.independentConfirms} 独立源交叉确认${t.confirms > t.independentConfirms ? ` · +${t.confirms - t.independentConfirms} 推导` : ""}<br><span class="why">${esc(t.why)}</span></span>
       </div>
       <dl class="kpis">
         <div class="kpi"><dt>兑付锚 NAV</dt><dd class="num">${nf(t.nav,6)}<span class="sm">${esc(t.navNote)}</span></dd></div>

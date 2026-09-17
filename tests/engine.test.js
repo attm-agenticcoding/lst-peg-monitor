@@ -106,4 +106,63 @@ t("worse 取更严重的一档", () => {
   assert.strictEqual(E.worse("crisis", "watch"), "crisis");
 });
 
+t("aggregate: 聚合器默认不进共识（kind 过滤）", () => {
+  const srcs = [
+    { venue: "curve", kind: "onchain", price: 0.99980 },
+    { venue: "cl",    kind: "oracle",  price: 0.99981 },
+    { venue: "okx",   kind: "cex",     price: 0.99982 },
+    { venue: "llama", kind: "agg",     price: 0.99857 },   // −14.3 bps
+    { venue: "gecko", kind: "agg",     price: 0.99944 },   // −5.6 bps
+  ];
+  // 旧行为：绝对地板 20 bps 让 −14.3 的聚合器留在共识里，把分歧顶到 12.5
+  const before = E.aggregate(srcs, 1);
+  assert.strictEqual(before.confirms, 5);
+  assert.ok(before.dispersion > 12, "旧逻辑分歧被聚合器顶高：" + before.dispersion);
+  // 新行为：聚合器不进共识，分歧回到真实场所价差
+  const after = E.aggregate(srcs, 1, { consensusKinds: ["onchain", "oracle", "cex"] });
+  assert.strictEqual(after.confirms, 3);
+  assert.deepStrictEqual([...after.excluded].sort(), ["gecko", "llama"]);
+  assert.ok(after.dispersion < 1, "剔出聚合器后分歧应回到场所价差：" + after.dispersion);
+  assert.strictEqual(after.sources.length, 5, "被剔的源仍要返回，看板照常显示");
+});
+
+t("aggregate: 够格的源不足两个时退回全集，不造假共识", () => {
+  const a = E.aggregate([
+    { venue: "uni",   kind: "onchain", price: 0.9998 },
+    { venue: "llama", kind: "agg",     price: 0.9997 },
+    { venue: "gecko", kind: "agg",     price: 0.9999 },
+  ], 1, { consensusKinds: ["onchain"] });
+  assert.strictEqual(a.kindFallback, true);
+  assert.strictEqual(a.confirms, 3);
+});
+
+t("aggregate: derived 源不计入 independentConfirms", () => {
+  const a = E.aggregate([
+    { venue: "uni",            kind: "onchain", price: 1.2439 },
+    { venue: "curve 换算",     kind: "onchain", price: 1.24392, derived: true },
+    { venue: "chainlink 换算", kind: "oracle",  price: 1.24393, derived: true },
+    { venue: "okx 换算",       kind: "cex",     price: 1.24391, derived: true },
+  ], 1.2441, { consensusKinds: ["onchain", "oracle", "cex"] });
+  assert.strictEqual(a.confirms, 4);
+  assert.strictEqual(a.independentConfirms, 1, "wstETH 真正独立的市价源只有 Uni v3 一个");
+});
+
+t("换算源对本代币零信息量：nav 在 pegBps 里约掉", () => {
+  const nav = 1.2441763842073688;
+  for (const p of [0.9998, 1.0, 0.97, 1.02]) close(E.pegBps(p * nav, nav), E.pegBps(p, 1), 1e-9);
+});
+
+t("stETH 与 wstETH 可原子互换 ⇒ 同一组源下共识必须相等", () => {
+  const nav = 1.2441763842073688;
+  const px = { curve: 0.99977, cl: 1.00006, okx: 0.99985 };
+  const kind = { curve: "onchain", cl: "oracle", okx: "cex" };
+  const mk = (scale, derived) => Object.keys(px).map((k) =>
+    ({ venue: k, kind: kind[k], price: px[k] * scale, derived }));
+  const K = { consensusKinds: ["onchain", "oracle", "cex"] };
+  const st = E.aggregate(mk(1, false), 1, K);
+  const ws = E.aggregate(mk(nav, true), nav, K);
+  close(st.consensus, ws.consensus, 1e-9);
+  assert.strictEqual(ws.independentConfirms, 0, "全是换算源时独立确认数应为 0");
+});
+
 console.log(`\n${pass} 项通过${process.exitCode ? "，有失败" : ""}`);

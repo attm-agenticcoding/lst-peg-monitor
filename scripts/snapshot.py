@@ -121,26 +121,49 @@ def peg_bps(price, nav):
 
 
 def aggregate(sources, nav):
+    """与 engine.js 的 aggregate() 逐条对齐，改一边记得改另一边。"""
     for s in sources:
         s["bps"] = peg_bps(s.get("price"), nav)
     usable = [s for s in sources if s["bps"] is not None and not s.get("stale") and not s.get("failed")]
-    vals = [s["bps"] for s in usable]
-    if not vals:
-        return {"consensus": None, "confirms": 0, "dispersion": None, "medPrice": None}
+    if not usable:
+        return {"consensus": None, "confirms": 0, "independentConfirms": 0,
+                "dispersion": None, "medPrice": None, "excluded": [], "kindFallback": False}
+
+    # 聚合器是 USD 口径独立取数、再各自除一个单独抓的 ETH/USD，误差进来两次，
+    # 噪声比真实场所价差大一个量级 —— 默认不让它进共识，但照常返回、照常显示。
+    allow = TH.get("consensusKinds") or []
+    eligible, kind_fallback = usable, False
+    if allow:
+        f = [s for s in usable if s.get("kind") in allow]
+        if len(f) >= 2:
+            eligible = f
+        else:
+            kind_fallback = True
+    elig_ids = {id(s) for s in eligible}
+
+    vals = [s["bps"] for s in eligible]
     med0 = statistics.median(vals)
-    if len(usable) >= 3:
+    if len(eligible) >= 3:
         mad = statistics.median([abs(v - med0) for v in vals])
         cut = max(3 * 1.4826 * mad, TH["outlierAbsFloor"])
-        for s in usable:
+        for s in eligible:
             s["outlier"] = abs(s["bps"] - med0) > cut
-    kept = [s for s in usable if not s.get("outlier")]
-    pool = kept if len(kept) >= 2 else usable
+    kept = [s for s in eligible if not s.get("outlier")]
+    pool = kept if len(kept) >= 2 else eligible
+    if pool is not kept:
+        for s in eligible:
+            s["outlier"] = False
     b = [s["bps"] for s in pool]
     return {
         "consensus": round(statistics.median(b), 3),
         "confirms": len(pool),
+        # derived 源 = 别的代币的报价 × 兑换率。peg = price/nav - 1，nav 约掉，
+        # 所以它恒等于被换算那一腿的 bps，对本代币零信息量，不计入独立确认数。
+        "independentConfirms": len([s for s in pool if not s.get("derived")]),
+        "kindFallback": kind_fallback,
         "dispersion": round(max(b) - min(b), 3) if len(b) >= 2 else None,
         "medPrice": statistics.median([s["price"] for s in pool]),
+        "excluded": [s["venue"] for s in usable if id(s) not in elig_ids],
     }
 
 
@@ -278,34 +301,34 @@ def collect():
     tokens = {}
 
     st = []
-    if cA1: st.append(src("curve_steth", cA1))
-    if cB1: st.append(src("curve_steth_ng", cB1))
-    if fS: st.append(src("chainlink_steth_eth", fS["price"], stale=fS["stale"], age=fS["age"]))
-    st.append(src("okx_steth_eth", O, failed=O is None, error=Oe))
-    if L: st.append(src("defillama", L.get("stETH")))
-    if G: st.append(src("coingecko", G.get("stETH")))
+    if cA1: st.append(src("curve_steth", cA1, kind="onchain"))
+    if cB1: st.append(src("curve_steth_ng", cB1, kind="onchain"))
+    if fS: st.append(src("chainlink_steth_eth", fS["price"], kind="oracle", stale=fS["stale"], age=fS["age"]))
+    st.append(src("okx_steth_eth", O, kind="cex", failed=O is None, error=Oe))
+    if L: st.append(src("defillama", L.get("stETH"), kind="agg"))
+    if G: st.append(src("coingecko", G.get("stETH"), kind="agg"))
     tokens["stETH"] = {"nav": 1.0, "sources": st,
                        "depth": {"curve_steth": {s: unit("cA", s) for s in SIZES},
                                  "curve_steth_ng": {s: unit("cB", s) for s in SIZES}}}
 
     ws = []
     uW1 = unit("uW", 1)
-    if uW1: ws.append(src("uniswap_v3_wsteth", uW1))
-    if cA1 and nav_wst: ws.append(src("curve_derived", cA1 * nav_wst))
-    if fS and nav_wst: ws.append(src("chainlink_derived", fS["price"] * nav_wst, stale=fS["stale"]))
-    if O and nav_wst: ws.append(src("okx_derived", O * nav_wst))
-    if L: ws.append(src("defillama", L.get("wstETH")))
-    if G: ws.append(src("coingecko", G.get("wstETH")))
+    if uW1: ws.append(src("uniswap_v3_wsteth", uW1, kind="onchain"))
+    if cA1 and nav_wst: ws.append(src("curve_derived", cA1 * nav_wst, kind="onchain", derived=True))
+    if fS and nav_wst: ws.append(src("chainlink_derived", fS["price"] * nav_wst, kind="oracle", derived=True, stale=fS["stale"]))
+    if O and nav_wst: ws.append(src("okx_derived", O * nav_wst, kind="cex", derived=True))
+    if L: ws.append(src("defillama", L.get("wstETH"), kind="agg"))
+    if G: ws.append(src("coingecko", G.get("wstETH"), kind="agg"))
     tokens["wstETH"] = {"nav": nav_wst, "sources": ws,
                         "depth": {"uniswap_v3_wsteth": {s: unit("uW", s) for s in SIZES}}}
 
     cb = []
     uC1 = unit("uC", 1)
-    if uC1: cb.append(src("uniswap_v3_cbeth", uC1))
-    if fC: cb.append(src("chainlink_cbeth_eth", fC["price"], stale=fC["stale"], age=fC["age"]))
-    cb.append(src("coinbase_cbeth_eth", C, failed=C is None, error=Ce))
-    if L: cb.append(src("defillama", L.get("cbETH")))
-    if G: cb.append(src("coingecko", G.get("cbETH")))
+    if uC1: cb.append(src("uniswap_v3_cbeth", uC1, kind="onchain"))
+    if fC: cb.append(src("chainlink_cbeth_eth", fC["price"], kind="oracle", stale=fC["stale"], age=fC["age"]))
+    cb.append(src("coinbase_cbeth_eth", C, kind="cex", failed=C is None, error=Ce))
+    if L: cb.append(src("defillama", L.get("cbETH"), kind="agg"))
+    if G: cb.append(src("coingecko", G.get("cbETH"), kind="agg"))
     tokens["cbETH"] = {"nav": nav_cb, "sources": cb,
                        "depth": {"uniswap_v3_cbeth": {s: unit("uC", s) for s in SIZES}}}
 
@@ -330,6 +353,8 @@ def collect():
             "nav": t["nav"],
             "consensus": agg["consensus"],
             "confirms": agg["confirms"],
+            "independentConfirms": agg["independentConfirms"],
+            "excluded": agg["excluded"],
             "dispersion": agg["dispersion"],
             "medPrice": agg["medPrice"],
             "status": classify(agg, best),
@@ -338,6 +363,12 @@ def collect():
             "sources": {s["venue"]: (round(s["bps"], 3) if s.get("bps") is not None else None)
                         for s in srcs},
         }
+
+    # 管线自检：stETH 与 wstETH 可原子互换（wrap/unwrap 按 stEthPerToken，零滑点），
+    # 所以两者的 peg 误差在物理上必须相等。这个差值不是市场信号，是本管线的噪声下界 ——
+    # 平时应当 <1 bps，一旦拉大就是某个源坏了，不是脱锚。
+    a, b = rec["stETH"]["consensus"], rec["wstETH"]["consensus"]
+    rec["selfCheck"] = {"stWstGapBps": round(abs(a - b), 3) if a is not None and b is not None else None}
     return rec
 
 

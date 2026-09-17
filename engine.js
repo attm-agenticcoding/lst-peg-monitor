@@ -36,23 +36,41 @@
    *   5. 共识 = 剩余集合的中位数；分歧 = 剩余集合的极差。
    */
   function aggregate(sources, nav, opts) {
-    const o = Object.assign({ absFloor: 20, minKeep: 2 }, opts || {});
+    const o = Object.assign({ absFloor: 20, minKeep: 2, consensusKinds: null }, opts || {});
     const srcs = sources.map((s) => Object.assign({}, s, { bps: pegBps(s.price, nav) }));
 
     const usable = srcs.filter((s) => s.bps != null && !s.stale && !s.failed);
-    const vals = usable.map((s) => s.bps);
+
+    /* 按来源类型筛出「够格进共识」的集合。
+     * 聚合器（agg）是 USD 口径独立取数、再各自除一个单独抓的 ETH/USD，误差进来两次，
+     * 噪声比真实场所价差大一个量级 —— 实测同一聚合器对 stETH / wstETH 这两个
+     * 可原子互换的资产报出过 72 bps 的价差。默认只让 onchain/oracle/cex 进共识，
+     * 聚合器仍然照常返回、照常显示，只是不参与中位数与分歧。
+     * 够格的不足 minKeep 个则退回全集 —— 宁可显示分歧，也不造假共识。 */
+    let eligible = usable;
+    let kindFallback = false;
+    if (o.consensusKinds && o.consensusKinds.length) {
+      const allow = new Set(o.consensusKinds);
+      const f = usable.filter((s) => allow.has(s.kind));
+      if (f.length >= o.minKeep) eligible = f;
+      else kindFallback = usable.length > 0;
+    }
+    const inPool = new Set(eligible);
+    for (const s of usable) s.inConsensus = inPool.has(s);
+
+    const vals = eligible.map((s) => s.bps);
     const med0 = median(vals);
     let m = null;
 
-    if (med0 != null && usable.length >= 3) {
+    if (med0 != null && eligible.length >= 3) {
       m = mad(vals, med0);
       const cut = Math.max(3 * 1.4826 * m, o.absFloor);
-      for (const s of usable) s.outlier = Math.abs(s.bps - med0) > cut;
+      for (const s of eligible) s.outlier = Math.abs(s.bps - med0) > cut;
     }
 
-    const kept = usable.filter((s) => !s.outlier);
-    const pool = kept.length >= o.minKeep ? kept : usable;
-    if (pool !== kept) for (const s of usable) s.outlier = false;
+    const kept = eligible.filter((s) => !s.outlier);
+    const pool = kept.length >= o.minKeep ? kept : eligible;
+    if (pool !== kept) for (const s of eligible) s.outlier = false;
 
     const bpsPool = pool.map((s) => s.bps);
     return {
@@ -60,9 +78,15 @@
       consensus: median(bpsPool),
       medPrice: median(pool.map((s) => s.price)),
       confirms: pool.length,
+      /* derived 源是别的代币的报价乘兑换率换算来的：peg = price/nav - 1，nav 直接约掉，
+       * 所以它恒等于被换算那一腿的 bps，对本代币零信息量。confirms 会把它算进去，
+       * independentConfirms 不会 —— 看板要显示后者，否则交叉确认数是虚高的。 */
+      independentConfirms: pool.filter((s) => !s.derived).length,
+      kindFallback,
       dispersion: pool.length >= 2 ? Math.max(...bpsPool) - Math.min(...bpsPool) : null,
       mad: m,
-      outliers: usable.filter((s) => s.outlier).map((s) => s.venue),
+      outliers: eligible.filter((s) => s.outlier).map((s) => s.venue),
+      excluded: usable.filter((s) => !s.inConsensus).map((s) => s.venue),
     };
   }
 
