@@ -2,7 +2,7 @@
 
 stETH（含 wstETH）与 cbETH 的脱锚监测看板：https://attm-agenticcoding.github.io/lst-peg-monitor/
 
-**兑付锚读代币合约；市价取流动性最深的场所；至少两个场所同时越档才升级状态。**
+**兑付锚读代币合约；市价取流动性最深的场所；主报价越档、且至少还有一个场所确认才升级状态。**
 
 ## 架构
 
@@ -32,15 +32,17 @@ gh workflow run snapshot.yml       # 手动拉起接力链（看门狗也会自�
 
 | 场所 | stETH | cbETH |
 |---|---|---|
-| 聚合路由 | KyberSwap（扫全部 DEX，含 Lido ARM、Fluid，按需 wrap wstETH ≈ LlamaSwap 的报价） | KyberSwap |
-| 链上池 | Curve stETH/ETH、Curve stETH-ng、Uniswap v3 wstETH 0.01% | Uniswap v3 cbETH 0.05% |
+| 聚合路由 | KyberSwap 主网（扫全部 DEX，含 Lido ARM、Fluid，按需 wrap wstETH ≈ LlamaSwap 的报价） | KyberSwap **Base**、KyberSwap 主网 |
+| 链上池（合约直读） | Curve stETH/ETH、Curve stETH-ng、Uniswap v3 wstETH 0.01% | Aerodrome Slipstream cbETH/WETH（**Base**）、Uniswap v3 cbETH 0.05%（主网） |
 | 交易所盘口 | OKX STETH-ETH（按买盘逐档吃单） | Coinbase CBETH-ETH |
+
+cbETH 的链上流动性主要在 Base（Coinbase 自家 L2）：Base 上卖 1000 枚约 −5 bps，主网池子卖 100 枚就要 −40 到 −470 bps。cbETH 的兑付锚仍然读主网合约的 `exchangeRate()`（Base 上的 cbETH 是桥过去的同一资产，合约里没有兑换率）。
 
 每个场所模拟卖出 1 / 10 / 100 / 1000 枚：
 
 1. **可退出规模** = 最优场所在 50 bps 内还卖得掉的最大量级。
-2. **主报价** = 在这个量级上执行价最好的场所（流动性最深），取它卖 1 枚的价。离中位数超过 75 bps 的源不能当主报价。
-3. **状态** = 至少两个场所同时达到的那一档（第二差的场所）：正常 ≤25 / 关注 25–75 / 警戒 75–200 / 危机 >200 bps；最优场所卖 10 枚差于 −100 bps 至少警戒；可用场所 <2 个为「源不足」。
+2. **主报价** = 在「最优执行价还不差于 −200 bps 的最大量级」上执行价最好的场所（流动性最深），取它卖 1 枚的价。用 −200 而不是 50 bps 来比，是为了压力下深池跌到 −80 时，不会被一个只挂着小单、价格还没跟上的薄盘口顶替。离中位数超过 75 bps 的源不能当主报价。
+3. **状态** = 主报价所在的档，但至少还要一个别的场所也到这一档才算（两者取较轻的一档）：正常 ≤25 / 关注 25–75 / 警戒 75–200 / 危机 >200 bps。薄池子自己漂（主网 cbETH 常年 −13 bps）、单个源报错都不会误报。最优场所卖 10 枚差于 −100 bps 至少警戒；可用场所 <2 个为「源不足」。
 4. **常态** = 主报价近 30 天：先每小时取中位数，再取中位数（常态）与 p10~p90（常见区间）。满 12 小时出数。
 
 `data/history.json`：`{schema:2, updated, baseline:{stETH,cbETH}, records:[{ts, stETH:{st,peg,via,clean,x,v}, cbETH:{…}, nav, err?}]}`。近 3 天全留，更早每小时一条，保留 60 天。旧版三币口径的历史归档在 `data/legacy/`。
@@ -50,7 +52,9 @@ gh workflow run snapshot.yml       # 手动拉起接力链（看门狗也会自�
 - **KyberSwap 怕并发**：一次并发 8 个请求会回 503 overloaded，所以逐个发、失败隔 0.8 秒重试一次。
 - **Curve coin 顺序不写死**：每轮 `coins(0)` 实时验证，顺序反了会静默返回倒数。
 - **公开 RPC 批量不能大**：4 条一批；`ethereum-rpc.publicnode.com`、`1rpc.io/eth` 浏览器可直连。
-- **cbETH 链上常年比 Coinbase 低约 10 bps**：Uniswap 1 枚约 −13 bps，Coinbase 盘口约 −2 bps；100 枚时链上 −40 到 −470 bps，Coinbase 约 −13。所以 cbETH 的主报价通常是 Coinbase。
+- **cbETH 看 Base，别看主网**：主网 Uniswap 卖 1 枚约 −13 bps，Base 上约 −1 到 −3 bps，Coinbase 盘口约 −2 bps。
+- **池子手续费**：Curve stETH/ETH 原池 1 bp、stETH-ng 0.8 bp，Uniswap wstETH 池 1 bp，Aerodrome cbETH 池 0.6 bp —— 这部分付给 LP，已经含在执行价里。LlamaSwap 本身不加收费用（它的收入是聚合器给的分成）。
+- **Aerodrome Slipstream 的 QuoterV2** 参数里是 `int24 tickSpacing` 而不是 `uint24 fee`，选择器是 `0x9e7defe6`，不是 Uniswap 的 `0xc6a5026a`。
 - **已去掉的来源**：Chainlink stETH/ETH（0.5% 偏离阈值 + 24h 心跳，比 25 bps 关注线还钝）；DefiLlama / CoinGecko 聚合价（USD 口径二次换算，噪声大一个量级）；Balancer（2025-11 v2 可组合稳定池被利用，正在关停）。
 - **Claude Artifact 不能当线上看板**：CSP 禁止向外部 host 发请求，所以走 GitHub Pages。
 

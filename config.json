@@ -37,8 +37,17 @@
   },
   "uniFee": { "wstETH": 100, "cbETH": 500 },
 
+  "base": {
+    "rpcs": ["https://base-rpc.publicnode.com", "https://mainnet.base.org"],
+    "cbETH": "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22",
+    "WETH": "0x4200000000000000000000000000000000000006",
+    "aeroQuoter": "0x254cF9E1E6e233aa1AC962CB9B05b2cfeAaE15b0",
+    "aeroTickSpacing": 1
+  },
+
   "http": {
     "kyber": "https://aggregator-api.kyberswap.com/ethereum/api/v1/routes",
+    "kyberBase": "https://aggregator-api.kyberswap.com/base/api/v1/routes",
     "okxBook": "https://www.okx.com/api/v5/market/books?instId=STETH-ETH&sz=400",
     "coinbaseBook": "https://api.exchange.coinbase.com/products/CBETH-ETH/book?level=2"
   }

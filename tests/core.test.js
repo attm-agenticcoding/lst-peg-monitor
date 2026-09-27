@@ -35,12 +35,22 @@ t("大额场所换人：1000 枚时 Curve 更好就用 Curve 卖 1 枚的价", (
   assert.strictEqual(a.peg, -2);
 });
 
-t("单个场所越线不升级，两个同时越线才升级", () => {
-  const one = st({ kyber: [-1, -1, -1, -1], curve: [-300, -300, -300, -300], okx: [-2, -2, -2, null] });
-  assert.strictEqual(one.status, "ok");
-  assert.ok(one.why.includes("没有第二个场所确认"));
+t("主报价越线、且有别的场所确认才升级", () => {
+  const thin = st({ kyber: [-1, -1, -1, -1], curve: [-300, -300, -300, -300], okx: [-2, -2, -2, null] });
+  assert.strictEqual(thin.status, "ok");
+  assert.ok(thin.why.includes("不是主要流动性"));
+  const lone = st({ kyber: [-30, -30, -30, -30], curve: [-2, -2, -2, -40], okx: [-2, -2, -2, null] });
+  assert.strictEqual(lone.primary, "kyber");
+  assert.strictEqual(lone.status, "ok");
+  assert.ok(lone.why.includes("没有别的场所确认"));
   const two = st({ kyber: [-30, -30, -31, -33], curve: [-40, -40, -41, -45], okx: [-2, -2, -2, null] });
   assert.strictEqual(two.status, "watch");
+  const mixed = st({ kyber: [-80, -80, -80, -82], curve: [-30, -30, -31, -90], okx: [-2, -2, null, null] });
+  assert.strictEqual(mixed.status, "watch"); // 主报价到警戒，但确认的场所只到关注 → 取较轻的一档
+  // 压力下深池跌到 −80，薄盘口的小单还挂在 −2：主报价不能被薄盘口顶替
+  const stress = st({ kyber: [-80, -80, -81, -85], curve: [-82, -82, -83, -90], okx: [-2, -2, null, null] });
+  assert.strictEqual(stress.primary, "kyber");
+  assert.strictEqual(stress.status, "alert");
   const bad = st({ kyber: [-230, -230, -240, -260], curve: [-250, -250, -260, -300], uni_wsteth: [-90, -90, -95, -120] });
   assert.strictEqual(bad.status, "crisis");
 });
@@ -63,14 +73,20 @@ t("可用场所不足 2 个 → 源不足", () => {
   assert.strictEqual(a.primary, "kyber");
 });
 
-t("cbETH 按 exchangeRate 算：Coinbase 更深时当主报价", () => {
+t("cbETH 按 exchangeRate 算：Base 最深时用 Base；主网薄池漂走不误报", () => {
   const nav = 1.14;
-  const a = C.analyse(pxFrom(nav, { coinbase: [-2.3, -6.1, -13.2, null], kyber: [-12.7, -13.3, -37.6, -8391],
-    uni_cbeth: [-12.7, -17, -467, -9027] }), nav, C.VENUES.cbETH, TH, S);
-  assert.strictEqual(a.clean, 100);
-  assert.strictEqual(a.primary, "coinbase");
-  assert.ok(Math.abs(a.peg + 2.3) < 0.02);
+  const cb = (t) => C.analyse(pxFrom(nav, t), nav, C.VENUES.cbETH, TH, S);
+  const live = { kyber_base: [-2.36, -2.43, -2.63, -5.81], aero_base: [-2.76, -2.78, -2.88, -3057], coinbase: [-2.3, -6.1, -13.2, null],
+    kyber: [-12.7, -13.3, -37.6, -8391], uni_cbeth: [-12.7, -17, -467, -9027] };
+  const a = cb(live);
+  assert.strictEqual(a.clean, 1000);
+  assert.strictEqual(a.primary, "kyber_base");
+  assert.ok(Math.abs(a.peg + 2.36) < 0.02);
   assert.strictEqual(a.status, "ok");
+  const drift = cb(Object.assign({}, live, { kyber: [-40, -41, -60, -8391], uni_cbeth: [-40, -45, -470, -9027] }));
+  assert.strictEqual(drift.status, "ok");
+  const noBase = cb({ coinbase: live.coinbase, kyber: live.kyber, uni_cbeth: live.uni_cbeth }); // Base 取不到时退回 Coinbase
+  assert.strictEqual(noBase.primary, "coinbase");
 });
 
 t("常态基线按小时分桶，稀疏化不影响权重", () => {

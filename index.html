@@ -215,10 +215,10 @@ table.src td:first-child{min-width:200px}
         <li><b>cbETH</b> — 锚 = <code>exchangeRate()</code>。Coinbase 每天 16:00 UTC 写一次，是阶梯函数，日内会有约 0.8 bps 的锯齿；没有链上赎回，只能在 Coinbase 兑付。</li>
       </ul>
       <h4>主报价：谁流动性深用谁</h4>
-      <p>每个场所都模拟卖出 1 / 10 / 100 / 1000 枚。先找「最优场所在 50 bps 内还卖得掉的最大量级」，在这个量级上执行价最好的场所就是流动性最深的，<b>主报价 = 它卖 1 枚的价</b>。stETH 通常是 KyberSwap 聚合路由（它会扫 Lido ARM、Fluid、Curve、Uniswap，需要时自动 wrap 成 wstETH —— 和在 LlamaSwap 上看到的是同一类报价）；cbETH 通常是 Coinbase 盘口，链上 cbETH 常年比 Coinbase 低 10 bps 左右。</p>
+      <p>每个场所都模拟卖出 1 / 10 / 100 / 1000 枚。在「最优执行价还不差于 −200 bps 的最大量级」上比，执行价最好的场所就是流动性最深的，<b>主报价 = 它卖 1 枚的价</b>。stETH 通常是 KyberSwap 聚合路由（它会扫 Lido ARM、Fluid、Curve、Uniswap，需要时自动 wrap 成 wstETH —— 和在 LlamaSwap 上看到的是同一类报价）。cbETH 的链上流动性主要在 <b>Base</b>：Base 上卖 1000 枚约 −5 bps，主网池子卖 100 枚就要 −40 到 −470 bps，所以 cbETH 通常用 KyberSwap 在 Base 上的聚合报价，另外直读 Aerodrome 池子的链上报价做对照。</p>
       <h4>状态</h4>
       <div class="thr" id="thr-list"></div>
-      <p style="margin-top:8px">状态取<b>至少两个场所同时达到</b>的那一档（即第二差的场所）：单个源报错或单个盘口变薄不会误报。离中位数太远的源不能当主报价。</p>
+      <p style="margin-top:8px">状态看<b>主报价</b>落在哪一档，但至少还要<b>一个别的场所</b>也到这一档才算（两者取较轻的一档）：薄池子自己漂、单个源报错都不会误报。离中位数太远的源不能当主报价。</p>
       <h4>常态</h4>
       <p>主报价近 30 天的分布：先每小时取中位数，再对小时序列取中位数（常态）和 p10~p90（常见区间）。新口径从上线起开始积累，满 12 小时出数。</p>
       <h4>刷新节奏</h4>

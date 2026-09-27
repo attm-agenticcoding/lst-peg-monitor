@@ -16,10 +16,13 @@
       { id: "uni_wsteth", label: "Uniswap v3 wstETH 0.01%", kind: "dex", note: "卖出等值的 wstETH，按 stEthPerToken 折成 stETH" },
       { id: "okx", label: "OKX STETH-ETH", kind: "cex", note: "按买盘逐档吃单" },
     ],
+    // cbETH 的链上流动性主要在 Base（Coinbase 自家 L2），主网池子很薄
     cbETH: [
+      { id: "kyber_base", label: "KyberSwap 聚合 · Base", kind: "agg", note: "Base 上扫全部 DEX（Maverick、Hydrex、Aerodrome、Uniswap v4…）" },
+      { id: "aero_base", label: "Aerodrome cbETH/WETH · Base", kind: "dex", note: "Slipstream 池（费率 0.006%），QuoterV2 直读链上" },
       { id: "coinbase", label: "Coinbase CBETH-ETH", kind: "cex", note: "按买盘逐档吃单" },
-      { id: "kyber", label: "KyberSwap 聚合路由", kind: "agg", note: "扫全部 DEX 找最优路径" },
-      { id: "uni_cbeth", label: "Uniswap v3 cbETH 0.05%", kind: "dex", note: "QuoterV2" },
+      { id: "kyber", label: "KyberSwap 聚合 · 主网", kind: "agg", note: "主网扫全部 DEX" },
+      { id: "uni_cbeth", label: "Uniswap v3 cbETH 0.05% · 主网", kind: "dex", note: "QuoterV2" },
     ],
   };
   const ASSETS = Object.keys(VENUES);
@@ -60,8 +63,8 @@
    * px: {venueId: {size: 每枚换回的 ETH}}；nav: 兑付锚（每枚背后的 ETH）
    * 1. 各场所各量级的执行价 → 相对兑付锚的 bps（负 = 折价）
    * 2. 可退出规模 clean = 最优场所在 cleanExitBps 内还卖得掉的最大量级
-   * 3. 主报价 = 在 clean 这个量级上执行价最好的场所（= 流动性最深）；peg = 它卖 1 枚的价
-   * 4. 状态 = 至少两个场所同时达到的那一档（第二差的场所）—— 单个源坏掉不会误报
+   * 3. 主报价 = 在「最优执行价不差于 −200 bps 的最大量级」上执行价最好的场所（= 流动性最深）；peg = 它卖 1 枚的价
+   * 4. 状态 = 主报价所在的档，但至少还要一个别的场所也到这一档才算（取两者中较轻的那档）
    * 5. 最优场所卖 thinSize 枚都差于 −thinBps → 至少警戒（深度塌了） */
   function analyse(px, nav, venues, th, sizes) {
     const V = venues.map((v) => {
@@ -77,7 +80,10 @@
     }
     let clean = null;
     for (const s of sizes) if (exit[s] != null && exit[s] >= -th.cleanExitBps) clean = s;
-    const ref = clean != null ? clean : sizes[0];
+    // 「最深」在最优执行价还不差于 −alert 的最大量级上比 —— 比 clean（50 bps）宽，
+    // 这样深池在压力下跌到 −80 时，不会被一个只挂着小单、价格还没跟上的薄盘口顶替成主报价
+    let ref = sizes[0];
+    for (const s of sizes) if (exit[s] != null && exit[s] >= -th.alert) ref = s;
     // 候选主报价先剔掉离群源（≥3 个场所时，离中位数超过 watch 阈值的不当主报价），
     // 免得一个报错成「高价」的源被当成最深的场所
     const med = median(live.map((v) => v.peg));
@@ -87,15 +93,21 @@
     for (const v of cand) if (v.bps[ref] != null && (!primary || v.bps[ref] > primary.bps[ref])) primary = v;
 
     let status = "dead", why = `可用场所只有 ${live.length} 个，至少要 ${th.minVenues} 个才能交叉确认`;
-    if (live.length >= th.minVenues) {
-      const ranked = live.map((v) => ({ v, t: tier(v.peg, th) }))
+    if (live.length >= th.minVenues && primary) {
+      // 主报价（最深的场所）决定档位，但至少还要一个别的场所也到这一档才算数：
+      // 薄池子自己漂（主网 cbETH 池常年 −13 bps）不会误报，单个源报错也不会
+      const tP = tier(primary.peg, th);
+      const others = live.filter((v) => v !== primary).map((v) => ({ v, t: tier(v.peg, th) }))
         .sort((a, b) => LEVEL[b.t] - LEVEL[a.t] || Math.abs(b.v.peg) - Math.abs(a.v.peg));
-      status = ranked[1].t;
+      const tO = others.length ? others[0].t : "ok";
+      status = LEVEL[tP] <= LEVEL[tO] ? tP : tO;
       if (status !== "ok") {
-        const hot = ranked.filter((x) => LEVEL[x.t] >= LEVEL[status]);
-        why = `${hot.map((x) => `${x.v.label} ${fmt(x.v.peg)}`).join("、")}：${hot.length} 个场所同时越过 ${th[EDGE[status]]} bps`;
-      } else if (ranked[0].t !== "ok") {
-        why = `只有 ${ranked[0].v.label}（${fmt(ranked[0].v.peg)} bps）越线，没有第二个场所确认`;
+        const conf = others.filter((x) => LEVEL[x.t] >= LEVEL[status]).map((x) => `${x.v.label} ${fmt(x.v.peg)}`);
+        why = `主报价 ${primary.label} ${fmt(primary.peg)}，${conf.join("、")} 确认：越过 ${th[EDGE[status]]} bps`;
+      } else if (tP !== "ok") {
+        why = `主报价 ${primary.label}（${fmt(primary.peg)} bps）越线，但没有别的场所确认`;
+      } else if (tO !== "ok") {
+        why = `主报价在 ±${th.ok} bps 内；${others[0].v.label}（${fmt(others[0].v.peg)}）偏离，但它不是主要流动性`;
       } else {
         why = `${live.length} 个场所都在 ±${th.ok} bps 以内`;
       }
@@ -195,9 +207,10 @@
     }
 
     // 公开 RPC：小批量发（大批量会被断开），一个节点不行换下一个
-    let rpcUrl = null;
-    async function ethCalls(calls) {
-      const order = rpcUrl ? [rpcUrl, ...cfg.rpcs.filter((u) => u !== rpcUrl)] : cfg.rpcs;
+    const sticky = {};
+    async function ethCalls(calls, chain) {
+      const list = chain === "base" ? cfg.base.rpcs : cfg.rpcs, rpcUrl = sticky[chain || "eth"];
+      const order = rpcUrl ? [rpcUrl, ...list.filter((u) => u !== rpcUrl)] : list;
       let last = null;
       for (const url of order) {
         try {
@@ -209,11 +222,11 @@
             if (!Array.isArray(res)) throw new Error("节点不接受批量请求");
             for (const x of res) if (x && x.id >= 0 && x.id < out.length) out[x.id] = x.result || null;
           }
-          rpcUrl = url;
+          sticky[chain || "eth"] = url;
           return out;
         } catch (e) { last = e; }
       }
-      note("rpc", last);
+      note(`rpc ${chain || "eth"}`, last);
       return calls.map(() => null);
     }
 
@@ -249,23 +262,32 @@
       return { stETH: 1, wstETH: rateW ? Number(rateW) / 1e18 : null, cbETH: rateC ? Number(rateC) / 1e18 : null };
     })();
 
+    // Base：Aerodrome Slipstream cbETH/WETH，QuoterV2.quoteExactInputSingle((tokenIn,tokenOut,amountIn,int24 tickSpacing,sqrtPriceLimitX96))
+    const base = (async () => {
+      const B = cfg.base;
+      const r = await ethCalls(sizes.map((s) => [B.aeroQuoter, "0x9e7defe6" + pad(B.cbETH) + pad(B.WETH)
+        + U(BigInt(s) * E18) + U(B.aeroTickSpacing) + U(0)]), "base");
+      r.forEach((h, i) => { const w = word0(h); if (w != null) put("cbETH", "aero_base", sizes[i], Number(w) / 1e18 / sizes[i]); });
+    })();
+
     // KyberSwap 对并发很敏感（并发 8 个会回 503 overloaded），所以逐个发，失败的隔 0.8 秒重试一次
     async function kyber() {
-      for (const [sym, token] of [["stETH", A.stETH], ["cbETH", A.cbETH]]) {
+      for (const [sym, id, url, token] of [["stETH", "kyber", cfg.http.kyber, A.stETH], ["cbETH", "kyber_base", cfg.http.kyberBase, cfg.base.cbETH],
+        ["cbETH", "kyber", cfg.http.kyber, A.cbETH]]) {
         let last = null, ok = 0;
         for (const s of sizes) {
           for (let k = 0; k < 2; k++) {
             try {
-              const d = await getJSON(`${cfg.http.kyber}?tokenIn=${token}&tokenOut=${A.ETH}&amountIn=${BigInt(s) * E18}`, null, 10000);
+              const d = await getJSON(`${url}?tokenIn=${token}&tokenOut=${A.ETH}&amountIn=${BigInt(s) * E18}`, null, 10000);
               const out = d && d.data && d.data.routeSummary && d.data.routeSummary.amountOut;
               if (!out) throw new Error((d && d.message) || "无报价");
-              put(sym, "kyber", s, Number(BigInt(out)) / 1e18 / s);
+              put(sym, id, s, Number(BigInt(out)) / 1e18 / s);
               ok++;
               break;
             } catch (e) { last = e; if (k === 0) await new Promise((r) => setTimeout(r, 800)); }
           }
         }
-        if (ok < sizes.length) note(`kyber ${sym}（${ok}/${sizes.length}）`, last);
+        if (ok < sizes.length) note(`${id} ${sym}（${ok}/${sizes.length}）`, last);
       }
     }
     async function book(sym, id, url, pick) {
@@ -278,6 +300,7 @@
 
     const [nav] = await Promise.all([
       chain,
+      base,
       kyber(),
       book("stETH", "okx", cfg.http.okxBook, (d) => d && d.data && d.data[0] && d.data[0].bids),
       book("cbETH", "coinbase", cfg.http.coinbaseBook, (d) => d && d.bids),
