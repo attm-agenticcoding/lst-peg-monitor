@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>LST Peg Monitor</title>
-<meta name="description" content="stETH / wstETH / cbETH 脱锚监测：兑付锚直接读代币合约，市价多源交叉确认。">
+<meta name="description" content="stETH（含 wstETH）与 cbETH 的脱锚监测：兑付锚读代币合约，市价取流动性最深的场所，多场所交叉确认。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
@@ -153,6 +153,34 @@ details.meth summary:focus-visible{outline:2px solid var(--accent);outline-offse
 footer{margin-top:24px;padding-top:14px;border-top:1px solid var(--line-soft);font-size:11.5px;
   color:var(--ink-3);text-align:center;line-height:1.7}
 a{color:var(--accent)}
+
+:root{--band:rgba(119,129,143,.16)}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){--band:rgba(160,172,190,.14)}}
+:root[data-theme="dark"]{--band:rgba(160,172,190,.14)}
+.tag.agg{background:color-mix(in srgb,var(--cat-3) 16%,transparent);color:var(--cat-3)}
+.tag.dex{background:color-mix(in srgb,var(--cat-1) 14%,transparent);color:var(--cat-1)}
+.tag.main{background:var(--ink);color:var(--panel)}
+tr.prim td{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+tr.best td{font-weight:600;border-top:1px solid var(--line)}
+td.dim{color:var(--ink-3)}
+.dev-up{color:var(--ok)} .dev-down{color:var(--alert)}
+.stale{color:var(--watch);font-weight:600}
+.spark{position:relative}
+.spark svg{display:block;overflow:visible}
+.sp-line{fill:none;stroke:var(--cat-1);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.sp-band{fill:var(--band)}
+.sp-med{stroke:var(--ink-3);stroke-width:1;stroke-dasharray:3 3}
+.sp-zero{stroke:var(--line);stroke-width:1}
+.sp-dot{fill:var(--cat-1);stroke:var(--panel);stroke-width:2}
+.sp-xh{stroke:var(--ink-3);stroke-width:1}
+.sp-t{font:11px "IBM Plex Mono",monospace;fill:var(--ink-3)}
+.sp-hit{fill:transparent;cursor:crosshair}
+.tip{position:absolute;top:0;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:6px;
+  box-shadow:var(--shadow);padding:4px 8px;font-size:12px;white-space:nowrap;color:var(--ink);transform:translateX(-50%)}
+.empty{font-size:12.5px;color:var(--ink-3);margin:0}
+table.src{min-width:540px}
+table.src td.r,table.src th.r{padding-left:14px;white-space:nowrap;width:68px}
+table.src td:first-child{min-width:200px}
 </style>
 </head>
 <body>
@@ -160,7 +188,7 @@ a{color:var(--accent)}
   <header class="mast">
     <div class="mast-in">
       <h1>LST Peg Monitor</h1>
-      <span class="sub">多源交叉确认</span>
+      <span class="sub">stETH · cbETH</span>
       <div class="mast-right">
         <span class="clock" id="clock">读取中…</span>
         <button class="refresh" id="refresh" type="button"><span id="spin" class="spin" hidden></span><span id="rlabel">刷新</span></button>
@@ -170,8 +198,8 @@ a{color:var(--accent)}
 
   <div class="verdict s-dead" id="verdict">
     <div class="vmain">
-      <p class="vtitle" id="vtitle">正在读取链上兑付率与各市场报价…</p>
-      <p class="vnote" id="vnote">兑付锚直接读代币合约，市价取多个互相独立的场所，中位数后再算脱锚。</p>
+      <p class="vtitle" id="vtitle">正在读取链上兑付率与各场所报价…</p>
+      <p class="vnote" id="vnote">兑付锚读代币合约；市价取流动性最深的场所，至少两个场所确认才升级状态。</p>
     </div>
   </div>
 
@@ -181,42 +209,38 @@ a{color:var(--accent)}
     <summary>口径与方法</summary>
     <div class="meth-body">
       <h4>Peg 怎么算</h4>
-      <p>脱锚 = 市价 ÷ 兑付锚 − 1，单位 bps（1 bps = 0.01%）。负数 = 折价。</p>
+      <p>脱锚 = 卖出执行价 ÷ 兑付锚 − 1，单位 bps（1 bps = 0.01%），负数 = 折价。用<b>卖出</b>价而不是中间价：看的是现在真要跑能拿回多少 ETH。</p>
       <ul>
-        <li><b>stETH</b> — 兑付锚固定 1.0000 ETH。Lido 提现队列按 1:1 结算，但合约里有 <code>maxShareRate</code> 封顶，极端亏损下可能低于 1:1（历史上未发生）；排队期间的质押收益在结算时销毁。</li>
-        <li><b>wstETH</b> — 兑付锚 = <code>stEthPerToken()</code>，每枚 wstETH 背后的 stETH（≈ETH）数量，链上实时读。</li>
-        <li><b>cbETH</b> — 兑付锚 = <code>exchangeRate()</code>，由 Coinbase 预言机<b>每 24 小时（16:00 UTC）</b>写入一次，是阶梯函数；且 cbETH 没有链上赎回，只能在 Coinbase 场内兑付。</li>
+        <li><b>stETH（含 wstETH）</b> — 锚 1.0000 ETH（Lido 提现队列 1:1，合约有 <code>maxShareRate</code> 封顶，极端亏损下可低于 1:1）。wstETH 与 stETH 可按 <code>stEthPerToken()</code> 原子互换，所以不单列：wstETH 场所卖出等值的 wstETH，按兑换率折成 stETH 口径，和 stETH 场所放在一起比。</li>
+        <li><b>cbETH</b> — 锚 = <code>exchangeRate()</code>。Coinbase 每天 16:00 UTC 写一次，是阶梯函数，日内会有约 0.8 bps 的锯齿；没有链上赎回，只能在 Coinbase 兑付。</li>
       </ul>
-      <h4>为什么不盯单一 DEX</h4>
-      <p>单个池子的价格可以被一笔交易推动，也可能因为预言机卡住而假性稳定。这里每个代币同时取<b>链上池子的可执行报价</b>、<b>预言机喂价</b>、<b>中心化交易所盘口</b>和<b>独立聚合器</b>，逐个算脱锚后：</p>
-      <ul>
-        <li>取<b>中位数</b>作共识，不用均值（均值会被一个离群源拖走）；</li>
-        <li>用 <b>MAD</b>（绝对中位差）判离群：偏离中位数超过 3×1.4826×MAD 且超过设定下限的源标为 outlier，剔出共识但仍显示；</li>
-        <li><b>源间分歧</b> = 参与共识的源之间的极差。分歧本身就是信号，通常先于真正的脱锚拉大；</li>
-        <li>预言机超过心跳时间未更新则标 stale，不参与共识。</li>
-      </ul>
-      <h4>退出折价曲线 / 可退出规模</h4>
-      <p>中间价好看不代表跑得掉。曲线是在<b>单个链上池子</b>里实际卖出 1 / 10 / 100 / 1000 枚得到的执行价（Curve <code>get_dy</code>、Uniswap v3 <code>QuoterV2</code>），换算成相对兑付锚的 bps；这不是跨场所聚合路由，所以只反映该池自身深度。「可退出规模」= 还能在设定 bps 以内成交的最大档位。真正的挤兑先体现在大额那一端。</p>
-      <h4>状态阈值</h4>
+      <h4>主报价：谁流动性深用谁</h4>
+      <p>每个场所都模拟卖出 1 / 10 / 100 / 1000 枚。先找「最优场所在 50 bps 内还卖得掉的最大量级」，在这个量级上执行价最好的场所就是流动性最深的，<b>主报价 = 它卖 1 枚的价</b>。stETH 通常是 KyberSwap 聚合路由（它会扫 Lido ARM、Fluid、Curve、Uniswap，需要时自动 wrap 成 wstETH —— 和在 LlamaSwap 上看到的是同一类报价）；cbETH 通常是 Coinbase 盘口，链上 cbETH 常年比 Coinbase 低 10 bps 左右。</p>
+      <h4>状态</h4>
       <div class="thr" id="thr-list"></div>
-      <h4>合约地址</h4>
-      <ul id="addrs"></ul>
+      <p style="margin-top:8px">状态取<b>至少两个场所同时达到</b>的那一档（即第二差的场所）：单个源报错或单个盘口变薄不会误报。离中位数太远的源不能当主报价。</p>
+      <h4>常态</h4>
+      <p>主报价近 30 天的分布：先每小时取中位数，再对小时序列取中位数（常态）和 p10~p90（常见区间）。新口径从上线起开始积累，满 12 小时出数。</p>
+      <h4>刷新节奏</h4>
+      <p>页面本身每 90 秒直读一次链上和各家 API，看到的就是实时数。后台另有 GitHub Actions 每 10 分钟存一条快照，用于走势、常态和每小时的推送巡检 —— 它用的是和页面同一份 <code>core.js</code>。</p>
       <h4>已知的坑</h4>
       <ul>
-        <li>Curve 池的 coin 顺序每轮<b>实时 <code>coins(0)</code> 验证</b>，不写死 —— 顺序反了会静默返回倒数，看起来只像几个 bps 的误差。</li>
-        <li>主网上 Chainlink 没有 wstETH/stETH、cbETH/ETH 的<b>兑换率</b>喂价（只在 L2），所以兑付锚一律读代币合约，预言机只用在市价那一腿 —— 两腿来源独立反而是对的。</li>
-        <li>Balancer 已从来源里剔除：2025-11 v2 可组合稳定池被利用约 1.28 亿美元（受影响的正是含 wstETH/osETH 的池），DAO 正在走关停流程。</li>
-        <li>公开 RPC 单次批量请求过大时会直接断开，所以 eth_call 按小批发送；取不到的源显示「不可用」，不会静默补数。</li>
+        <li>Curve 池的 coin 顺序每轮用 <code>coins(0)</code> 实时验证，不写死 —— 顺序反了会静默返回倒数，看起来只像几个 bps 的误差。</li>
+        <li>KyberSwap 对并发敏感（一次并发 8 个会回 503），所以逐个请求；公开 RPC 批量太大会断开，所以 4 条一批。</li>
+        <li>已不用的来源：Chainlink stETH/ETH 喂价（0.5% 偏离阈值 + 24 小时心跳，比 25 bps 的关注线还钝）；DefiLlama / CoinGecko 聚合价（USD 口径二次换算，噪声比真实价差大一个量级）；Balancer（2025-11 v2 可组合稳定池被利用，正在关停）。</li>
+        <li>GitHub 的 cron 是尽力而为，实测「每 30 分钟」实际 2–5.5 小时才跑一次；所以快照改成一个 run 内循环、到点接力下一个 run，cron 只当看门狗。</li>
       </ul>
+      <h4>合约地址</h4>
+      <ul id="addrs"></ul>
     </div>
   </details>
 
   <footer>
-    阈值与来源权重由我自己设定，这不是投资建议。<br>
+    阈值由我自己设定，这不是投资建议。<br>
     数值在浏览器里直接向公开节点与各家公开 API 取得，不经过中间服务器。
   </footer>
 </div>
-<script src="engine.js"></script>
+<script src="core.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

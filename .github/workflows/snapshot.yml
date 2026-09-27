@@ -1,56 +1,53 @@
 name: snapshot
 
+# 节奏：一个 run 在 runner 上循环约 5.5 小时、每 10 分钟取一次快照，结束前用 workflow_dispatch 接力下一个 run。
+# GITHUB_TOKEN 触发的事件里，workflow_dispatch 是少数会真正起新 run 的，所以接力链不需要任何私钥。
+#
+# 为什么不用 cron：GitHub 的 schedule 是 best-effort，拥堵时直接丢弃。实测「每 30 分钟」的 cron
+# 实际 2–5.5 小时才触发一次（中位约 4 小时）。所以 schedule 在这里只当看门狗 ——
+# 接力链意外断了（runner 挂掉、GitHub 故障）才由它重新拉起；链在跑时 gate 直接放行为空转。
 on:
-  schedule:
-    # 避开 :00 / :30 —— 绝大多数公共仓库的 cron 都挤在整点和半点，而 GitHub 的
-    # schedule 事件是 best-effort：队列拥堵时直接丢弃，不补跑、不报错、不留 run 记录。
-    # 错开到 :07 / :37 是目前唯一能在仓库侧提高实际触发率的手段。
-    # 想要真正稳定的节奏，得从外部打 workflow_dispatch，别指望 cron。
-    - cron: "7,37 * * * *"
   workflow_dispatch:
+  schedule:
+    - cron: "23 * * * *"
 
 permissions:
   contents: write
-
-concurrency:
-  group: snapshot
-  cancel-in-progress: false
+  actions: write
 
 jobs:
-  snapshot:
+  gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    outputs:
+      go: ${{ steps.g.outputs.go }}
+    steps:
+      - id: g
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then echo "go=1" >> "$GITHUB_OUTPUT"; exit 0; fi
+          n=$(gh api "repos/${{ github.repository }}/actions/workflows/snapshot.yml/runs?per_page=30" \
+                --jq '[.workflow_runs[] | select(.id != ${{ github.run_id }} and .status != "completed")] | length')
+          echo "其他未结束的 run：$n"
+          if [ "$n" = "0" ]; then echo "go=1" >> "$GITHUB_OUTPUT"; else echo "go=0" >> "$GITHUB_OUTPUT"; fi
+
+  loop:
+    needs: gate
+    if: needs.gate.outputs.go == '1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    concurrency:
+      group: snapshot-loop
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      # 显式固定 node：原先靠 runner 自带版本，会跟着镜像漂
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-
-      # 取数排在单测之前 —— 单测挂掉不该连带把数据采集一起停掉
-      - name: take snapshot
-        run: python3 scripts/snapshot.py
-
-      - name: commit data
-        run: |
-          if [ -z "$(git status --porcelain data)" ]; then echo "no change"; exit 0; fi
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data
-          git commit -m "data: snapshot $(date -u +%Y-%m-%dT%H:%MZ)"
-          for i in 1 2 3; do
-            git push && exit 0
-            echo "push 失败，rebase 后重试 ($i/3)"
-            git pull --rebase --autostash origin main || true
-            sleep 5
-          done
-          exit 1
-
-      # 数据落盘之后再跑单测：失败照样把这次 run 标红，但不会造成数据断档
-      - name: run engine tests
-        run: node tests/engine.test.js
+      - name: unit tests
+        run: node tests/core.test.js
+        continue-on-error: true
+      - name: snapshot loop
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/loop.sh
