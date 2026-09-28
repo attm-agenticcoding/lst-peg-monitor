@@ -1,6 +1,7 @@
 name: snapshot
 
-# 节奏：一个 run 在 runner 上循环约 5.5 小时、每 10 分钟取一次快照，结束前用 workflow_dispatch 接力下一个 run。
+# 节奏：一个 run 在 runner 上循环约 5.5 小时、每 2 分钟采样一次（当场判断预警、直接推送到手机），
+# 历史每 10 分钟提交一次；结束前用 workflow_dispatch 接力下一个 run。
 # GITHUB_TOKEN 触发的事件里，workflow_dispatch 是少数会真正起新 run 的，所以接力链不需要任何私钥。
 #
 # 为什么不用 cron：GitHub 的 schedule 是 best-effort，拥堵时直接丢弃。实测「每 30 分钟」的 cron
@@ -50,4 +51,5 @@ jobs:
       - name: snapshot loop
         env:
           GH_TOKEN: ${{ github.token }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: bash scripts/loop.sh

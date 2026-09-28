@@ -10,8 +10,8 @@ stETH（含 wstETH）与 cbETH 的脱锚监测看板：https://attm-agenticcodin
 |---|---|
 | `core.js` | 取数 + 计算，浏览器和 Actions 共用同一份（旧版是 Python 与 JS 两套实现，要手动对齐） |
 | `app.js` / `index.html` | 页面每 90 秒用 `core.js` 直读一次；读 `data/history.json` 算常态、画 7 天走势 |
-| `scripts/snapshot.js` | 取一份快照，追加进 `data/history.json`（schema 2），重算常态 |
-| `scripts/loop.sh` + `.github/workflows/snapshot.yml` | 一个 run 在 runner 上循环约 5.5 小时、每 10 分钟一条快照，结束前用 `workflow_dispatch` 接力下一个 run；cron 每小时只当看门狗 |
+| `scripts/snapshot.js` | 采样一次 → 判断撤离预警和档位变化 → 需要时推送到手机（ntfy）→ 追加进 `data/history.json` |
+| `scripts/loop.sh` + `.github/workflows/snapshot.yml` | 一个 run 在 runner 上循环约 5.5 小时、每 2 分钟采样、每 10 分钟提交一次（有推送时立刻提交），结束前用 `workflow_dispatch` 接力下一个 run；cron 每小时只当看门狗 |
 
 为什么不用 cron 定时：GitHub 的 schedule 是尽力而为，拥堵时直接丢弃。旧版「每 30 分钟」的 cron 实测 2–5.5 小时才跑一次（中位约 4 小时），这正是巡检误报「快照停更」的原因。
 `GITHUB_TOKEN` 触发的 `workflow_dispatch` 会真的起新 run，所以接力链不需要任何私钥；公共仓库的 Actions 分钟数不计费。
@@ -22,6 +22,26 @@ node scripts/snapshot.js --dry-run # 取一份快照看看（需要能连外网�
 python3 -m http.server 8080        # 本地预览（前端要读 config.json，必须起 http）
 gh workflow run snapshot.yml       # 手动拉起接力链（看门狗也会自动拉）
 ```
+
+## 推送（ntfy）
+
+预警要在采样的那台机器上当场发出，才能做到偏离出现后约 2 分钟内到手机；Claude 的定时任务最短一小时一次，只用来发现后台本身停了。
+
+1. 手机装 ntfy（iOS / Android，免费、不用注册），订阅一个只有自己知道的频道名。
+2. `gh secret set NTFY_TOPIC --body "<频道名>"`
+3. 下一个 run 起来时会先推一条「LST 预警通道已接通」。没设这个 secret 时照常采样，只是不推送。
+
+频道名等于密码：知道它的人能看到也能往里发，所以只放在 GitHub secret 里，不进仓库。
+
+## 撤离预警
+
+两个指标，各自对照每个场所**自己的**历史：卖 1 枚的价，卖大额（stETH 1000 枚、cbETH 100 枚）的执行价。
+
+- 窗口 24h / 7 天 / 30 天，都排除最近 1 小时；7 天、30 天先每小时取一个点。
+- 中心 = 中位数，尺度 = 1.4826×MAD。不用均值/标准差：报价离散跳档，平静期 σ 会塌到 ~0.1 bps（3σ 的线贴着现价，回测 19 小时里 77 个时点误报 8 次）；偶发溢价尖刺又会把 σ 撑大 7 倍。
+- 预警线 = 中心 − max(3×尺度, 3 bps)，取三个窗口里最紧的一条；3 bps 下限 ≈ 撤离本身的成本（手续费 + gas + 大额滑点）。
+- 同一次采样里 ≥ 2 个场所跌破各自的线才报；只看折价；连续 3 次采样回到线上才报恢复。
+- 绝对档位 25 / 75 / 200 bps 照旧，兜住慢慢漂下去的偏离。
 
 ## 口径
 
@@ -45,7 +65,7 @@ cbETH 的链上流动性主要在 Base（Coinbase 自家 L2）：Base 上卖 100
 3. **状态** = 主报价所在的档，但至少还要一个别的场所也到这一档才算（两者取较轻的一档）：正常 ≤25 / 关注 25–75 / 警戒 75–200 / 危机 >200 bps。薄池子自己漂（主网 cbETH 常年 −13 bps）、单个源报错都不会误报。最优场所卖 10 枚差于 −100 bps 至少警戒；可用场所 <2 个为「源不足」。
 4. **常态** = 主报价近 30 天：先每小时取中位数，再取中位数（常态）与 p10~p90（常见区间）。满 12 小时出数。
 
-`data/history.json`：`{schema:2, updated, baseline:{stETH,cbETH}, records:[{ts, stETH:{st,peg,via,clean,x,v}, cbETH:{…}, nav, err?}]}`。近 3 天全留，更早每小时一条，保留 60 天。旧版三币口径的历史归档在 `data/legacy/`。
+`data/history.json`：`{schema:2, updated, push, alerts, guard, baseline, records:[{ts, stETH:{st,peg,via,clean,x,v,vb}, cbETH:{…}, nav, g?, err?}]}`。`v` / `vb` 是各场所卖 1 枚 / 卖大额的 bps，`g` 是当时处于预警中的指标。1 天内全留（2 分钟一条），1–3 天 10 分钟一条，更早每小时一条，保留 60 天。旧版三币口径的历史归档在 `data/legacy/`。
 
 ## 实盘验证过的坑
 

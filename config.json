@@ -2,7 +2,8 @@
   "_comment": "阈值、场所、合约地址都在这里改。浏览器（app.js）和 Actions（scripts/snapshot.js）共用这一份，也共用同一个 core.js。",
   "schema": 2,
   "refreshSeconds": 90,
-  "snapshotMinutes": 10,
+  "snapshotMinutes": 2,
+  "commitMinutes": 10,
   "sizes": [1, 10, 100, 1000],
 
   "thresholds": {
@@ -16,7 +17,25 @@
   },
 
   "baseline": { "days": 30, "minHours": 12 },
-  "history": { "fullDays": 3, "keepDays": 60 },
+
+  "_guard": "撤离预警：每个场所对照自己的历史（排除最近 excludeMinutes），中心 = 中位数，尺度 = 1.4826×MAD；预警线 = 中心 − max(k×尺度, floorBps)，各窗口取最紧的一条；同一次采样里 ≥ minVenues 个场所跌破各自的线才触发；连续 clearSamples 次不满足才算恢复",
+  "guard": {
+    "k": 3,
+    "floorBps": 3,
+    "excludeMinutes": 60,
+    "minVenues": 2,
+    "minPoints": 30,
+    "clearSamples": 3,
+    "bigSize": { "stETH": 1000, "cbETH": 100 },
+    "windows": [
+      { "name": "24h", "hours": 24, "minHours": 6, "hourly": false },
+      { "name": "7天", "hours": 168, "minHours": 48, "hourly": true },
+      { "name": "30天", "hours": 720, "minHours": 240, "hourly": true }
+    ]
+  },
+
+  "_history": "分层稀疏化：[天数, 间隔秒]。1 天内全留（2 分钟一条），1–3 天 10 分钟一条，3–60 天每小时一条",
+  "history": { "tiers": [[1, 0], [3, 600], [60, 3600]] },
 
   "rpcs": [
     "https://ethereum-rpc.publicnode.com",

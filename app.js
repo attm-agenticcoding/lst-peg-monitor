@@ -30,7 +30,9 @@
   function card(sym, a, snap) {
     const S = CFG.sizes, maxS = S[S.length - 1];
     const b = hist ? C.baseline(hist.records, sym, snap.ts, CFG.baseline) : { ready: false, hours: 0 };
-    const dev = b.ready && a.peg != null ? a.peg - b.median : null;
+    // 撤离预警线来自后台最近一次采样（history.json 顶层 guard），每 10 分钟同步一次
+    const gd = hist && hist.guard ? hist.guard[sym] : null, gp = gd && gd.peg && gd.peg.rep, gb = gd && gd.big && gd.big.rep;
+    const on = gd && ((gd.peg && gd.peg.on) || (gd.big && gd.big.on));
     const clean = a.clean == null ? `< ${S[0]} 枚` : `${a.clean === maxS ? "≥ " : ""}${a.clean.toLocaleString()} 枚`;
     const nav = sym === "stETH"
       ? ["1.0000", `Lido 1:1 · wstETH = ${snap.nav.wstETH ? snap.nav.wstETH.toFixed(4) : "—"} stETH`]
@@ -52,11 +54,14 @@
         <span class="anchor-kind">${sym === "stETH" ? "含 wstETH · 锚 1:1" : "锚 exchangeRate"}</span>
         <span class="pill p-${a.status}">${C.TEXT[a.status]}</span></div>
       <div class="headline"><span class="big num v-${a.status}">${fmt(a.peg)}</span><span class="big-unit">bps</span>
-        <div class="hnote">主报价 · ${esc(a.primaryLabel || "—")} 卖 1 枚<br><span class="why">${esc(a.why)}</span></div></div>
+        <div class="hnote">主报价 · ${esc(a.primaryLabel || "—")} 卖 1 枚<br><span class="why">${esc(a.why)}</span>${on ? '<br><b class="stale">偏离预警中</b>' : ""}</div></div>
       <dl class="kpis">
         ${kpi("常态", b.ready ? `${fmt(b.median)} bps` : "积累中",
           b.ready ? `近 ${span(b.hours)}中位 · 均值 ${fmt(b.mean)} · 常见 ${fmt(b.p10)}~${fmt(b.p90)}` : `已有 ${b.hours} 小时，满 ${CFG.baseline.minHours} 小时出数`)}
-        ${kpi("偏离常态", dev == null ? "—" : `<span class="${dev >= 0 ? "dev-up" : "dev-down"}">${fmt(dev)}</span> bps`, "现在 − 常态；负 = 比平时更折价")}
+        ${kpi("撤离预警线", gp ? `${fmt(gp.level)} bps` : "积累中",
+          gp ? `卖 1 枚跌破即报（${gp.win} 中位 ${fmt(gp.center)} − ${Math.max(3 * gp.scale, CFG.guard.floorBps).toFixed(1)}）`
+            + (gb ? `；卖 ${gd.big.size} 枚 ${fmt(gb.x)} / 线 ${fmt(gb.level)}` : `；卖 ${CFG.guard.bigSize[sym]} 枚的线积累中`)
+            : `需要 ${CFG.guard.windows[0].minHours} 小时历史`)}
         ${kpi(`${CFG.thresholds.cleanExitBps} bps 内可卖`, clean, a.clean == null ? "1 枚都已超过" : `最优场所 ${fmt(a.exit[a.clean], 2)} bps`)}
         ${kpi("兑付锚", nav[0], nav[1])}
       </dl>
@@ -77,7 +82,7 @@
       .map((r) => [r.ts, r[sym].peg]);
     if (a.peg != null) pts.push([now, a.peg]);
     if (pts.length < 3) {
-      el.innerHTML = `<p class="empty">后台快照积累中（每 ${CFG.snapshotMinutes} 分钟一条），攒够几条后这里出走势。</p>`;
+      el.innerHTML = `<p class="empty">后台快照积累中，攒够几条后这里出走势。</p>`;
       return;
     }
     const b = C.baseline(hist.records, sym, now, CFG.baseline);
@@ -137,7 +142,7 @@
     let note = `页面每 ${CFG.refreshSeconds} 秒直读一次。`;
     if (hist) {
       const age = snap.ts - hist.updated;
-      note += ` 后台快照 <span class="${age > 30 * 60 ? "stale" : ""}">${ago(age)}</span>（每 ${CFG.snapshotMinutes} 分钟一条，推送巡检用它）。`;
+      note += ` 后台每 ${CFG.snapshotMinutes} 分钟采样、当场判断预警并推送；历史 <span class="${age > 30 * 60 ? "stale" : ""}">${ago(age)}</span>同步（每 ${CFG.commitMinutes} 分钟）。`;
     } else note += " 后台快照还在按新口径积累。";
     if (snap.err.length) note += ` 本轮取不到：${esc(snap.err.join("；"))}`;
     $("vnote").innerHTML = note;

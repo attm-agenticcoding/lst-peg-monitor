@@ -103,21 +103,62 @@ t("常态基线按小时分桶，稀疏化不影响权重", () => {
   assert.strictEqual(C.baseline(recs.slice(-5), "stETH", now, { minHours: 12 }).ready, false);
 });
 
-t("历史稀疏化：近 3 天全留，更早每小时一条，超期丢弃", () => {
+t("历史分层稀疏化：1 天内全留、1–3 天 10 分钟一条、更早每小时一条、超期丢弃", () => {
   const now = 1_800_000_000, recs = [];
-  for (let m = 0; m <= 70 * 24 * 6; m++) recs.push({ ts: now - m * 600 });
-  recs.reverse();
-  const out = C.thin(recs, now, { fullDays: 3, keepDays: 60 });
-  const full = out.filter((r) => r.ts >= now - 3 * 86400).length;
-  assert.strictEqual(full, 3 * 144 + 1);
-  assert.ok(out[0].ts >= now - 60 * 86400);
-  assert.ok(Math.abs(out.length - (full + 57 * 24)) <= 1);
+  for (let m = 70 * 24 * 30; m >= 0; m--) recs.push({ ts: now - m * 120 }); // 2 分钟一条，70 天
+  const out = C.thin(recs, now, CFG.history.tiers);
+  const age = (r) => now - r.ts;
+  assert.strictEqual(out.filter((r) => age(r) <= 86400).length, 721);
+  const d3 = out.filter((r) => age(r) > 86400 && age(r) <= 3 * 86400).length;
+  const old = out.filter((r) => age(r) > 3 * 86400).length;
+  assert.ok(Math.abs(d3 - 288) <= 1, d3);
+  assert.ok(Math.abs(old - 57 * 24) <= 1, old);
+  assert.ok(out.every((r) => age(r) <= 60 * 86400));
+});
+
+const G = CFG.guard;
+const hist = (n, step, now, fn) => { const out = []; for (let i = n; i >= 1; i--) out.push(fn(now - i * step, i)); return out; };
+
+t("预警线：平静期由 3 bps 下限决定；最近 1 小时不进基线；数据不够不给线", () => {
+  const now = 1_800_000_000;
+  const s = hist(720, 120, now, (ts, i) => [ts, i % 3 ? -1 : -0.9]);
+  const L = C.guardLevel(s, now, G);
+  assert.strictEqual(L.win, "24h");
+  assert.strictEqual(L.level, -4); // 中位 −1，MAD = 0 → 下限 3 bps
+  const crash = s.map(([ts, v]) => [ts, now - ts < 3600 ? -50 : v]);
+  assert.strictEqual(C.guardLevel(crash, now, G).level, -4);
+  assert.strictEqual(C.guardLevel(s.slice(-90), now, G), null); // 只有 3 小时
+});
+
+t("偶发的无害尖刺不会放宽预警线（中位数/MAD，不用均值/σ）", () => {
+  const now = 1_800_000_000;
+  const L = C.guardLevel(hist(720, 120, now, (ts, i) => [ts, i % 50 ? -2.4 : 4.2]), now, G);
+  assert.strictEqual(L.level, -5.4);
+});
+
+t("偏离预警：同一次采样里至少两个场所跌破各自的线才触发；大额那一路单独判断", () => {
+  const now = 1_800_000_000;
+  const recs = hist(720, 120, now, (ts) => ({ ts, stETH: { v: { kyber: -1, curve: -2, uni_wsteth: -2 },
+    vb: { kyber: -1.5, curve: -2.6, uni_wsteth: -3 } }, cbETH: {} }));
+  const cur = (v, vb) => ({ ts: now, stETH: { via: "kyber", v, vb }, cbETH: {} });
+  const calm = { kyber: -1.5, curve: -2.6, uni_wsteth: -3 };
+  let g = C.guard(recs, cur({ kyber: -7, curve: -2, uni_wsteth: -2 }, calm), CFG);
+  assert.strictEqual(g.stETH.peg.hit, false);
+  assert.deepStrictEqual(g.stETH.peg.hits, ["kyber"]);
+  g = C.guard(recs, cur({ kyber: -4.5, curve: -5.5, uni_wsteth: -2 }, calm), CFG);
+  assert.strictEqual(g.stETH.peg.hit, true);
+  assert.strictEqual(g.stETH.peg.rep.id, "kyber");
+  assert.strictEqual(g.stETH.big.hit, false);
+  g = C.guard(recs, cur({ kyber: -1, curve: -2, uni_wsteth: -2 }, { kyber: -8, curve: -9, uni_wsteth: -3 }), CFG);
+  assert.strictEqual(g.stETH.peg.hit, false);
+  assert.strictEqual(g.stETH.big.hit, true); // 卖 1 枚还没动，大额退出成本先恶化
 });
 
 t("toRecord 字段齐全", () => {
   const snap = { ts: 1, nav: { stETH: 1, wstETH: 1.24, cbETH: 1.14 }, px: { stETH: pxFrom(1, { kyber: [-1, -1, -1, -1], curve: [-2, -2, -2, -2] }), cbETH: {} }, err: ["okx: 超时"] };
-  const r = C.toRecord(snap, C.evaluate(snap, CFG));
-  assert.deepStrictEqual(Object.keys(r.stETH).sort(), ["clean", "peg", "st", "v", "via", "x"]);
+  const r = C.toRecord(snap, C.evaluate(snap, CFG), CFG);
+  assert.deepStrictEqual(Object.keys(r.stETH).sort(), ["clean", "peg", "st", "v", "vb", "via", "x"]);
+  assert.strictEqual(r.stETH.vb.kyber, -1);
   assert.strictEqual(r.stETH.via, "kyber");
   assert.strictEqual(r.cbETH.st, "dead");
   assert.deepStrictEqual(r.err, ["okx: 超时"]);

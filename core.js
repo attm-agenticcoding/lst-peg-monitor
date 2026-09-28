@@ -156,28 +156,83 @@
     return b;
   }
 
-  /** 历史稀疏化：近 fullDays 天全留，更早的每小时留第一条，超过 keepDays 的丢掉。 */
-  function thin(records, now, opt) {
-    const o = Object.assign({ fullDays: 3, keepDays: 60 }, opt || {});
-    const out = [];
-    let lastHour = null;
+  /** 历史分层稀疏化。tiers = [[天数, 间隔秒], …]（天数递增）：落在某层的记录，每个间隔桶只留第一条；
+   *  间隔 0 = 全留；比最后一层还旧的丢掉。 */
+  function thin(records, now, tiers) {
+    const T = tiers || [[1, 0], [3, 600], [60, 3600]];
+    const out = [], seen = new Set();
     for (const r of records || []) {
-      if (!r || !(r.ts >= now - o.keepDays * 86400)) continue;
-      if (r.ts >= now - o.fullDays * 86400) { out.push(r); continue; }
-      const h = Math.floor(r.ts / 3600);
-      if (h !== lastHour) { out.push(r); lastHour = h; }
+      if (!r || !num(r.ts)) continue;
+      const age = now - r.ts, i = T.findIndex(([d]) => age <= d * 86400);
+      if (i < 0) continue;
+      const sp = T[i][1];
+      if (!sp) { out.push(r); continue; }
+      const key = i + ":" + Math.floor(r.ts / sp);
+      if (!seen.has(key)) { seen.add(key); out.push(r); }
     }
     return out;
   }
 
-  function toRecord(snap, res) {
+  /* ---------- 撤离预警：偏离自己的历史基线 ----------
+   * 每个场所、每个指标（卖 1 枚 / 卖大额）各自对照自己的历史，不和别的场所混：
+   *   窗口 24h / 7天 / 30天，都排除最近 excludeMinutes（免得正在发生的偏离把基线拖走）；
+   *   7天、30天先每小时取一个点（历史本来就是分层稀疏的，这样各段权重一致）；
+   *   中心 = 中位数，尺度 = 1.4826×MAD —— 不用均值和标准差：报价是离散跳档的、偶有无害尖刺，
+   *   均值/σ 会被尖刺撑大；中位数/MAD 在窗口里混进一半的异常值之前都不会被拖走。
+   *   预警线 = 中心 − max(k×尺度, floor)；各窗口取最紧（最高）的那条。只看折价一侧。 */
+  function guardLevel(series, t, g) {
+    let best = null;
+    for (const w of g.windows) {
+      const lo = t - w.hours * 3600, hi = t - g.excludeMinutes * 60;
+      let pts = series.filter((p) => p[0] >= lo && p[0] < hi && num(p[1]));
+      if (w.hourly) {
+        const seen = new Set();
+        pts = pts.filter((p) => { const k = Math.floor(p[0] / 3600); if (seen.has(k)) return false; seen.add(k); return true; });
+      }
+      if (pts.length < (w.hourly ? Math.min(g.minPoints, w.minHours) : g.minPoints)) continue;
+      if (pts[pts.length - 1][0] - pts[0][0] < w.minHours * 3600) continue;
+      const vals = pts.map((p) => p[1]), c = median(vals);
+      const sc = 1.4826 * median(vals.map((v) => Math.abs(v - c)));
+      const level = c - Math.max(g.k * sc, g.floorBps);
+      if (!best || level > best.level) best = { level: r2(level), center: r2(c), scale: r2(sc), win: w.name, n: pts.length };
+    }
+    return best;
+  }
+
+  /** 对最新一条记录 rec，算每个代币、每个指标的预警线，以及有几个场所跌破。
+   *  records = 之前的历史（可以含 rec 本身，最近一段本来就被排除）。 */
+  function guard(records, rec, cfg) {
+    const g = cfg.guard, out = {};
+    for (const sym of ASSETS) {
+      const a = rec[sym] || {}, res = {};
+      for (const [m, key, size] of [["peg", "v", 1], ["big", "vb", g.bigSize[sym]]]) {
+        const venues = [];
+        for (const v of VENUES[sym]) {
+          const x = a[key] ? a[key][v.id] : null;
+          if (!num(x)) continue;
+          const L = guardLevel((records || []).map((r) => [r.ts, r[sym] && r[sym][key] ? r[sym][key][v.id] : null]), rec.ts, g);
+          if (L) venues.push(Object.assign({ id: v.id, label: v.label, x, hit: x < L.level }, L));
+        }
+        const hits = venues.filter((v) => v.hit);
+        // 展示用的「代表场所」：卖 1 枚用主报价场所，卖大额用这一档执行价最好的场所
+        const rep = m === "peg" ? venues.find((v) => v.id === a.via)
+          : venues.slice().sort((p, q) => q.x - p.x)[0];
+        res[m] = { size, hit: hits.length >= g.minVenues, hits: hits.map((v) => v.id), venues, rep: rep || venues[0] || null };
+      }
+      out[sym] = res;
+    }
+    return out;
+  }
+
+  function toRecord(snap, res, cfg) {
     const rec = { ts: snap.ts };
     for (const sym of ASSETS) {
-      const a = res[sym];
+      const a = res[sym], big = cfg && cfg.guard ? cfg.guard.bigSize[sym] : null;
       rec[sym] = {
         st: a.status, peg: a.peg, via: a.primary, clean: a.clean, x: a.exit,
         v: Object.fromEntries(a.venues.map((v) => [v.id, v.peg])),
       };
+      if (big) rec[sym].vb = Object.fromEntries(a.venues.map((v) => [v.id, v.bps[big]]));
     }
     rec.nav = { wstETH: snap.nav.wstETH, cbETH: snap.nav.cbETH };
     if (snap.err.length) rec.err = snap.err;
@@ -308,5 +363,5 @@
     return { ts: Math.floor(Date.now() / 1000), nav, px, err };
   }
 
-  return { VENUES, ASSETS, LEVEL, TEXT, quantile, median, fmt, tier, sellBook, analyse, evaluate, baseline, thin, toRecord, collect };
+  return { VENUES, ASSETS, LEVEL, TEXT, quantile, median, fmt, tier, sellBook, analyse, evaluate, baseline, thin, guardLevel, guard, toRecord, collect };
 });
