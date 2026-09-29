@@ -154,6 +154,17 @@ t("偏离预警：同一次采样里至少两个场所跌破各自的线才触�
   assert.strictEqual(g.stETH.big.hit, true); // 卖 1 枚还没动，大额退出成本先恶化
 });
 
+t("平时就很薄的场所（常态已差于 −25 bps）不算确认：2026-09-29 那次 cbETH 误报回放", () => {
+  const now = 1_800_000_000;
+  const recs = hist(720, 120, now, (ts) => ({ ts, stETH: {}, cbETH: { v: {}, vb: { kyber_base: -2.6, aero_base: -2.9, coinbase: -13, kyber: -37, uni_cbeth: -467 } } }));
+  const recs2 = recs.map((r) => ({ ts: r.ts, stETH: {}, cbETH: { v: {}, vb: Object.assign({}, r.cbETH.vb, { coinbase: -9.7 }) } }));
+  const cur = { ts: now, stETH: {}, cbETH: { via: "kyber_base", v: {}, vb: { kyber_base: 0.2, aero_base: -0.4, coinbase: -13.1, kyber: -183, uni_cbeth: -480 } } };
+  const g = C.guard(recs2, cur, CFG);
+  assert.deepStrictEqual(g.cbETH.big.hits, ["coinbase"]); // 主网两个场所常态就差于 −25 bps，不算出口
+  assert.strictEqual(g.cbETH.big.hit, false);
+  assert.ok(["kyber", "uni_cbeth"].every((id) => g.cbETH.big.venues.find((v) => v.id === id).thin));
+});
+
 t("Base 买入 → Coinbase 赎回：取买到更多 cbETH 的路由，按 Coinbase 兑换率算回 ETH", () => {
   const cfg = Object.assign({}, CFG, { roundTrip: { sizes: [25, 50] } });
   const q = { kyber: { 25: 21.91967, 50: 43.8383 }, aero: { 25: 21.72, 50: 23.08 }, rate: 1.1404925, waitDays: 10.61, apy: 0.0235 };

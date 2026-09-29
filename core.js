@@ -233,7 +233,11 @@
           const x = a[key] ? a[key][v.id] : null;
           if (!num(x)) continue;
           const L = guardLevel((records || []).map((r) => [r.ts, r[sym] && r[sym][key] ? r[sym][key][v.id] : null]), rec.ts, g);
-          if (L) venues.push(Object.assign({ id: v.id, label: v.label, x, hit: x < L.level }, L));
+          // 平时卖这个量就要亏超过「关注」线（25 bps）的场所，本来就不是这个量级的出口，它的抖动不算确认。
+          // 2026-09-29 08:01 ET：主网聚合路由卖 100 cbETH 常态 −33 bps、当时跳到 −183，加上 Coinbase 盘口
+          // 变薄 3 bps，凑成两个场所误报了一次 —— 而真正的出口 Base 那时是 +0.2 bps。
+          const thinVenue = L && L.center < -cfg.thresholds.ok;
+          if (L) venues.push(Object.assign({ id: v.id, label: v.label, x, thin: thinVenue, hit: !thinVenue && x < L.level }, L));
         }
         const hits = venues.filter((v) => v.hit);
         // 展示用的「代表场所」：卖 1 枚用主报价场所，卖大额用这一档执行价最好的场所
