@@ -43,6 +43,15 @@ gh workflow run snapshot.yml       # 手动拉起接力链（看门狗也会自�
 - 同一次采样里 ≥ 2 个场所跌破各自的线才报；只看折价；连续 3 次采样回到线上才报恢复。
 - 绝对档位 25 / 75 / 200 bps 照旧，兜住慢慢漂下去的偏离。
 
+## Base 买入 → Coinbase 赎回（cbETH 卡片里的表）
+
+在 Base 上用 25 / 50 / 75 / 100 ETH 买 cbETH，再到 Coinbase 按兑换率 unwrap，能拿回多少 ETH。
+
+- 买入：KyberSwap 在 Base 上的聚合报价（ETH → cbETH）和 Aerodrome 单池报价，取买到 cbETH 更多的那个。Aerodrome 单池在买入方向很浅（实测 50 ETH 就吃穿），大额基本都靠聚合器走做市商和多个池子。
+- 赎回：Coinbase 公开接口 `wrapped-assets/CBETH` 的 `conversion_rate`（与主网合约 `exchangeRate()` 一致；取不到时退回链上值）。unwrap 不收费。
+- 同一个接口还给 `redeem_time_estimate_days`（赎回排队天数估计）和 `apy`。赎回得到的是 Coinbase 上的质押 ETH，要排以太坊退出队列才变成可用 ETH；表里的「折合年化」= 差额 ÷ 排队天数 × 365，用来和质押年化对比。
+- cbETH 可以直接走 Base 网络充值到 Coinbase（2026-08-17 起 Coinbase 只保留 Ethereum 和 Base 两条网络）。Base 上的 gas 不到 1 美分，没有计入。
+
 ## 口径
 
 **脱锚 = 卖出执行价 ÷ 兑付锚 − 1**，bps，负数 = 折价。用卖出价：看的是现在真要跑能拿回多少 ETH。

@@ -154,6 +154,21 @@ t("偏离预警：同一次采样里至少两个场所跌破各自的线才触�
   assert.strictEqual(g.stETH.big.hit, true); // 卖 1 枚还没动，大额退出成本先恶化
 });
 
+t("Base 买入 → Coinbase 赎回：取买到更多 cbETH 的路由，按 Coinbase 兑换率算回 ETH", () => {
+  const cfg = Object.assign({}, CFG, { roundTrip: { sizes: [25, 50] } });
+  const q = { kyber: { 25: 21.91967, 50: 43.8383 }, aero: { 25: 21.72, 50: 23.08 }, rate: 1.1404925, waitDays: 10.61, apy: 0.0235 };
+  const r = C.roundTrip(q, 1.14, cfg);
+  assert.strictEqual(r.src, "coinbase");
+  assert.deepStrictEqual(r.rows.map((x) => x.via), ["kyber_base", "kyber_base"]);
+  assert.ok(Math.abs(r.rows[0].back - 21.91967 * 1.1404925) < 1e-9);
+  assert.ok(Math.abs(r.rows[0].bps - ((21.91967 * 1.1404925 - 25) / 25) * 1e4) < 0.01);
+  assert.ok(Math.abs(r.rows[0].apr - (r.rows[0].diff / 25) * 365 / 10.61) < 1e-6);
+  const fb = C.roundTrip({ aero: { 25: 21.72 } }, 1.14, Object.assign({}, CFG, { roundTrip: { sizes: [25] } }));
+  assert.strictEqual(fb.src, "onchain"); // 取不到 Coinbase 兑换率时退回链上 exchangeRate
+  assert.strictEqual(fb.rows[0].via, "aero_base");
+  assert.strictEqual(fb.rows[0].apr, null);
+});
+
 t("toRecord 字段齐全", () => {
   const snap = { ts: 1, nav: { stETH: 1, wstETH: 1.24, cbETH: 1.14 }, px: { stETH: pxFrom(1, { kyber: [-1, -1, -1, -1], curve: [-2, -2, -2, -2] }), cbETH: {} }, err: ["okx: 超时"] };
   const r = C.toRecord(snap, C.evaluate(snap, CFG), CFG);

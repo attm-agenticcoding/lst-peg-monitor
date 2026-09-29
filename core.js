@@ -129,7 +129,29 @@
     const out = {};
     for (const sym of ASSETS)
       out[sym] = analyse(snap.px[sym], sym === "stETH" ? 1 : snap.nav[sym], VENUES[sym], cfg.thresholds, cfg.sizes);
+    out.cbETH.rt = roundTrip(snap.rt, snap.nav.cbETH, cfg);
     return out;
+  }
+
+  /* ---------- Base 买入 cbETH → Coinbase 赎回成 ETH ----------
+   * 买入：KyberSwap 在 Base 上的聚合报价和 Aerodrome 单池报价，取买到 cbETH 更多的那个；
+   * 赎回：Coinbase 公布的兑换率（取不到就用主网合约的 exchangeRate），unwrap 不收费；
+   * 差额 = 赎回得到的 ETH − 投入的 ETH。赎回得到的是 Coinbase 上的质押 ETH，要变成可用 ETH
+   * 还得排以太坊退出队列，所以另外按 Coinbase 的排队天数估计折成年化，方便和质押收益比。 */
+  function roundTrip(q, navOnchain, cfg) {
+    const sizes = (cfg.roundTrip && cfg.roundTrip.sizes) || [];
+    if (!q) return null;
+    const rate = num(q.rate) && q.rate > 0 ? q.rate : navOnchain, src = num(q.rate) && q.rate > 0 ? "coinbase" : "onchain";
+    if (!(rate > 0)) return null;
+    const rows = sizes.map((x) => {
+      const k = q.kyber && q.kyber[x], a = q.aero && q.aero[x];
+      const best = num(k) && (!num(a) || k >= a) ? { cb: k, via: "kyber_base" } : num(a) ? { cb: a, via: "aero_base" } : null;
+      if (!best) return { eth: x, cbeth: null, back: null, diff: null, bps: null, apr: null, via: null };
+      const back = best.cb * rate, diff = back - x, bps = (diff / x) * 1e4;
+      const apr = num(q.waitDays) && q.waitDays > 0 ? (bps / 1e4) * (365 / q.waitDays) : null;
+      return { eth: x, cbeth: best.cb, back, diff, bps: r2(bps), apr, via: best.via };
+    });
+    return { rate, src, waitDays: num(q.waitDays) ? q.waitDays : null, apy: num(q.apy) ? q.apy : null, onchain: navOnchain, rows };
   }
 
   /* ---------- 常态基线 ----------
@@ -233,6 +255,7 @@
         v: Object.fromEntries(a.venues.map((v) => [v.id, v.peg])),
       };
       if (big) rec[sym].vb = Object.fromEntries(a.venues.map((v) => [v.id, v.bps[big]]));
+      if (a.rt) { rec[sym].rt = Object.fromEntries(a.rt.rows.map((r) => [r.eth, r.bps])); if (a.rt.waitDays != null) rec[sym].wait = a.rt.waitDays; }
     }
     rec.nav = { wstETH: snap.nav.wstETH, cbETH: snap.nav.cbETH };
     if (snap.err.length) rec.err = snap.err;
@@ -318,32 +341,49 @@
     })();
 
     // Base：Aerodrome Slipstream cbETH/WETH，QuoterV2.quoteExactInputSingle((tokenIn,tokenOut,amountIn,int24 tickSpacing,sqrtPriceLimitX96))
+    const rtSizes = (cfg.roundTrip && cfg.roundTrip.sizes) || [], rt = {};
     const base = (async () => {
       const B = cfg.base;
       const r = await ethCalls(sizes.map((s) => [B.aeroQuoter, "0x9e7defe6" + pad(B.cbETH) + pad(B.WETH)
         + U(BigInt(s) * E18) + U(B.aeroTickSpacing) + U(0)]), "base");
       r.forEach((h, i) => { const w = word0(h); if (w != null) put("cbETH", "aero_base", sizes[i], Number(w) / 1e18 / sizes[i]); });
+      // 买入方向（Base 上用 ETH 买 cbETH），给「Base 买入 → Coinbase 赎回」算账
+      const rb = await ethCalls(rtSizes.map((x) => [B.aeroQuoter, "0x9e7defe6" + pad(B.WETH) + pad(B.cbETH)
+        + U(BigInt(x) * E18) + U(B.aeroTickSpacing) + U(0)]), "base");
+      rb.forEach((h, i) => { const w = word0(h); if (w != null) (rt.aero = rt.aero || {})[rtSizes[i]] = Number(w) / 1e18; });
     })();
 
     // KyberSwap 对并发很敏感（并发 8 个会回 503 overloaded），所以逐个发，失败的隔 0.8 秒重试一次
     async function kyber() {
-      for (const [sym, id, url, token] of [["stETH", "kyber", cfg.http.kyber, A.stETH], ["cbETH", "kyber_base", cfg.http.kyberBase, cfg.base.cbETH],
-        ["cbETH", "kyber", cfg.http.kyber, A.cbETH]]) {
+      const jobs = [
+        { name: "kyber stETH", url: cfg.http.kyber, tin: A.stETH, tout: A.ETH, sizes, put: (s, o) => put("stETH", "kyber", s, o / s) },
+        { name: "kyber_base cbETH", url: cfg.http.kyberBase, tin: cfg.base.cbETH, tout: A.ETH, sizes, put: (s, o) => put("cbETH", "kyber_base", s, o / s) },
+        { name: "kyber cbETH", url: cfg.http.kyber, tin: A.cbETH, tout: A.ETH, sizes, put: (s, o) => put("cbETH", "kyber", s, o / s) },
+        { name: "kyber_base 买入", url: cfg.http.kyberBase, tin: A.ETH, tout: cfg.base.cbETH, sizes: rtSizes, put: (x, o) => { (rt.kyber = rt.kyber || {})[x] = o; } },
+      ];
+      for (const j of jobs) {
         let last = null, ok = 0;
-        for (const s of sizes) {
+        for (const s of j.sizes) {
           for (let k = 0; k < 2; k++) {
             try {
-              const d = await getJSON(`${url}?tokenIn=${token}&tokenOut=${A.ETH}&amountIn=${BigInt(s) * E18}`, null, 10000);
+              const d = await getJSON(`${j.url}?tokenIn=${j.tin}&tokenOut=${j.tout}&amountIn=${BigInt(s) * E18}`, null, 10000);
               const out = d && d.data && d.data.routeSummary && d.data.routeSummary.amountOut;
               if (!out) throw new Error((d && d.message) || "无报价");
-              put(sym, id, s, Number(BigInt(out)) / 1e18 / s);
+              j.put(s, Number(BigInt(out)) / 1e18);
               ok++;
               break;
             } catch (e) { last = e; if (k === 0) await new Promise((r) => setTimeout(r, 800)); }
           }
         }
-        if (ok < sizes.length) note(`${id} ${sym}（${ok}/${sizes.length}）`, last);
+        if (ok < j.sizes.length) note(`${j.name}（${ok}/${j.sizes.length}）`, last);
       }
+    }
+    // Coinbase 自己公布的 cbETH 兑换率、赎回排队天数估计、质押年化
+    async function cbInfo() {
+      try {
+        const d = await getJSON(cfg.http.coinbaseCbethInfo, null, 10000);
+        rt.rate = +d.conversion_rate; rt.waitDays = +d.redeem_time_estimate_days; rt.apy = +d.apy;
+      } catch (e) { note("coinbase 兑换率", e); }
     }
     async function book(sym, id, url, pick) {
       try {
@@ -359,9 +399,10 @@
       kyber(),
       book("stETH", "okx", cfg.http.okxBook, (d) => d && d.data && d.data[0] && d.data[0].bids),
       book("cbETH", "coinbase", cfg.http.coinbaseBook, (d) => d && d.bids),
+      cbInfo(),
     ]);
-    return { ts: Math.floor(Date.now() / 1000), nav, px, err };
+    return { ts: Math.floor(Date.now() / 1000), nav, px, rt, err };
   }
 
-  return { VENUES, ASSETS, LEVEL, TEXT, quantile, median, fmt, tier, sellBook, analyse, evaluate, baseline, thin, guardLevel, guard, toRecord, collect };
+  return { VENUES, ASSETS, LEVEL, TEXT, quantile, median, fmt, tier, sellBook, analyse, evaluate, roundTrip, baseline, thin, guardLevel, guard, toRecord, collect };
 });
