@@ -20,6 +20,7 @@
 
   "_guard": "撤离预警：每个场所对照自己的历史（排除最近 excludeMinutes），中心 = 中位数，尺度 = 1.4826×MAD；预警线 = 中心 − max(k×尺度, floorBps)，各窗口取最紧的一条；同一次采样里 ≥ minVenues 个场所跌破各自的线才触发；连续 clearSamples 次不满足才算恢复",
   "guard": {
+    "version": "2026-09-30",
     "k": 3,
     "floorBps": 3,
     "excludeMinutes": 60,
