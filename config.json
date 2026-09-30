@@ -36,6 +36,8 @@
 
   "_roundTrip": "Base 上用这些数量的 ETH 买 cbETH，再到 Coinbase 按兑换率赎回，能拿回多少 ETH",
   "roundTrip": { "sizes": [25, 50, 75, 100] },
+  "_wrapSell": "反方向：在 Coinbase 上用这些数量的 ETH 质押并包装成 cbETH，提到 Base 上卖掉，能拿回多少 ETH",
+  "wrapSell": { "sizes": [5, 10, 25, 50] },
 
   "_history": "分层稀疏化：[天数, 间隔秒]。1 天内全留（2 分钟一条），1–3 天 10 分钟一条，3–60 天每小时一条",
   "history": { "tiers": [[1, 0], [3, 600], [60, 3600]] },

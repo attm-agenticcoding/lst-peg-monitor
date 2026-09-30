@@ -180,6 +180,16 @@ t("Base 买入 → Coinbase 赎回：取买到更多 cbETH 的路由，按 Coinb
   assert.strictEqual(fb.rows[0].apr, null);
 });
 
+t("Coinbase 包装 → Base 卖出：包装得到 X / 兑换率 枚 cbETH，取卖出更好的路由", () => {
+  const cfg = Object.assign({}, CFG, { roundTrip: { sizes: [] }, wrapSell: { sizes: [5, 50] } });
+  const q = { rate: 1.1405679, ws: { kyber: { 5: 5.0001, 50: 50 }, aero: { 5: 4.9999, 50: 49.9987 } } };
+  const r = C.roundTrip(q, 1.14, cfg);
+  assert.ok(Math.abs(r.ws[0].cbeth - 5 / 1.1405679) < 1e-12);
+  assert.strictEqual(r.ws[0].via, "kyber_base");
+  assert.ok(Math.abs(r.ws[0].bps - 0.2) < 0.01);
+  assert.strictEqual(r.ws[1].bps, 0);
+});
+
 t("toRecord 字段齐全", () => {
   const snap = { ts: 1, nav: { stETH: 1, wstETH: 1.24, cbETH: 1.14 }, px: { stETH: pxFrom(1, { kyber: [-1, -1, -1, -1], curve: [-2, -2, -2, -2] }), cbETH: {} }, err: ["okx: 超时"] };
   const r = C.toRecord(snap, C.evaluate(snap, CFG), CFG);

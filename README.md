@@ -54,6 +54,14 @@ gh workflow run snapshot.yml       # 手动拉起接力链（看门狗也会自�
 - 同一个接口还给 `redeem_time_estimate_days`（赎回排队天数估计）和 `apy`。赎回得到的是 Coinbase 上的质押 ETH，要排以太坊退出队列才变成可用 ETH；表里的「折合年化」= 差额 ÷ 排队天数 × 365，用来和质押年化对比。
 - cbETH 可以直接走 Base 网络充值到 Coinbase（2026-08-17 起 Coinbase 只保留 Ethereum 和 Base 两条网络）。Base 上的 gas 不到 1 美分，没有计入。
 
+## Coinbase 质押包装 → Base 卖出（反方向，cbETH 在 Base 上有溢价时看）
+
+在 Coinbase 上用 5 / 10 / 25 / 50 ETH 质押并包装成 cbETH（不收费，得到 X ÷ 兑换率 枚），直接走 Base 网络提出来，在 Base 上卖掉，能拿回多少 ETH。
+
+- 卖出：KyberSwap 在 Base 上的聚合报价和 Aerodrome 单池报价，取拿回 ETH 更多的那个。卖出数量要先知道兑换率，所以这组报价排在兑换率拿到之后。
+- 不用排队，不折年化。提币网络费（Base 上几美分）没有计入。
+- Coinbase 的帮助文档没写明刚质押的 ETH 是否马上能包装，包装功能按地区开放，文档还提到「交易偶尔会因为网络或流动性情况失败」。
+
 ## 口径
 
 **脱锚 = 卖出执行价 ÷ 兑付锚 − 1**，bps，负数 = 折价。用卖出价：看的是现在真要跑能拿回多少 ETH。

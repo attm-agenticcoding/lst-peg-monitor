@@ -90,7 +90,21 @@
         <th class="r">差额 ETH</th><th class="r">折合年化</th><th style="padding-left:16px">买入路由</th></tr></thead><tbody>${rows}</tbody></table></div>
       <p class="empty" style="margin-top:8px">unwrap 不收费。赎回得到的是 Coinbase 上的质押 ETH，要排以太坊退出队列才变成可用 ETH（Coinbase 当前估计 ${days} 天），这段时间钱是锁住的；
       折合年化 = 差额 ÷ 排队天数 × 365，可以和质押年化（现在 ${rt.apy != null ? (rt.apy * 100).toFixed(2) + "%" : "—"}）对比。
-      cbETH 可以直接走 Base 网络充值到 Coinbase；Base 上的 gas 不到 1 美分，没有计入。</p></div>`;
+      cbETH 可以直接走 Base 网络充值到 Coinbase；Base 上的 gas 不到 1 美分，没有计入。</p></div>${wsSection(rt, n)}`;
+  }
+
+  /* ---------- 反方向：Coinbase 质押包装 → Base 卖出（溢价时看这个） ---------- */
+  function wsSection(rt, n) {
+    if (!rt.ws || !rt.ws.length) return "";
+    const rows = rt.ws.map((r) => `<tr><td class="num">${r.eth}</td><td class="r num">${n(r.cbeth, 4)}</td>
+      <td class="r num">${n(r.back, 4)}</td>
+      <td class="r num">${r.diff == null ? "—" : `${r.diff >= 0 ? "+" : "−"}${n(Math.abs(r.diff), 4)}`}<span class="vmeta">${fmt(r.bps, 1)} bps</span></td>
+      <td class="dim" style="padding-left:16px">${RT_VIA[r.via] || "—"}</td></tr>`).join("");
+    return `<div class="sect"><h3>Coinbase 质押包装 → Base 卖出 <span class="cnt">按兑换率 ${rt.rate.toFixed(6)} 包装，不用排队</span></h3>
+      <div class="tw"><table class="src"><thead><tr><th>投入 ETH</th><th class="r">包装得 cbETH</th><th class="r">Base 卖出得 ETH</th>
+        <th class="r">差额 ETH</th><th style="padding-left:16px">卖出路由</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="empty" style="margin-top:8px">cbETH 在 Base 上有溢价时看这张：Coinbase 上质押 ETH 后包装成 cbETH 不收费，按兑换率换算；包装好的 cbETH 可以直接走 Base 网络提到钱包，再在 Base 上卖掉。
+      提币时 Coinbase 会扣一笔网络费（Base 上通常几美分），这里没有计入。Coinbase 的说明里没有写明刚质押的 ETH 是否马上能包装，包装功能也按地区开放，第一次先用小额试一遍。</p></div>`;
   }
 
   /* ---------- 走势小图 ---------- */

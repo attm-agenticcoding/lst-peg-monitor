@@ -151,7 +151,15 @@
       const apr = num(q.waitDays) && q.waitDays > 0 ? (bps / 1e4) * (365 / q.waitDays) : null;
       return { eth: x, cbeth: best.cb, back, diff, bps: r2(bps), apr, via: best.via };
     });
-    return { rate, src, waitDays: num(q.waitDays) ? q.waitDays : null, apy: num(q.apy) ? q.apy : null, onchain: navOnchain, rows };
+    // 反方向：Coinbase 上把 X ETH 质押并包装成 X / 兑换率 枚 cbETH（不收费），提到 Base 上卖掉
+    const ws = ((cfg.wrapSell && cfg.wrapSell.sizes) || []).map((x) => {
+      const k = q.ws && q.ws.kyber && q.ws.kyber[x], a = q.ws && q.ws.aero && q.ws.aero[x];
+      const best = num(k) && (!num(a) || k >= a) ? { back: k, via: "kyber_base" } : num(a) ? { back: a, via: "aero_base" } : null;
+      if (!best) return { eth: x, cbeth: x / rate, back: null, diff: null, bps: null, via: null };
+      const diff = best.back - x;
+      return { eth: x, cbeth: x / rate, back: best.back, diff, bps: r2((diff / x) * 1e4), via: best.via };
+    });
+    return { rate, src, waitDays: num(q.waitDays) ? q.waitDays : null, apy: num(q.apy) ? q.apy : null, onchain: navOnchain, rows, ws };
   }
 
   /* ---------- 常态基线 ----------
@@ -259,7 +267,11 @@
         v: Object.fromEntries(a.venues.map((v) => [v.id, v.peg])),
       };
       if (big) rec[sym].vb = Object.fromEntries(a.venues.map((v) => [v.id, v.bps[big]]));
-      if (a.rt) { rec[sym].rt = Object.fromEntries(a.rt.rows.map((r) => [r.eth, r.bps])); if (a.rt.waitDays != null) rec[sym].wait = a.rt.waitDays; }
+      if (a.rt) {
+        rec[sym].rt = Object.fromEntries(a.rt.rows.map((r) => [r.eth, r.bps]));
+        if (a.rt.ws && a.rt.ws.length) rec[sym].ws = Object.fromEntries(a.rt.ws.map((r) => [r.eth, r.bps]));
+        if (a.rt.waitDays != null) rec[sym].wait = a.rt.waitDays;
+      }
     }
     rec.nav = { wstETH: snap.nav.wstETH, cbETH: snap.nav.cbETH };
     if (snap.err.length) rec.err = snap.err;
@@ -346,6 +358,11 @@
 
     // Base：Aerodrome Slipstream cbETH/WETH，QuoterV2.quoteExactInputSingle((tokenIn,tokenOut,amountIn,int24 tickSpacing,sqrtPriceLimitX96))
     const rtSizes = (cfg.roundTrip && cfg.roundTrip.sizes) || [], rt = {};
+    const wsSizes = (cfg.wrapSell && cfg.wrapSell.sizes) || [];
+    const cbinfoP = cbInfo();
+    // 包装得到多少 cbETH 要先知道兑换率：优先 Coinbase 公布的，取不到用主网合约 exchangeRate
+    const rateP = (async () => { await cbinfoP; if (num(rt.rate) && rt.rate > 0) return rt.rate; const n = await chain; return n.cbETH; })();
+    const wsWei = async () => { const r = await rateP; return r > 0 ? wsSizes.map((x) => BigInt(Math.floor((x / r) * 1e18))) : []; };
     const base = (async () => {
       const B = cfg.base;
       const r = await ethCalls(sizes.map((s) => [B.aeroQuoter, "0x9e7defe6" + pad(B.cbETH) + pad(B.WETH)
@@ -355,6 +372,12 @@
       const rb = await ethCalls(rtSizes.map((x) => [B.aeroQuoter, "0x9e7defe6" + pad(B.WETH) + pad(B.cbETH)
         + U(BigInt(x) * E18) + U(B.aeroTickSpacing) + U(0)]), "base");
       rb.forEach((h, i) => { const w = word0(h); if (w != null) (rt.aero = rt.aero || {})[rtSizes[i]] = Number(w) / 1e18; });
+      // 反方向：Coinbase 上质押包装出来的 cbETH 拿到 Base 上卖（Aerodrome 单池）
+      const amts = await wsWei();
+      if (amts.length) {
+        const rs = await ethCalls(amts.map((w) => [B.aeroQuoter, "0x9e7defe6" + pad(B.cbETH) + pad(B.WETH) + U(w) + U(B.aeroTickSpacing) + U(0)]), "base");
+        rs.forEach((h, i) => { const w = word0(h); if (w != null) ((rt.ws = rt.ws || {}).aero = rt.ws.aero || {})[wsSizes[i]] = Number(w) / 1e18; });
+      }
     })();
 
     // KyberSwap 对并发很敏感（并发 8 个会回 503 overloaded），所以逐个发，失败的隔 0.8 秒重试一次
@@ -365,12 +388,18 @@
         { name: "kyber cbETH", url: cfg.http.kyber, tin: A.cbETH, tout: A.ETH, sizes, put: (s, o) => put("cbETH", "kyber", s, o / s) },
         { name: "kyber_base 买入", url: cfg.http.kyberBase, tin: A.ETH, tout: cfg.base.cbETH, sizes: rtSizes, put: (x, o) => { (rt.kyber = rt.kyber || {})[x] = o; } },
       ];
+      // 反方向：包装得到的 cbETH 在 Base 上的聚合卖出报价（数量 = X / 兑换率，所以排在最后、等兑换率到手）
+      if (wsSizes.length) jobs.push({ name: "kyber_base 包装后卖出", url: cfg.http.kyberBase, tin: cfg.base.cbETH, tout: A.ETH, sizes: wsSizes,
+        amount: async (x) => { const a = await wsWei(); return a[wsSizes.indexOf(x)]; },
+        put: (x, o) => { ((rt.ws = rt.ws || {}).kyber = rt.ws.kyber || {})[x] = o; } });
       for (const j of jobs) {
         let last = null, ok = 0;
         for (const s of j.sizes) {
           for (let k = 0; k < 2; k++) {
             try {
-              const d = await getJSON(`${j.url}?tokenIn=${j.tin}&tokenOut=${j.tout}&amountIn=${BigInt(s) * E18}`, null, 10000);
+              const amt = j.amount ? await j.amount(s) : BigInt(s) * E18;
+              if (!amt) throw new Error("没有兑换率");
+              const d = await getJSON(`${j.url}?tokenIn=${j.tin}&tokenOut=${j.tout}&amountIn=${amt}`, null, 10000);
               const out = d && d.data && d.data.routeSummary && d.data.routeSummary.amountOut;
               if (!out) throw new Error((d && d.message) || "无报价");
               j.put(s, Number(BigInt(out)) / 1e18);
@@ -403,7 +432,7 @@
       kyber(),
       book("stETH", "okx", cfg.http.okxBook, (d) => d && d.data && d.data[0] && d.data[0].bids),
       book("cbETH", "coinbase", cfg.http.coinbaseBook, (d) => d && d.bids),
-      cbInfo(),
+      cbinfoP,
     ]);
     return { ts: Math.floor(Date.now() / 1000), nav, px, rt, err };
   }
