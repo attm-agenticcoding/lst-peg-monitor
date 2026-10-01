@@ -190,6 +190,20 @@ t("Coinbase 包装 → Base 卖出：包装得到 X / 兑换率 枚 cbETH，取�
   assert.strictEqual(r.ws[1].bps, 0);
 });
 
+t("买 stETH → Lido 赎回：取买到最多 stETH 的路由，1:1 赎回，按 Lido 排队天数折年化", () => {
+  const cfg = Object.assign({}, CFG, { stRedeem: { sizes: [50, 300], gasUnits: 300000 } });
+  const q = { kyber: { 50: 50.0159, 300: 300.0878 }, curve: { 50: 50.0143, 300: 300.081 }, curve_ng: { 50: 50.0159, 300: 300.0806 },
+    waitMs: 293623000, waitType: "validatorBalances", apr: 2.261, gasGwei: 0.088 };
+  const r = C.stRedeem(q, cfg);
+  assert.strictEqual(r.rows[0].via, "kyber");
+  assert.ok(Math.abs(r.rows[0].bps - 3.18) < 0.01);
+  assert.ok(Math.abs(r.waitDays - 3.398) < 0.001);
+  assert.ok(Math.abs(r.rows[1].apr - (0.0878 / 300) * 365 / r.waitDays) < 1e-9);
+  assert.ok(Math.abs(r.gasEth - 0.088e-9 * 300000) < 1e-12);
+  assert.strictEqual(r.apr, 0.02261);
+  assert.strictEqual(C.stRedeem({ curve: { 50: 50.01 } }, cfg).rows[1].bps, null); // 300 那档取不到报价
+});
+
 t("toRecord 字段齐全", () => {
   const snap = { ts: 1, nav: { stETH: 1, wstETH: 1.24, cbETH: 1.14 }, px: { stETH: pxFrom(1, { kyber: [-1, -1, -1, -1], curve: [-2, -2, -2, -2] }), cbETH: {} }, err: ["okx: 超时"] };
   const r = C.toRecord(snap, C.evaluate(snap, CFG), CFG);

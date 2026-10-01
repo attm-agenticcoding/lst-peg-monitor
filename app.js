@@ -70,7 +70,7 @@
       <div class="sect"><h3>各场所卖出执行价 <span class="cnt">相对兑付锚，bps；主报价 = 大额上最好的那家</span></h3>
         <div class="tw"><table class="src"><thead><tr><th>场所</th>${S.map((s, i) => `<th class="r">${i ? "" : "卖 "}${s.toLocaleString()}${i ? "" : " 枚"}</th>`).join("")}</tr></thead>
         <tbody>${rows}<tr class="best"><td>最优（逐档取最好）</td>${best}</tr></tbody></table></div></div>
-      ${sym === "cbETH" ? rtSection(a.rt) : ""}
+      ${sym === "cbETH" ? rtSection(a.rt) : stSection(a.rt)}
     </section>`;
   }
 
@@ -91,6 +91,25 @@
       <p class="empty" style="margin-top:8px">unwrap 不收费。赎回得到的是 Coinbase 上的质押 ETH，要排以太坊退出队列才变成可用 ETH（Coinbase 当前估计 ${days} 天），这段时间钱是锁住的；
       折合年化 = 差额 ÷ 排队天数 × 365，可以和质押年化（现在 ${rt.apy != null ? (rt.apy * 100).toFixed(2) + "%" : "—"}）对比。
       cbETH 可以直接走 Base 网络充值到 Coinbase；Base 上的 gas 不到 1 美分，没有计入。</p></div>${wsSection(rt, n)}`;
+  }
+
+  /* ---------- 主网买 stETH → Lido 提现赎回 ---------- */
+  const ST_VIA = { kyber: "KyberSwap 聚合", curve: "Curve stETH/ETH", curve_ng: "Curve stETH-ng" };
+  function stSection(rt) {
+    if (!rt || !rt.rows.length) return "";
+    const n = (x, d) => (x == null ? "—" : x.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }));
+    const days = rt.waitDays != null ? rt.waitDays.toFixed(1) : "—";
+    const rows = rt.rows.map((r) => `<tr><td class="num">${r.eth}</td><td class="r num">${n(r.steth, 4)}</td>
+      <td class="r num">${n(r.back, 4)}</td>
+      <td class="r num">${r.diff == null ? "—" : `${r.diff >= 0 ? "+" : "−"}${n(Math.abs(r.diff), 4)}`}<span class="vmeta">${fmt(r.bps, 1)} bps</span></td>
+      <td class="r num">${r.apr == null ? "—" : `${r.apr >= 0 ? "" : "−"}${Math.abs(r.apr * 100).toFixed(2)}%`}</td>
+      <td class="dim" style="padding-left:16px">${ST_VIA[r.via] || "—"}</td></tr>`).join("");
+    return `<div class="sect"><h3>买入 stETH → Lido 提现赎回 <span class="cnt">1:1 兑付 · 排队约 ${days} 天（Lido 估计）</span></h3>
+      <div class="tw"><table class="src"><thead><tr><th>投入 ETH</th><th class="r">买到 stETH</th><th class="r">赎回得 ETH</th>
+        <th class="r">差额 ETH</th><th class="r">折合年化</th><th style="padding-left:16px">买入路由</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="empty" style="margin-top:8px">Lido 提现队列按 1:1 兑付、不收提现费；申请之后这部分 stETH 不再计收益，排队时间取决于提现需求和协议模式（通常 1–5 天）。
+      折合年化 = 差额 ÷ 排队天数 × 365，可以和 stETH 质押 APR（近 7 天平均 ${rt.apr != null ? (rt.apr * 100).toFixed(2) + "%" : "—"}）对比。
+      要两笔主网交易（申请、领取），按现在的 gas 价合计约 ${rt.gasEth != null ? rt.gasEth.toFixed(5) : "—"} ETH，没有计入；单笔申请上限 1000 stETH，更大的会自动拆成多笔。</p></div>`;
   }
 
   /* ---------- 反方向：Coinbase 质押包装 → Base 卖出（溢价时看这个） ---------- */

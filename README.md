@@ -63,6 +63,14 @@ gh workflow run snapshot.yml       # 手动拉起接力链（看门狗也会自�
 - 同一个接口还给 `redeem_time_estimate_days`（赎回排队天数估计）和 `apy`。赎回得到的是 Coinbase 上的质押 ETH，要排以太坊退出队列才变成可用 ETH；表里的「折合年化」= 差额 ÷ 排队天数 × 365，用来和质押年化对比。
 - cbETH 可以直接走 Base 网络充值到 Coinbase（2026-08-17 起 Coinbase 只保留 Ethereum 和 Base 两条网络）。Base 上的 gas 不到 1 美分，没有计入。
 
+## 买入 stETH → Lido 提现赎回（stETH 卡片里的表）
+
+主网用 50 / 100 / 200 / 300 ETH 买 stETH，再走 Lido 提现队列 1:1 赎回，能拿回多少 ETH。
+
+- 买入：KyberSwap 主网聚合报价（ETH → stETH）和 Curve 两个池子的直读报价（`get_dy(ETH, stETH)`），取买到最多的那个。
+- 赎回：1:1、不收提现费；申请后这部分 stETH 不再计收益。排队时间用 Lido 官方提现 API（`wq-api.lido.fi/v2/request-time/calculate`，按最大一档估），APR 用 `eth-api.lido.fi/v1/protocol/steth/apr/sma`（近 7 天平均）。
+- 「折合年化」= 差额 ÷ 排队天数 × 365。两笔主网交易（申请 + 领取，约 30 万 gas）按当时 gas 价估出来显示在说明里，不计入差额。单笔申请上限 1000 stETH。
+
 ## Coinbase 质押包装 → Base 卖出（反方向，cbETH 在 Base 上有溢价时看）
 
 在 Coinbase 上用 5 / 10 / 25 / 50 ETH 质押并包装成 cbETH（不收费，得到 X ÷ 兑换率 枚），直接走 Base 网络提出来，在 Base 上卖掉，能拿回多少 ETH。

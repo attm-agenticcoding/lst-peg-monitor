@@ -130,6 +130,7 @@
     for (const sym of ASSETS)
       out[sym] = analyse(snap.px[sym], sym === "stETH" ? 1 : snap.nav[sym], VENUES[sym], cfg.thresholds, cfg.sizes);
     out.cbETH.rt = roundTrip(snap.rt, snap.nav.cbETH, cfg);
+    out.stETH.rt = stRedeem(snap.st, cfg);
     return out;
   }
 
@@ -160,6 +161,25 @@
       return { eth: x, cbeth: x / rate, back: best.back, diff, bps: r2((diff / x) * 1e4), via: best.via };
     });
     return { rate, src, waitDays: num(q.waitDays) ? q.waitDays : null, apy: num(q.apy) ? q.apy : null, onchain: navOnchain, rows, ws };
+  }
+
+  /* ---------- 主网买 stETH → Lido 提现队列赎回 ----------
+   * 买入：KyberSwap 主网聚合报价、Curve 两个池子的直读报价，取买到 stETH 最多的那个；
+   * 赎回：Lido 提现队列按 1:1 兑付、不收费（只有两笔交易的 gas）；申请之后这部分 stETH 不再计收益。
+   * 排队天数用 Lido 官方提现 API 的估计，折成年化，方便和 stETH 的质押 APR 比。 */
+  function stRedeem(q, cfg) {
+    const sizes = (cfg.stRedeem && cfg.stRedeem.sizes) || [];
+    if (!q || !sizes.length) return null;
+    const waitDays = num(q.waitMs) && q.waitMs > 0 ? q.waitMs / 864e5 : null;
+    const gasEth = num(q.gasGwei) ? q.gasGwei * 1e-9 * ((cfg.stRedeem && cfg.stRedeem.gasUnits) || 300000) : null;
+    const rows = sizes.map((x) => {
+      const c = [["kyber", q.kyber && q.kyber[x]], ["curve", q.curve && q.curve[x]], ["curve_ng", q.curve_ng && q.curve_ng[x]]].filter((p) => num(p[1]));
+      if (!c.length) return { eth: x, steth: null, back: null, diff: null, bps: null, apr: null, via: null };
+      const [via, got] = c.reduce((a, b) => (b[1] > a[1] ? b : a));
+      const diff = got - x, bps = (diff / x) * 1e4; // 1:1 赎回，拿回的 ETH = 买到的 stETH
+      return { eth: x, steth: got, back: got, diff, bps: r2(bps), apr: waitDays ? (bps / 1e4) * (365 / waitDays) : null, via };
+    });
+    return { waitDays, waitType: q.waitType || null, apr: num(q.apr) ? q.apr / 100 : null, gasEth, rows };
   }
 
   /* ---------- 常态基线 ----------
@@ -324,6 +344,7 @@
       return calls.map(() => null);
     }
 
+    const stSizes = (cfg.stRedeem && cfg.stRedeem.sizes) || [], st = {};
     const chain = (async () => {
       // 1) 兑付锚 + Curve 的 coin 顺序（每轮实时验证，顺序反了会静默返回倒数）
       const r1 = await ethCalls([
@@ -353,6 +374,21 @@
         const w = word0(h), [sym, id, s] = keys[i];
         if (w != null) put(sym, id, s, Number(w) / 1e18 / s);
       });
+      // 买入方向（ETH → stETH），给「买 stETH → Lido 赎回」算账：get_dy(i=ETH, j=stETH)
+      if (stSizes.length) {
+        const bc = [], bk = [];
+        for (const x of stSizes) {
+          const dx = BigInt(x) * E18;
+          if (oA) { bk.push(["curve", x]); bc.push([A.curveStEth, "0x5e0d443f" + U(oA[1]) + U(oA[0]) + U(dx)]); }
+          if (oB) { bk.push(["curve_ng", x]); bc.push([A.curveStEthNg, "0x5e0d443f" + U(oB[1]) + U(oB[0]) + U(dx)]); }
+        }
+        (await ethCalls(bc)).forEach((h, i) => { const w = word0(h); if (w != null) (st[bk[i][0]] = st[bk[i][0]] || {})[bk[i][1]] = Number(w) / 1e18; });
+        try {
+          const g = await getJSON(sticky.eth || cfg.rpcs[0], { method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_gasPrice", params: [] }) }, 10000);
+          if (g && g.result) st.gasGwei = Number(BigInt(g.result)) / 1e9;
+        } catch (e) { note("gas 价", e); }
+      }
       return { stETH: 1, wstETH: rateW ? Number(rateW) / 1e18 : null, cbETH: rateC ? Number(rateC) / 1e18 : null };
     })();
 
@@ -386,6 +422,7 @@
         { name: "kyber stETH", url: cfg.http.kyber, tin: A.stETH, tout: A.ETH, sizes, put: (s, o) => put("stETH", "kyber", s, o / s) },
         { name: "kyber_base cbETH", url: cfg.http.kyberBase, tin: cfg.base.cbETH, tout: A.ETH, sizes, put: (s, o) => put("cbETH", "kyber_base", s, o / s) },
         { name: "kyber cbETH", url: cfg.http.kyber, tin: A.cbETH, tout: A.ETH, sizes, put: (s, o) => put("cbETH", "kyber", s, o / s) },
+        { name: "kyber 买入 stETH", url: cfg.http.kyber, tin: A.ETH, tout: A.stETH, sizes: stSizes, put: (x, o) => { (st.kyber = st.kyber || {})[x] = o; } },
         { name: "kyber_base 买入", url: cfg.http.kyberBase, tin: A.ETH, tout: cfg.base.cbETH, sizes: rtSizes, put: (x, o) => { (rt.kyber = rt.kyber || {})[x] = o; } },
       ];
       // 反方向：包装得到的 cbETH 在 Base 上的聚合卖出报价（数量 = X / 兑换率，所以排在最后、等兑换率到手）
@@ -418,6 +455,19 @@
         rt.rate = +d.conversion_rate; rt.waitDays = +d.redeem_time_estimate_days; rt.apy = +d.apy;
       } catch (e) { note("coinbase 兑换率", e); }
     }
+    // Lido：按最大一档估提现排队时间（官方提现 API），以及 stETH 近 7 天平均 APR
+    async function lidoInfo() {
+      if (!stSizes.length) return;
+      try {
+        const d = await getJSON(`${cfg.http.lidoWq}?amount=${Math.max(...stSizes)}`, null, 10000);
+        const ri = d && d.requestInfo;
+        if (ri && num(ri.finalizationIn)) { st.waitMs = ri.finalizationIn; st.waitType = ri.type || null; }
+      } catch (e) { note("lido 排队估计", e); }
+      try {
+        const d = await getJSON(cfg.http.lidoApr, null, 10000);
+        if (d && d.data && num(d.data.smaApr)) st.apr = d.data.smaApr;
+      } catch (e) { note("lido APR", e); }
+    }
     async function book(sym, id, url, pick) {
       try {
         const bids = pick(await getJSON(url, null, 10000));
@@ -433,9 +483,10 @@
       book("stETH", "okx", cfg.http.okxBook, (d) => d && d.data && d.data[0] && d.data[0].bids),
       book("cbETH", "coinbase", cfg.http.coinbaseBook, (d) => d && d.bids),
       cbinfoP,
+      lidoInfo(),
     ]);
-    return { ts: Math.floor(Date.now() / 1000), nav, px, rt, err };
+    return { ts: Math.floor(Date.now() / 1000), nav, px, rt, st, err };
   }
 
-  return { VENUES, ASSETS, LEVEL, TEXT, quantile, median, fmt, tier, sellBook, analyse, evaluate, roundTrip, baseline, thin, guardLevel, guard, toRecord, collect };
+  return { VENUES, ASSETS, LEVEL, TEXT, quantile, median, fmt, tier, sellBook, analyse, evaluate, roundTrip, stRedeem, baseline, thin, guardLevel, guard, toRecord, collect };
 });
