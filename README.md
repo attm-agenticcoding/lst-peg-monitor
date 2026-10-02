@@ -73,7 +73,7 @@ gh workflow run snapshot.yml       # 手动拉起接力链（看门狗也会自�
 
 ## Coinbase 质押包装 → Base 卖出（反方向，cbETH 在 Base 上有溢价时看）
 
-在 Coinbase 上用 5 / 10 / 25 / 50 ETH 质押并包装成 cbETH（不收费，得到 X ÷ 兑换率 枚），直接走 Base 网络提出来，在 Base 上卖掉，能拿回多少 ETH。
+在 Coinbase 上用 5 / 10 / 25 / 50 / 100 ETH 质押并包装成 cbETH（不收费，得到 X ÷ 兑换率 枚），直接走 Base 网络提出来，在 Base 上卖掉，能拿回多少 ETH。
 
 - 卖出：KyberSwap 在 Base 上的聚合报价和 Aerodrome 单池报价，取拿回 ETH 更多的那个。卖出数量要先知道兑换率，所以这组报价排在兑换率拿到之后。
 - 不用排队，不折年化。提币网络费（Base 上几美分）没有计入。
