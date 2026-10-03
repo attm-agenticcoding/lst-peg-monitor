@@ -1,0 +1,19 @@
+name: tests
+on:
+  pull_request:
+    paths: ['**.js', 'config.json', 'index.html', '.github/workflows/test.yml']
+  push:
+    branches: ['feat/steth-redemption-estimator']
+    paths: ['**.js', 'config.json', 'index.html', '.github/workflows/test.yml']
+permissions:
+  contents: read
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node --check app.js && node --check core.js && node --check redemption.js
+      - run: node tests/core.test.js && node tests/redemption.test.js && node tests/collect-redemption.test.js && node tests/app-redemption.test.js

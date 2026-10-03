@@ -39,8 +39,37 @@
   "roundTrip": { "sizes": [25, 50, 75, 100] },
   "_wrapSell": "反方向：在 Coinbase 上用这些数量的 ETH 质押并包装成 cbETH，提到 Base 上卖掉，能拿回多少 ETH",
   "wrapSell": { "sizes": [5, 10, 25, 50, 100, 300] },
-  "_stRedeem": "主网用这些数量的 ETH 买 stETH，再走 Lido 提现队列 1:1 赎回，能拿回多少 ETH；gasUnits 是申请 + 领取两笔交易的大致 gas",
-  "stRedeem": { "sizes": [50, 100, 200, 300], "gasUnits": 300000 },
+  "_stRedeem": "通用示例数量（非用户资产）。净收益含 swap/授权/申请/领取 gas；官方等待时间仅作未经校准的参考，保守倍数是情景而非 p90。仅页面提示，不新增推送。",
+  "stRedeem": {
+    "sizes": [
+      50,
+      100,
+      200,
+      300
+    ],
+    "swapGasUnits": {
+      "kyber": 350000,
+      "curve": 200000,
+      "curve_ng": 200000
+    },
+    "approvalGasUnits": 60000,
+    "requestGasUnits": 180000,
+    "claimGasUnits": 120000,
+    "gasMultiplier": 2,
+    "slippageBps": 1,
+    "haircutBps": 0,
+    "extraCostEth": 0,
+    "extraHours": 2,
+    "waitMultiplier": 2,
+    "manualWaitDays": null,
+    "manualConservativeDays": null,
+    "minProfitEth": 0.005,
+    "minNetBps": 1,
+    "premiumPctPoints": 1,
+    "quoteMaxAgeSeconds": 180,
+    "etaMaxAgeSeconds": 300,
+    "aprMaxAgeSeconds": 86400
+  },
 
   "_history": "分层稀疏化：[天数, 间隔秒]。1 天内全留（2 分钟一条），1–3 天 10 分钟一条，3–60 天每小时一条",
   "history": { "tiers": [[1, 0], [3, 600], [60, 3600]] },
@@ -53,6 +82,7 @@
   "rpcBatchSize": 4,
 
   "addresses": {
+    "withdrawalQueue": "0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1",
     "stETH": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
     "wstETH": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
     "cbETH": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",

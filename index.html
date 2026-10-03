@@ -181,6 +181,18 @@ td.dim{color:var(--ink-3)}
 table.src{min-width:540px}
 table.src td.r,table.src th.r{padding-left:14px;white-space:nowrap;width:68px}
 table.src td:first-child{min-width:200px}
+.redemption-table{min-width:700px!important}
+.redemption-detail td{font-size:11px;color:var(--ink-3);white-space:normal!important;padding-bottom:12px!important}
+.redemption-warning{border-left:3px solid var(--watch);background:var(--watch-bg);padding:10px 12px;font-size:12px;color:var(--ink-2)}
+.scenario-match{color:var(--watch);font-size:12px}
+.st-settings{padding:14px 16px;margin-top:16px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.st-settings summary{cursor:pointer;font-size:13px;font-weight:600}
+.st-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
+.st-fields label{font-size:11px;color:var(--ink-2)}
+.st-fields input{display:block;width:100%;margin-top:4px;padding:7px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);font:inherit;font-size:13px}
+.st-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#st-settings-status{font-size:12px;color:var(--ink-2)}
+@media(max-width:640px){.st-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -202,6 +214,28 @@ table.src td:first-child{min-width:200px}
       <p class="vnote" id="vnote">兑付锚读代币合约；市价取流动性最深的场所，至少两个场所确认才升级状态。</p>
     </div>
   </div>
+
+  <details class="st-settings">
+    <summary>stETH 赎回测算参数 · 通用示例，可在本页修改</summary>
+    <form id="st-settings">
+      <p class="empty">数量留空时比较 50 / 100 / 200 / 300 ETH 通用示例，并非个人持仓。输入只在本页内存保留；报价数量会发送给公开 RPC、KyberSwap 与 Lido API，不发送钱包或余额。</p>
+      <div class="st-fields">
+        <label>买入 ETH（留空显示示例）<input name="amount" type="number" min="0.001" max="100000" step="0.001" placeholder="例如 10"></label>
+        <label>手动预计等待天数（空用官方参考）<input name="manualWaitDays" type="number" min="0.01" max="3650" step="0.01" placeholder="不可用时保持空白"></label>
+        <label>手动保守等待天数（空用倍数）<input name="manualConservativeDays" type="number" min="0.01" max="3650" step="0.01"></label>
+        <label>保守等待倍数（非统计区间）<input name="waitMultiplier" type="number" min="1" max="100" step="0.1" required></label>
+        <label>申请/领取额外延迟（小时）<input name="extraHours" type="number" min="0" max="8760" step="0.1" required></label>
+        <label>保守 gas 倍数<input name="gasMultiplier" type="number" min="1" max="100" step="0.1" required></label>
+        <label>额外成交滑点（bps）<input name="slippageBps" type="number" min="0" max="9999" step="0.1" required></label>
+        <label>兑付折损压力（bps）<input name="haircutBps" type="number" min="0" max="9999" step="0.1" required></label>
+        <label>其他未计成本（ETH）<input name="extraCostEth" type="number" min="0" max="100000" step="0.000001" required></label>
+        <label>保守净利润门槛（ETH）<input name="minProfitEth" type="number" min="0" max="100000" step="0.001" required></label>
+        <label>保守净回报门槛（bps）<input name="minNetBps" type="number" min="0" max="10000" step="0.1" required></label>
+        <label>高于质押 APR（百分点）<input name="premiumPctPoints" type="number" min="0" max="1000" step="0.1" required></label>
+      </div>
+      <div class="st-actions"><button class="refresh" type="submit">应用并重新取报价</button><button class="refresh" id="st-reset" type="button">恢复示例</button><span id="st-settings-status" role="status"></span></div>
+    </form>
+  </details>
 
   <div id="cards"></div>
 
@@ -249,6 +283,7 @@ table.src td:first-child{min-width:200px}
     数值在浏览器里直接向公开节点与各家公开 API 取得，不经过中间服务器。
   </footer>
 </div>
+<script src="redemption.js"></script>
 <script src="core.js"></script>
 <script src="app.js"></script>
 </body>
