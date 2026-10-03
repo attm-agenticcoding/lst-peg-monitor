@@ -12,7 +12,8 @@
     { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
   const span = (h) => (h < 48 ? `${h} 小时` : `${Math.round(h / 24)} 天`);
   const KIND = { agg: "聚合", dex: "链上", cex: "交易所" };
-  let CFG = null, hist = null, histAt = 0, busy = false, timer = null;
+  let CFG = null, hist = null, histAt = 0, busy = false, timer = null, stOverrides = {}, customAmount = null;
+  const currentCfg = () => Object.assign({}, CFG, { stRedeem: Object.assign({}, CFG.stRedeem, stOverrides, customAmount == null ? {} : { sizes: [customAmount] }) });
 
   async function loadHist() {
     if (hist && Date.now() - histAt < 5 * 60e3) return;
@@ -97,19 +98,33 @@
   const ST_VIA = { kyber: "KyberSwap 聚合", curve: "Curve stETH/ETH", curve_ng: "Curve stETH-ng" };
   function stSection(rt) {
     if (!rt || !rt.rows.length) return "";
-    const n = (x, d) => (x == null ? "—" : x.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }));
-    const days = rt.waitDays != null ? rt.waitDays.toFixed(1) : "—";
-    const rows = rt.rows.map((r) => `<tr><td class="num">${r.eth}</td><td class="r num">${n(r.steth, 4)}</td>
-      <td class="r num">${n(r.back, 4)}</td>
-      <td class="r num">${r.diff == null ? "—" : `${r.diff >= 0 ? "+" : "−"}${n(Math.abs(r.diff), 4)}`}<span class="vmeta">${fmt(r.bps, 1)} bps</span></td>
-      <td class="r num">${r.apr == null ? "—" : `${r.apr >= 0 ? "" : "−"}${Math.abs(r.apr * 100).toFixed(2)}%`}</td>
-      <td class="dim" style="padding-left:16px">${ST_VIA[r.via] || "—"}</td></tr>`).join("");
-    return `<div class="sect"><h3>买入 stETH → Lido 提现赎回 <span class="cnt">1:1 兑付 · 排队约 ${days} 天（Lido 估计）</span></h3>
-      <div class="tw"><table class="src"><thead><tr><th>投入 ETH</th><th class="r">买到 stETH</th><th class="r">赎回得 ETH</th>
-        <th class="r">差额 ETH</th><th class="r">折合年化</th><th style="padding-left:16px">买入路由</th></tr></thead><tbody>${rows}</tbody></table></div>
-      <p class="empty" style="margin-top:8px">Lido 提现队列按 1:1 兑付、不收提现费；申请之后这部分 stETH 不再计收益，排队时间取决于提现需求和协议模式（通常 1–5 天）。
-      折合年化 = 差额 ÷ 排队天数 × 365，可以和 stETH 质押 APR（近 7 天平均 ${rt.apr != null ? (rt.apr * 100).toFixed(2) + "%" : "—"}）对比。
-      要两笔主网交易（申请、领取），按现在的 gas 价合计约 ${rt.gasEth != null ? rt.gasEth.toFixed(5) : "—"} ETH，没有计入；单笔申请上限 1000 stETH，更大的会自动拆成多笔。</p></div>`;
+    const n = (x, d = 4) => (x == null || !Number.isFinite(x) ? "—" : x.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }));
+    const signed = (x, d = 4) => x == null ? "—" : `${x >= 0 ? "+" : "−"}${n(Math.abs(x), d)}`;
+    const pct = (x) => x == null ? "—" : `${signed(x * 100, 2)}%`;
+    const days = (x) => x == null ? "—" : n(x, 2) + " 天";
+    const rows = rt.rows.map((r) => {
+      const e = r.expected, c = r.conservative;
+      const state = r.signal === "scenario_pass" ? "情景达标 · 待校准" : r.signal === "below_threshold" ? "未达情景门槛" : "资料不足 · 不提示操作";
+      const waitLabel = r.waitSource === "manual" ? "手动假设" : r.waitSource === "official_unvalidated" ? "官方参考 · 未验证" : "参考时间不可用";
+      return `<tr><td class="num">${n(r.eth, 2)}<span class="vmeta">买到 ${n(r.steth)} stETH</span></td>
+        <td class="r num">${days(r.totalDays)}<span class="vmeta">${waitLabel}<br>保守情景 ${days(r.conservativeDays)}</span></td>
+        <td class="r num">${signed(e && e.profit)}<span class="vmeta">保守 ${signed(c && c.profit)}<br>净回报 ${pct(e && e.netReturn)}</span></td>
+        <td class="r num">${pct(e && e.apr)}<span class="vmeta">保守 ${pct(c && c.apr)}<br>较质押 ${signed(c && c.apr != null && rt.apr != null ? (c.apr - rt.apr) * 100 : null, 2)} 百分点</span></td>
+        <td><b class="${r.signal === "scenario_pass" ? "scenario-match" : "dim"}">${state}</b><span class="vmeta">${esc(ST_VIA[r.via] || "无报价")}<br>${r.quoteAt ? "报价 " + hm(r.quoteAt) : ""}</span></td></tr>
+        <tr class="redemption-detail"><td colspan="5">全部投入 ${n(e && e.cost)} ETH；gas 预算 ${n(r.gasEth, 5)} ETH（保守 ×${rt.options.gasMultiplier}）；
+          同周期质押收益 ${signed(e && e.stakingProfit)} ETH；保守情景超额 ${signed(c && c.excessProfit)} ETH。
+          ${r.gasUnits ? `按 ${r.gasUnits.requests} 个 ≤1000 stETH 申请预算 gas；` : ""}${r.eta && r.eta.calculatedAt ? `官方参考响应计算 ${hm(r.eta.calculatedAt)}；读取 ${hm(r.eta.fetchedAt)}；` : ""}${esc(r.reasons.join("；"))}</td></tr>`;
+    }).join("");
+    return `<div class="sect"><h3>买入 stETH → 立即申请 Lido 赎回 <span class="cnt">净收益情景 · 独立等待模型待校准</span></h3>
+      <p class="empty">链上未完成队列：${rt.queue && rt.queue.unfinalizedSteth != null ? n(rt.queue.unfinalizedSteth, 0) + " stETH" : "不可用"}；${rt.queue ? `源区块 #${rt.queue.blockNumber} · ${hm(rt.queue.blockTimestamp)} · 读取 ${hm(rt.queue.at)}${Date.now() / 1000 - rt.queue.blockTimestamp > rt.options.quoteMaxAgeSeconds ? " · 已过期" : ""}` : "源区块时间不可用"}。官方 API 内部队列/validator 快照时间：未暴露，时效未知。</p>
+      <p class="redemption-warning">官方时间与赎回页面来自同一估计体系，不能当作准确承诺。当前不发出“可以执行”的提示；情景达标也需要独立历史验证与成交前复核。</p>
+      <div class="tw"><table class="src redemption-table"><thead><tr><th>买入投入 ETH</th><th class="r">全周期等待</th><th class="r">净利润 ETH</th><th class="r">净简单年化 APR</th><th>页面提示</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="empty">质押对照：Lido 近 7 天平均 APR ${rt.apr == null ? "不可用" : n(rt.apr * 100, 2) + "%"}${rt.aprAt ? "（读取 " + hm(rt.aprAt) + "）" : ""}。
+        净利润 = 赎回 ETH − 买入投入 − gas − 额外成本；净回报分母包含所有投入；简单年化 = 净回报 ×365÷全周期天数。排队 stETH 不再获得质押收益。<br>
+        报价已含池费及该数量的价格冲击，不重复扣费；保守情景另留 ${rt.options.slippageBps} bps 成交滑点、${rt.options.haircutBps} bps 兑付折损、较长等待与 gas 预算。
+        名义 1:1 兑付可能受亏损/罚没与取整影响；未来 gas 和等待均可能更差。保守情景是压力假设，不是置信区间。<br>
+        门槛示例：保守净利润 ≥${rt.options.minProfitEth} ETH、净回报 ≥${rt.options.minNetBps} bps、简单年化 ≥质押 APR +${rt.options.premiumPctPoints} 个百分点。
+        <a href="#st-settings">修改本页数量和情景参数</a>。不展示假设持续重复交易的复利 APY；不新增手机推送或自动交易。</p></div>`;
   }
 
   /* ---------- 反方向：Coinbase 质押包装 → Base 卖出（溢价时看这个） ---------- */
@@ -220,8 +235,9 @@
     busy = true;
     $("spin").hidden = false; $("refresh").disabled = true; $("rlabel").textContent = "读取中";
     try {
-      const [snap] = await Promise.all([C.collect(CFG), loadHist()]);
-      const res = C.evaluate(snap, CFG);
+      const cfg = currentCfg();
+      const [snap] = await Promise.all([C.collect(cfg), loadHist()]);
+      const res = C.evaluate(snap, cfg);
       $("cards").innerHTML = C.ASSETS.map((s) => card(s, res[s], snap)).join("");
       for (const s of C.ASSETS) drawSpark(s, res[s], snap.ts);
       verdict(res, snap);
@@ -238,6 +254,34 @@
     CFG = await (await fetch("config.json", { cache: "no-store" })).json();
     staticBits();
     $("refresh").addEventListener("click", run);
+    const form = $("st-settings");
+    const fill = () => {
+      for (const el of form.elements) {
+        if (!el.name) continue;
+        const v = el.name === "amount" ? customAmount : (stOverrides[el.name] ?? CFG.stRedeem[el.name]);
+        el.value = v == null ? "" : String(v);
+      }
+    };
+    fill();
+    form.addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      if (busy) { $("st-settings-status").textContent = "正在读取，请稍后再应用参数"; return; }
+      if (!form.reportValidity()) return;
+      const next = {};
+      for (const el of form.elements) if (el.name && el.name !== "amount") next[el.name] = el.value.trim() === "" ? null : Number(el.value);
+      if (next.manualConservativeDays != null && next.manualWaitDays != null && next.manualConservativeDays < next.manualWaitDays) {
+        $("st-settings-status").textContent = "保守等待不能短于手动预计等待"; return;
+      }
+      customAmount = form.elements.amount.value.trim() === "" ? null : Number(form.elements.amount.value);
+      stOverrides = next;
+      $("st-settings-status").textContent = "已应用；只在本页内存保留，刷新页面会恢复通用示例";
+      run();
+    });
+    $("st-reset").addEventListener("click", () => {
+      if (busy) { $("st-settings-status").textContent = "正在读取，请稍后再重置"; return; }
+      customAmount = null; stOverrides = {}; fill();
+      $("st-settings-status").textContent = "已恢复通用示例参数"; run();
+    });
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) { clearInterval(timer); timer = null; }
       else if (!timer) { run(); timer = setInterval(run, CFG.refreshSeconds * 1000); }
