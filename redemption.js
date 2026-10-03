@@ -36,11 +36,12 @@
     const requests = Math.ceil(got / 1000);
     return { swap, requests, total: swap + o.approvalGasUnits + requests * (o.requestGasUnits + o.claimGasUnits) };
   }
-  function selectQuote(q, x, cfg) {
+  function selectQuote(q, x, cfg, now = Math.floor(Date.now() / 1000)) {
     const o = options(cfg);
     const candidates = ["kyber", "curve", "curve_ng"].map((via) => {
       const got = q[via] && q[via][x];
-      if (!finite(got) || got <= 0) return null;
+      const meta = q.quoteMeta && q.quoteMeta[via] && q.quoteMeta[via][x];
+      if (!finite(got) || got <= 0 || !meta || !fresh(meta.quotedAt, now, o.quoteMaxAgeSeconds)) return null;
       const gas = gasUnits(q, via, x, got, o);
       const gasEth = finite(q.gasGwei) && q.gasGwei > 0 ? q.gasGwei * 1e-9 * gas.total : null;
       return { via, got, gas, gasEth, score: got - (gasEth || 0) };
@@ -83,9 +84,9 @@
       && Object.values(o.swapGasUnits).every((v) => finite(v) && v > 0)
       && [o.manualWaitDays, o.manualConservativeDays].every((v) => v == null || finite(v) && v > 0);
     const rows = sizes.map((x) => {
-      const best = finite(x) && x > 0 ? selectQuote(q, x, cfg) : null;
+      const best = finite(x) && x > 0 ? selectQuote(q, x, cfg, now) : null;
       const empty = { eth: x, steth: null, back: null, diff: null, bps: null, apr: null, via: null,
-        expected: null, conservative: null, waitDays: null, conservativeDays: null, signal: "unavailable", reasons: ["无有效买入报价"] };
+        expected: null, conservative: null, waitDays: null, conservativeDays: null, signal: "unavailable", actionable: false, reasons: ["无新鲜有效买入报价"] };
       if (!best) return empty;
       const { via, got, gas, gasEth } = best;
       const meta = q.quoteMeta && q.quoteMeta[via] && q.quoteMeta[via][x];
@@ -102,6 +103,7 @@
       const conservative = valid ? economics(x, got * (1 - o.slippageBps / 1e4) * (1 - o.haircutBps / 1e4),
         gasEth == null ? null : gasEth * o.gasMultiplier, o.extraCostEth, conservativeDays, apr) : null;
       const reasons = [];
+      if (q.refreshFailed) reasons.push("本轮读取失败，旧快照仅供参考");
       if (!valid) reasons.push("情景参数无效");
       if (!meta || !fresh(meta.quotedAt, now, o.quoteMaxAgeSeconds)) reasons.push("买入报价缺少时间或已过期");
       if (!fresh(q.gasAt, now, o.quoteMaxAgeSeconds) || gasEth == null) reasons.push("gas 价格不可用或已过期");

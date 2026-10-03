@@ -13,10 +13,13 @@ const html = fs.readFileSync(require.resolve("../index.html"), "utf8");
 form.elements = [...html.matchAll(/<input name="([^"]+)"/g)].map((m) => ({ name: m[1], value: "" }));
 for (const el of form.elements) form.elements[el.name] = el;
 form.reportValidity = () => true;
-let unavailable = false, quotes = 0;
+let unavailable = false, fail = false, quotes = 0, currentTime = Date.now();
+class TestDate extends Date { static now() { return currentTime; } }
+const intervals = [];
 const collect = async (cfg) => {
   quotes++;
-  const now = Math.floor(Date.now() / 1000), st = { kyber: {}, quoteMeta: { kyber: {} }, waits: {}, gasGwei: 10, gasAt: now, apr: 3, aprAt: now,
+  if (fail) throw new Error("test source failed");
+  const now = Math.floor(TestDate.now() / 1000), st = { kyber: {}, quoteMeta: { kyber: {} }, waits: {}, gasGwei: 10, gasAt: now, apr: 3, aprAt: now,
     queue: { at: now, blockTimestamp: now, blockNumber: 25000000, bunker: false, paused: false, unfinalizedSteth: 10000 } };
   for (const x of cfg.stRedeem.sizes) {
     const got = x * 1.001; st.kyber[x] = got; st.quoteMeta.kyber[x] = { quotedAt: now };
@@ -26,7 +29,7 @@ const collect = async (cfg) => {
 };
 const ctx = { window: { PegCore: Object.assign({}, Core, { collect }) }, document: { getElementById: element, addEventListener() {}, hidden: false },
   fetch: async (url) => url === "config.json" ? { json: async () => config } : { ok: false },
-  setInterval() { return 1; }, clearInterval() {}, Date, console };
+  setInterval(fn, ms) { intervals.push({ fn, ms }); return intervals.length; }, clearInterval() {}, Date: TestDate, console };
 const flush = () => new Promise((r) => setImmediate(r));
 const submit = () => form.events.submit({ preventDefault() {} });
 (async () => {
@@ -51,5 +54,14 @@ const submit = () => form.events.submit({ preventDefault() {} });
   assert.ok(!element("cards").innerHTML.includes("Infinity"));
   const before = quotes; const p = element("refresh").events.click(); element("refresh").events.click(); await p;
   assert.equal(quotes, before + 1, "repeated refresh does not duplicate collection");
-  console.log("UI controller smoke passed: render, decimal amount, invalid/manual scenario, refresh/reset, edit preservation, unavailable ETA, double refresh");
+  unavailable = false; await element("refresh").events.click();
+  assert.ok(element("cards").innerHTML.includes("情景达标 · 待校准"));
+  currentTime += 301000;
+  intervals.find((x) => x.ms === 10000).fn();
+  assert.ok(element("st-redemption").outerHTML.includes("已过期"));
+  assert.ok(!element("st-redemption").outerHTML.includes("情景达标 · 待校准"));
+  fail = true; await element("refresh").events.click();
+  assert.ok(element("st-redemption").outerHTML.includes("无新鲜有效买入报价"));
+  assert.ok(!element("st-redemption").outerHTML.includes("情景达标 · 待校准"));
+  console.log("UI controller smoke passed: render, decimal amount, invalid/manual scenario, refresh/reset, edit preservation, unavailable ETA, double refresh, wall-clock expiry and failed refresh");
 })().catch((e) => { console.error(e); process.exitCode = 1; });

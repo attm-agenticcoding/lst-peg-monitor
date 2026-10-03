@@ -192,7 +192,7 @@ t("Coinbase 包装 → Base 卖出：包装得到 X / 兑换率 枚 cbETH，取�
 
 t("买 stETH → Lido 赎回：旧快照不伪装成新鲜净年化", () => {
   const cfg = Object.assign({}, CFG, { stRedeem: { sizes: [50, 300] } });
-  const q = { kyber: { 50: 50.0159, 300: 300.0878 }, waitMs: 293623000, apr: 2.261, gasGwei: 0.088 };
+  const q = { kyber: { 50: 50.0159, 300: 300.0878 }, quoteMeta: { kyber: { 50: { quotedAt: Date.now() / 1000 }, 300: { quotedAt: Date.now() / 1000 } } }, waitMs: 293623000, apr: 2.261, gasGwei: 0.088 };
   const r = C.stRedeem(q, cfg);
   assert.strictEqual(r.rows[0].via, "kyber");
   assert.ok(Math.abs(r.rows[0].bps - 3.18) < 0.01); // 保留历史 rt 的原始折价口径

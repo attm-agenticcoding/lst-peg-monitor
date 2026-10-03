@@ -12,7 +12,7 @@
     { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
   const span = (h) => (h < 48 ? `${h} 小时` : `${Math.round(h / 24)} 天`);
   const KIND = { agg: "聚合", dex: "链上", cex: "交易所" };
-  let CFG = null, hist = null, histAt = 0, busy = false, timer = null, stOverrides = {}, customAmount = null;
+  let CFG = null, hist = null, histAt = 0, busy = false, timer = null, stOverrides = {}, customAmount = null, lastSnap = null, lastCfg = null, refreshFailed = false;
   const currentCfg = () => Object.assign({}, CFG, { stRedeem: Object.assign({}, CFG.stRedeem, stOverrides, customAmount == null ? {} : { sizes: [customAmount] }) });
 
   async function loadHist() {
@@ -115,7 +115,7 @@
           同周期质押收益 ${signed(e && e.stakingProfit)} ETH；保守情景超额 ${signed(c && c.excessProfit)} ETH。
           ${r.gasUnits ? `按 ${r.gasUnits.requests} 个 ≤1000 stETH 申请预算 gas；` : ""}${r.eta && r.eta.calculatedAt ? `官方参考响应计算 ${hm(r.eta.calculatedAt)}；读取 ${hm(r.eta.fetchedAt)}；` : ""}${esc(r.reasons.join("；"))}</td></tr>`;
     }).join("");
-    return `<div class="sect"><h3>买入 stETH → 立即申请 Lido 赎回 <span class="cnt">净收益情景 · 独立等待模型待校准</span></h3>
+    return `<div class="sect" id="st-redemption"><h3>买入 stETH → 立即申请 Lido 赎回 <span class="cnt">净收益情景 · 独立等待模型待校准</span></h3>
       <p class="empty">链上未完成队列：${rt.queue && rt.queue.unfinalizedSteth != null ? n(rt.queue.unfinalizedSteth, 0) + " stETH" : "不可用"}；${rt.queue ? `源区块 #${rt.queue.blockNumber} · ${hm(rt.queue.blockTimestamp)} · 读取 ${hm(rt.queue.at)}${Date.now() / 1000 - rt.queue.blockTimestamp > rt.options.quoteMaxAgeSeconds ? " · 已过期" : ""}` : "源区块时间不可用"}。官方 API 内部队列/validator 快照时间：未暴露，时效未知。</p>
       <p class="redemption-warning">官方时间与赎回页面来自同一估计体系，不能当作准确承诺。当前不发出“可以执行”的提示；情景达标也需要独立历史验证与成交前复核。</p>
       <div class="tw"><table class="src redemption-table"><thead><tr><th>买入投入 ETH</th><th class="r">全周期等待</th><th class="r">净利润 ETH</th><th class="r">净简单年化 APR</th><th>页面提示</th></tr></thead><tbody>${rows}</tbody></table></div>
@@ -229,6 +229,14 @@
       .map(([k, v]) => `<li>${k}：<code>${v}</code></li>`).join("");
   }
 
+  // Expire scenario badges against wall-clock time, including slow or failed refreshes.
+  function redrawRedemption() {
+    const el = $("st-redemption");
+    if (!el || !lastSnap || !lastCfg) return;
+    const q = Object.assign({}, lastSnap.st, { refreshFailed });
+    el.outerHTML = stSection(C.stRedeem(q, lastCfg, Math.floor(Date.now() / 1000)));
+  }
+
   /* ---------- 主循环 ---------- */
   async function run() {
     if (busy) return;
@@ -238,11 +246,13 @@
       const cfg = currentCfg();
       const [snap] = await Promise.all([C.collect(cfg), loadHist()]);
       const res = C.evaluate(snap, cfg);
+      lastSnap = snap; lastCfg = cfg; refreshFailed = false;
       $("cards").innerHTML = C.ASSETS.map((s) => card(s, res[s], snap)).join("");
       for (const s of C.ASSETS) drawSpark(s, res[s], snap.ts);
       verdict(res, snap);
       $("clock").textContent = new Date().toLocaleTimeString("zh-CN", { hour12: false });
     } catch (e) {
+      refreshFailed = true; redrawRedemption();
       $("vtitle").textContent = "读取失败";
       $("vnote").textContent = String((e && e.message) || e);
     } finally {
@@ -288,6 +298,7 @@
     });
     await run();
     timer = setInterval(run, CFG.refreshSeconds * 1000);
+    setInterval(redrawRedemption, 10000);
   }
   boot().catch((e) => { $("vtitle").textContent = "初始化失败"; $("vnote").textContent = String(e); });
 })();

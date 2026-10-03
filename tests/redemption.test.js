@@ -96,6 +96,13 @@ t("best route selected by nominal gas-adjusted proceeds", () => {
   q.waits[100] = wait(100.099);
   assert.equal(row(q).via, "curve");
 });
+t("stale high-output Kyber quote falls back to fresh Curve before ETA selection", () => {
+  const q = data(); q.quoteMeta.kyber[100].quotedAt = now - 181;
+  q.curve = { 100: 100.05 }; q.quoteMeta.curve = { 100: { quotedAt: now } };
+  q.waits[100] = wait(100.05);
+  assert.equal(R.selectQuote(q, 100, cfg, now).via, "curve");
+  assert.equal(row(q).via, "curve"); assert.equal(row(q).waitSource, "official_unvalidated");
+});
 t("missing gas does not pretend net equals gross", () => {
   const q = data(); delete q.gasGwei;
   assert.equal(row(q).expected, null); assert.equal(row(q).signal, "unavailable");
