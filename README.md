@@ -17,6 +17,7 @@ stETH（含 wstETH）与 cbETH 的脱锚监测看板：https://attm-agenticcodin
 `GITHUB_TOKEN` 触发的 `workflow_dispatch` 会真的起新 run，所以接力链不需要任何私钥；公共仓库的 Actions 分钟数不计费。
 
 ```bash
+node tests/lido-cutoff.test.js     # 固定批次情景、时点兼容性、净收益门禁
 node tests/core.test.js            # 原有 peg/guard 逻辑
 node tests/redemption.test.js      # 净收益/等待/质量门槛
 node tests/collect-redemption.test.js # mock API 集成，无外部调用
@@ -65,6 +66,14 @@ gh workflow run snapshot.yml       # 手动拉起接力链（看门狗也会自�
 - 赎回：Coinbase 公开接口 `wrapped-assets/CBETH` 的 `conversion_rate`（与主网合约 `exchangeRate()` 一致；取不到时退回链上值）。unwrap 不收费。
 - 同一个接口还给 `redeem_time_estimate_days`（赎回排队天数估计）和 `apy`。赎回得到的是 Coinbase 上的质押 ETH，要排以太坊退出队列才变成可用 ETH；表里的「折合年化」= 差额 ÷ 排队天数 × 365，用来和质押年化对比。
 - cbETH 可以直接走 Base 网络充值到 Coinbase（2026-08-17 起 Coinbase 只保留 Ethereum 和 Base 两条网络）。Base 上的 gas 不到 1 美分，没有计入。
+
+## Lido 六档批次情景（固定研究快照）
+
+页面已接入 2026-10-04 16:16:23 UTC / 区块 26120128 的完整队列与认证 BeaconState 情景。100 / 200 / 300 / 500 / 1000 / 1500 stETH 分别是假设从相同队尾加入；不是个人仓位，也不是六笔累计。主情景均为 10 月 7 日参考报告，重负载压力为 10 月 9 日；参考时间为 12:00:11 UTC，发布和领取在后。这不是实时 ETA、概率区间或最坏上限。
+
+独立卡片展示来源时间、快照年龄、拆单、每日 funding cutoff 和净收益/同周期质押对照。超过 5 分钟或买入实际 stETH 数量、队列块、quote/gas/APR 不兼容时，批次情景净收益留空；不会用当前时钟缩短原情景周期。刷新仅重新读取已发布的快照文件，不重新跑共识模型。原实时价格采样及预警不变。
+
+数据和方法：[固定快照](data/lido-cutoff-snapshot.json)、[方法与验证边界](docs/lido-cutoff-scenarios.md)。18 FIFO 测试、8 共识测试、291 集成断言与 20,319 区块回放是机制验证，不是样本外预测验证。
 
 ## 买入 stETH → Lido 提现赎回（净收益情景）
 

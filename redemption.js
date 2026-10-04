@@ -76,7 +76,7 @@
     const o = options(cfg), sizes = o.sizes || [];
     if (!q || !sizes.length) return null;
     now = finite(now) ? now : Math.floor(Date.now() / 1000);
-    const apr = finite(q.apr) && q.apr >= 0 ? q.apr / 100 : null;
+    const apr = finite(q.apr) && q.apr >= 0 && fresh(q.aprAt, now, o.aprMaxAgeSeconds) ? q.apr / 100 : null;
     const valid = [o.approvalGasUnits, o.requestGasUnits, o.claimGasUnits, o.extraHours, o.extraCostEth,
       o.minProfitEth, o.minNetBps, o.premiumPctPoints].every((v) => finite(v) && v >= 0)
       && [o.gasMultiplier, o.waitMultiplier].every((v) => finite(v) && v >= 1)
@@ -88,7 +88,8 @@
       const empty = { eth: x, steth: null, back: null, diff: null, bps: null, apr: null, via: null,
         expected: null, conservative: null, waitDays: null, conservativeDays: null, signal: "unavailable", actionable: false, reasons: ["无新鲜有效买入报价"] };
       if (!best) return empty;
-      const { via, got, gas, gasEth } = best;
+      const { via, got, gas } = best;
+      const gasEth = fresh(q.gasAt, now, o.quoteMaxAgeSeconds) ? best.gasEth : null;
       const meta = q.quoteMeta && q.quoteMeta[via] && q.quoteMeta[via][x];
       const eta = q.waits && q.waits[x];
       const amountMatches = eta && finite(eta.amountSteth) && Math.abs(eta.amountSteth - got) <= Math.max(1e-9, got * 1e-10);

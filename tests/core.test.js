@@ -198,7 +198,7 @@ t("买 stETH → Lido 赎回：旧快照不伪装成新鲜净年化", () => {
   assert.ok(Math.abs(r.rows[0].bps - 3.18) < 0.01); // 保留历史 rt 的原始折价口径
   assert.strictEqual(r.rows[0].apr, null); // 旧单一等待时间没有数量和时间证据
   assert.strictEqual(r.rows[0].actionable, false);
-  assert.strictEqual(r.apr, 0.02261);
+  assert.strictEqual(r.apr, null); // 缺少时间证据的质押 APR 不进入对照
 });
 
 t("toRecord 字段齐全", () => {

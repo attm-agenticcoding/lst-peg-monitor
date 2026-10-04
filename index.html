@@ -184,6 +184,23 @@ table.src td:first-child{min-width:200px}
 .redemption-table{min-width:700px!important}
 .redemption-detail td{font-size:11px;color:var(--ink-3);white-space:normal!important;padding-bottom:12px!important}
 .redemption-warning{border-left:3px solid var(--watch);background:var(--watch-bg);padding:10px 12px;font-size:12px;color:var(--ink-2)}
+.cutoff-panel{padding:22px 24px;margin-top:20px}
+.cutoff-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.cutoff-head h2{font-size:18px;margin:0}
+.cutoff-status{font-size:12px}
+.cutoff-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0}
+.cutoff-summary>div{border:1px solid var(--line);border-radius:8px;padding:14px}
+.cutoff-summary span{display:block;color:var(--ink-2);font-size:12px}
+.cutoff-summary strong{display:block;font-size:30px;margin-top:5px}
+.cutoff-summary small{font-size:12px;font-weight:400;color:var(--ink-3)}
+.cutoff-details{border-top:1px solid var(--line);padding-top:12px;margin-top:14px}
+.cutoff-details summary{cursor:pointer;font-size:13px;font-weight:600;margin-bottom:10px}
+.cutoff-notes{font-size:12px;color:var(--ink-2);padding-left:20px;line-height:1.8}
+table.cutoff-table td:first-child{min-width:125px}
+table.cutoff-economics{min-width:850px}
+table.cutoff-economics td:first-child{min-width:65px}
+table.cutoff-economics td:last-child{white-space:normal;min-width:220px;font-size:11px}
+@media(max-width:640px){.cutoff-panel{padding:16px}.cutoff-summary{grid-template-columns:1fr}.cutoff-summary strong{font-size:26px}}
 .scenario-match{color:var(--watch);font-size:12px}
 .st-settings{padding:14px 16px;margin-top:16px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
 .st-settings summary{cursor:pointer;font-size:13px;font-weight:600}
@@ -224,7 +241,7 @@ table.src td:first-child{min-width:200px}
         <label>手动预计等待天数（空用官方参考）<input name="manualWaitDays" type="number" min="0.01" max="3650" step="0.01" placeholder="不可用时保持空白"></label>
         <label>手动保守等待天数（空用倍数）<input name="manualConservativeDays" type="number" min="0.01" max="3650" step="0.01"></label>
         <label>保守等待倍数（非统计区间）<input name="waitMultiplier" type="number" min="1" max="100" step="0.1" required></label>
-        <label>申请/领取额外延迟（小时）<input name="extraHours" type="number" min="0" max="8760" step="0.1" required></label>
+        <label>发布/申请/领取额外延迟（小时）<input name="extraHours" type="number" min="0" max="8760" step="0.1" required></label>
         <label>保守 gas 倍数<input name="gasMultiplier" type="number" min="1" max="100" step="0.1" required></label>
         <label>额外成交滑点（bps）<input name="slippageBps" type="number" min="0" max="9999" step="0.1" required></label>
         <label>兑付折损压力（bps）<input name="haircutBps" type="number" min="0" max="9999" step="0.1" required></label>
@@ -236,6 +253,8 @@ table.src td:first-child{min-width:200px}
       <div class="st-actions"><button class="refresh" type="submit">应用并重新取报价</button><button class="refresh" id="st-reset" type="button">恢复示例</button><span id="st-settings-status" role="status"></span></div>
     </form>
   </details>
+
+  <section class="card cutoff-panel" id="lido-cutoff" aria-label="Lido 固定快照批次情景"><p class="empty">正在读取固定批次情景…</p></section>
 
   <div id="cards"></div>
 
@@ -265,7 +284,7 @@ table.src td:first-child{min-width:200px}
       <h4>常态</h4>
       <p>主报价近 30 天的分布：先每小时取中位数，再对小时序列取中位数（常态）和 p10~p90（常见区间）。新口径从上线起开始积累，满 12 小时出数。</p>
       <h4>刷新节奏</h4>
-      <p>页面本身每 90 秒直读一次链上和各家 API，看到的就是实时数。后台由 GitHub Actions 每 2 分钟采样一次，<b>采样当场判断预警、直接推送到手机</b>（ntfy），所以从偏离出现到收到推送最多约 2 分钟；历史每 10 分钟同步到这个页面。后台用的是和页面同一份 <code>core.js</code>。另有每小时一次的巡检，只负责发现后台本身停了。</p>
+      <p>实时价格每 90 秒尝试直读链上和各家 API，失败或过期时会标记。Lido 批次情景是另列来源时间的固定快照，刷新页面不会自动重算。后台由 GitHub Actions 每 2 分钟采样一次，<b>采样当场判断预警、直接推送到手机</b>（ntfy），所以从偏离出现到收到推送最多约 2 分钟；历史每 10 分钟同步到这个页面。后台用的是和页面同一份 <code>core.js</code>。另有每小时一次的巡检，只负责发现后台本身停了。</p>
       <h4>已知的坑</h4>
       <ul>
         <li>Curve 池的 coin 顺序每轮用 <code>coins(0)</code> 实时验证，不写死 —— 顺序反了会静默返回倒数，看起来只像几个 bps 的误差。</li>
@@ -280,11 +299,12 @@ table.src td:first-child{min-width:200px}
 
   <footer>
     阈值由我自己设定，这不是投资建议。<br>
-    数值在浏览器里直接向公开节点与各家公开 API 取得，不经过中间服务器。
+    实时行情由浏览器读取公开节点与 API；Lido 批次情景来自单独标注时间的固定研究快照。
   </footer>
 </div>
 <script src="redemption.js"></script>
 <script src="core.js"></script>
+<script src="lido-cutoff.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

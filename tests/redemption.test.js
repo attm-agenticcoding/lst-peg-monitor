@@ -73,6 +73,12 @@ t("stale quote gas APR and missing protocol status suppress signal", () => {
     const q = data(); change(q); assert.equal(row(q).signal, "unavailable");
   }
 });
+t("stale gas blanks net economics; stale APR blanks staking comparison", () => {
+  const q = data(); q.gasAt = now - 181;
+  assert.equal(row(q).expected, null); assert.equal(row(q).conservative, null);
+  const a = data(); a.aprAt = now - 86401;
+  assert.equal(row(a).expected.stakingProfit, null); assert.equal(row(a).expected.excessProfit, null);
+});
 t("paused or bunker protocol status suppresses signal", () => {
   for (const key of ["paused", "bunker"]) { const q = data(); q.queue[key] = true; assert.equal(row(q).signal, "unavailable"); }
 });

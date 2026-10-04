@@ -2,7 +2,7 @@
  * 另外每 5 分钟读一次 data/history.json：算常态、画 7 天走势、看后台快照是否新鲜。 */
 (() => {
   "use strict";
-  const C = window.PegCore;
+  const C = window.PegCore, Cutoff = window.LidoCutoff;
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const fmt = C.fmt;
@@ -13,7 +13,38 @@
   const span = (h) => (h < 48 ? `${h} 小时` : `${Math.round(h / 24)} 天`);
   const KIND = { agg: "聚合", dex: "链上", cex: "交易所" };
   let CFG = null, hist = null, histAt = 0, busy = false, timer = null, stOverrides = {}, customAmount = null, lastSnap = null, lastCfg = null, refreshFailed = false;
+  let cutoffSnapshot = null, cutoffLoadFailed = false, cutoffLoading = false;
   const currentCfg = () => Object.assign({}, CFG, { stRedeem: Object.assign({}, CFG.stRedeem, stOverrides, customAmount == null ? {} : { sizes: [customAmount] }) });
+
+  function redrawCutoff() {
+    const panel = $("lido-cutoff");
+    if (!panel || !Cutoff || !CFG) return;
+    const opened = ["cutoff-details", "cutoff-economics"].filter((id) => $(id) && $(id).open);
+    panel.innerHTML = Cutoff.render(Cutoff.evaluate(cutoffSnapshot,
+      lastSnap ? Object.assign({}, lastSnap.st, { refreshFailed }) : null,
+      lastCfg || currentCfg(), Date.now() / 1000, cutoffLoadFailed));
+    for (const id of opened) if ($(id)) $(id).open = true;
+  }
+  async function loadCutoff() {
+    if (cutoffLoading) return;
+    cutoffLoading = true;
+    const controller = new AbortController();
+    let timeout;
+    try {
+      const next = await Promise.race([
+        (async () => {
+          const r = await fetch("data/lido-cutoff-snapshot.json", { cache: "no-store", signal: controller.signal });
+          if (!r.ok) throw new Error("snapshot unavailable");
+          return r.json();
+        })(),
+        new Promise((_, reject) => { timeout = setTimeout(() => { controller.abort(); reject(new Error("snapshot timeout")); }, 8000); }),
+      ]);
+      if (!Cutoff || !Cutoff.validate(next)) throw new Error("invalid snapshot");
+      cutoffSnapshot = next; cutoffLoadFailed = false;
+    } catch { cutoffLoadFailed = true; }
+    finally { clearTimeout(timeout); cutoffLoading = false; }
+    redrawCutoff();
+  }
 
   async function loadHist() {
     if (hist && Date.now() - histAt < 5 * 60e3) return;
@@ -244,15 +275,16 @@
     $("spin").hidden = false; $("refresh").disabled = true; $("rlabel").textContent = "读取中";
     try {
       const cfg = currentCfg();
+      void loadCutoff(); // Independent static file must never hold live quotes or refresh controls.
       const [snap] = await Promise.all([C.collect(cfg), loadHist()]);
       const res = C.evaluate(snap, cfg);
-      lastSnap = snap; lastCfg = cfg; refreshFailed = false;
+      lastSnap = snap; lastCfg = cfg; refreshFailed = false; redrawCutoff();
       $("cards").innerHTML = C.ASSETS.map((s) => card(s, res[s], snap)).join("");
       for (const s of C.ASSETS) drawSpark(s, res[s], snap.ts);
       verdict(res, snap);
       $("clock").textContent = new Date().toLocaleTimeString("zh-CN", { hour12: false });
     } catch (e) {
-      refreshFailed = true; redrawRedemption();
+      refreshFailed = true; redrawRedemption(); redrawCutoff();
       $("vtitle").textContent = "读取失败";
       $("vnote").textContent = String((e && e.message) || e);
     } finally {
@@ -298,7 +330,7 @@
     });
     await run();
     timer = setInterval(run, CFG.refreshSeconds * 1000);
-    setInterval(redrawRedemption, 10000);
+    setInterval(() => { redrawRedemption(); redrawCutoff(); }, 10000);
   }
   boot().catch((e) => { $("vtitle").textContent = "初始化失败"; $("vnote").textContent = String(e); });
 })();
