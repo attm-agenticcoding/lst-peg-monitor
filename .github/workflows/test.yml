@@ -1,0 +1,19 @@
+name: tests
+on:
+  pull_request:
+    paths: ['**.js', 'config.json', 'data/lido-cutoff-snapshot.json', 'index.html', '.github/workflows/test.yml']
+  push:
+    branches: ['main', 'feat/steth-redemption-estimator']
+    paths: ['**.js', 'config.json', 'data/lido-cutoff-snapshot.json', 'index.html', '.github/workflows/test.yml']
+permissions:
+  contents: read
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node --check app.js && node --check core.js && node --check redemption.js && node --check lido-cutoff.js
+      - run: node tests/core.test.js && node tests/redemption.test.js && node tests/collect-redemption.test.js && node tests/app-redemption.test.js && node tests/lido-cutoff.test.js

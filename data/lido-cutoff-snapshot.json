@@ -1,0 +1,154 @@
+{
+  "schema": 1,
+  "id": "lido-26120128-known-state-v1",
+  "asOf": "2026-10-04T16:16:23Z",
+  "blockNumber": 26120128,
+  "blockHash": "0x2e16104d47adde9a36610c72cf57b6eea262636f2a155aa534ee44be0fe15631",
+  "beaconSlot": 15358880,
+  "beaconStateRoot": "0xa4797903dfc2a2f9e03d808729007afe66378c465ae8ff34cd491e1b3bff5183",
+  "pendingRequests": 479,
+  "pendingSteth": "147365.696918335063465874",
+  "physicalCashEth": "3586.962265060984543582",
+  "maxEconomicAgeSeconds": 300,
+  "live": false,
+  "calibrated": false,
+  "tiers": [
+    {
+      "steth": 100,
+      "split": [
+        100
+      ],
+      "main": {
+        "eligible_report_index": 3,
+        "reference_time_utc": "2026-10-07T12:00:11Z",
+        "elapsed_to_reference_seconds": 243828
+      },
+      "stress": {
+        "eligible_report_index": 5,
+        "reference_time_utc": "2026-10-09T12:00:11Z",
+        "elapsed_to_reference_seconds": 416628
+      }
+    },
+    {
+      "steth": 200,
+      "split": [
+        200
+      ],
+      "main": {
+        "eligible_report_index": 3,
+        "reference_time_utc": "2026-10-07T12:00:11Z",
+        "elapsed_to_reference_seconds": 243828
+      },
+      "stress": {
+        "eligible_report_index": 5,
+        "reference_time_utc": "2026-10-09T12:00:11Z",
+        "elapsed_to_reference_seconds": 416628
+      }
+    },
+    {
+      "steth": 300,
+      "split": [
+        300
+      ],
+      "main": {
+        "eligible_report_index": 3,
+        "reference_time_utc": "2026-10-07T12:00:11Z",
+        "elapsed_to_reference_seconds": 243828
+      },
+      "stress": {
+        "eligible_report_index": 5,
+        "reference_time_utc": "2026-10-09T12:00:11Z",
+        "elapsed_to_reference_seconds": 416628
+      }
+    },
+    {
+      "steth": 500,
+      "split": [
+        500
+      ],
+      "main": {
+        "eligible_report_index": 3,
+        "reference_time_utc": "2026-10-07T12:00:11Z",
+        "elapsed_to_reference_seconds": 243828
+      },
+      "stress": {
+        "eligible_report_index": 5,
+        "reference_time_utc": "2026-10-09T12:00:11Z",
+        "elapsed_to_reference_seconds": 416628
+      }
+    },
+    {
+      "steth": 1000,
+      "split": [
+        1000
+      ],
+      "main": {
+        "eligible_report_index": 3,
+        "reference_time_utc": "2026-10-07T12:00:11Z",
+        "elapsed_to_reference_seconds": 243828
+      },
+      "stress": {
+        "eligible_report_index": 5,
+        "reference_time_utc": "2026-10-09T12:00:11Z",
+        "elapsed_to_reference_seconds": 416628
+      }
+    },
+    {
+      "steth": 1500,
+      "split": [
+        1000,
+        500
+      ],
+      "main": {
+        "eligible_report_index": 3,
+        "reference_time_utc": "2026-10-07T12:00:11Z",
+        "elapsed_to_reference_seconds": 243828
+      },
+      "stress": {
+        "eligible_report_index": 5,
+        "reference_time_utc": "2026-10-09T12:00:11Z",
+        "elapsed_to_reference_seconds": 416628
+      }
+    }
+  ],
+  "dailyCutoffs": [
+    {
+      "referenceTime": "2026-10-05T12:00:11Z",
+      "mainSteth": "0.000000000000000000",
+      "stressSteth": "0.000000000000000000"
+    },
+    {
+      "referenceTime": "2026-10-06T12:00:11Z",
+      "mainSteth": "0.000000000000000000",
+      "stressSteth": "0.000000000000000000"
+    },
+    {
+      "referenceTime": "2026-10-07T12:00:11Z",
+      "mainSteth": "7541.174114849921077708",
+      "stressSteth": "0.000000000000000000"
+    },
+    {
+      "referenceTime": "2026-10-08T12:00:11Z",
+      "mainSteth": "36803.194551070921077708",
+      "stressSteth": "0.000000000000000000"
+    },
+    {
+      "referenceTime": "2026-10-09T12:00:11Z",
+      "mainSteth": "41848.048846979921077708",
+      "stressSteth": "9584.582771778921077708"
+    }
+  ],
+  "validation": {
+    "fifoTests": 18,
+    "consensusTests": 8,
+    "integrationAssertions": 291,
+    "independentReplayedBlocks": 20319,
+    "predictiveOutOfSample": false
+  },
+  "sourceDigests": {
+    "fresh_fixed_snapshot.json": "8ea0948341faf557cc54f578c5c5221afe8dfbda7a8cc664f1b74e0951870616",
+    "integrated_amount_report_scenarios.json": "14861099ed974db72875ea65ec1a5db9db76327014a2d4f988a73d7a9569169c",
+    "scenario_integration_validation.json": "b7eb6ebdab408a8f0857a6b89805b3a3ff86fb3aeb08464a3545ee394e520b2e",
+    "inflow_source/eip4788_state_anchor.json": "c45611cf3f9262ca6a418ba75e99500ca0434816243f4d041f60e29ce5295b4f"
+  }
+}

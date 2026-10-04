@@ -17,7 +17,11 @@ stETH（含 wstETH）与 cbETH 的脱锚监测看板：https://attm-agenticcodin
 `GITHUB_TOKEN` 触发的 `workflow_dispatch` 会真的起新 run，所以接力链不需要任何私钥；公共仓库的 Actions 分钟数不计费。
 
 ```bash
-node tests/core.test.js            # 单测
+node tests/lido-cutoff.test.js     # 固定批次情景、时点兼容性、净收益门禁
+node tests/core.test.js            # 原有 peg/guard 逻辑
+node tests/redemption.test.js      # 净收益/等待/质量门槛
+node tests/collect-redemption.test.js # mock API 集成，无外部调用
+node tests/app-redemption.test.js   # 页面控制器 smoke（不能替代视觉 QA）
 node scripts/snapshot.js --dry-run # 取一份快照看看（需要能连外网）
 python3 -m http.server 8080        # 本地预览（前端要读 config.json，必须起 http）
 gh workflow run snapshot.yml       # 手动拉起接力链（看门狗也会自动拉）
@@ -63,13 +67,21 @@ gh workflow run snapshot.yml       # 手动拉起接力链（看门狗也会自�
 - 同一个接口还给 `redeem_time_estimate_days`（赎回排队天数估计）和 `apy`。赎回得到的是 Coinbase 上的质押 ETH，要排以太坊退出队列才变成可用 ETH；表里的「折合年化」= 差额 ÷ 排队天数 × 365，用来和质押年化对比。
 - cbETH 可以直接走 Base 网络充值到 Coinbase（2026-08-17 起 Coinbase 只保留 Ethereum 和 Base 两条网络）。Base 上的 gas 不到 1 美分，没有计入。
 
-## 买入 stETH → Lido 提现赎回（stETH 卡片里的表）
+## Lido 六档批次情景（固定研究快照）
 
-主网用 50 / 100 / 200 / 300 ETH 买 stETH，再走 Lido 提现队列 1:1 赎回，能拿回多少 ETH。
+页面已接入 2026-10-04 16:16:23 UTC / 区块 26120128 的完整队列与认证 BeaconState 情景。100 / 200 / 300 / 500 / 1000 / 1500 stETH 分别是假设从相同队尾加入；不是个人仓位，也不是六笔累计。主情景均为 10 月 7 日参考报告，重负载压力为 10 月 9 日；参考时间为 12:00:11 UTC，发布和领取在后。这不是实时 ETA、概率区间或最坏上限。
 
-- 买入：KyberSwap 主网聚合报价（ETH → stETH）和 Curve 两个池子的直读报价（`get_dy(ETH, stETH)`），取买到最多的那个。
-- 赎回：1:1、不收提现费；申请后这部分 stETH 不再计收益。排队时间用 Lido 官方提现 API（`wq-api.lido.fi/v2/request-time/calculate`，按最大一档估），APR 用 `eth-api.lido.fi/v1/protocol/steth/apr/sma`（近 7 天平均）。
-- 「折合年化」= 差额 ÷ 排队天数 × 365。两笔主网交易（申请 + 领取，约 30 万 gas）按当时 gas 价估出来显示在说明里，不计入差额。单笔申请上限 1000 stETH。
+独立卡片展示来源时间、快照年龄、拆单、每日 funding cutoff 和净收益/同周期质押对照。超过 5 分钟或买入实际 stETH 数量、队列块、quote/gas/APR 不兼容时，批次情景净收益留空；不会用当前时钟缩短原情景周期。刷新仅重新读取已发布的快照文件，不重新跑共识模型。原实时价格采样及预警不变。
+
+数据和方法：[固定快照](data/lido-cutoff-snapshot.json)、[方法与验证边界](docs/lido-cutoff-scenarios.md)。18 FIFO 测试、8 共识测试、291 集成断言与 20,319 区块回放是机制验证，不是样本外预测验证。
+
+## 买入 stETH → Lido 提现赎回（净收益情景）
+
+通用 50 / 100 / 200 / 300 ETH 示例，或本页临时输入金额。按对应数量的 Kyber/Curve 买入报价，计入 swap、授权、申请与领取 gas 后，展示净利润、净回报、全周期简单年化 APR、保守等待/成本情景和同周期质押收益对照。
+
+**独立等待模型尚未校准。** 官方 API 只作未经验证的对照；按真正买到的 stETH 数量分别查询。API 不可用/过期不会填一个假 ETA，手动等待不会触发可执行机会提示。情景通过门槛也标注“待校准”，不新增手机推送或自动交易。
+
+默认 gas/延迟/滑点/门槛都是可见的假设，不是统计置信区间。Lido queued stETH 不再计收益，名义 1:1 兑付也可能因亏损/罚没下降。详见 [公式、时间戳、验证限制与独立模型路线](docs/redemption-model.md)。
 
 ## Coinbase 质押包装 → Base 卖出（反方向，cbETH 在 Base 上有溢价时看）
 

@@ -1,9 +1,9 @@
 /* core.js — 取数 + 计算。浏览器（app.js）和 Actions 快照（scripts/snapshot.js）共用这一份，
  * 所以网页上看到的数、历史里存的数、告警用的数是同一套算法，不会两边漂移。 */
 (function (root, factory) {
-  if (typeof module === "object" && module.exports) module.exports = factory();
-  else root.PegCore = factory();
-})(typeof self !== "undefined" ? self : this, function () {
+  if (typeof module === "object" && module.exports) module.exports = factory(require("./redemption.js"));
+  else root.PegCore = factory(root.Redemption);
+})(typeof self !== "undefined" ? self : this, function (Redemption) {
   "use strict";
 
   /* 场所。stETH 与 wstETH 可按 stEthPerToken 原子互换，合成一行看：
@@ -130,7 +130,7 @@
     for (const sym of ASSETS)
       out[sym] = analyse(snap.px[sym], sym === "stETH" ? 1 : snap.nav[sym], VENUES[sym], cfg.thresholds, cfg.sizes);
     out.cbETH.rt = roundTrip(snap.rt, snap.nav.cbETH, cfg);
-    out.stETH.rt = stRedeem(snap.st, cfg);
+    out.stETH.rt = stRedeem(snap.st, cfg, snap.ts);
     return out;
   }
 
@@ -163,24 +163,8 @@
     return { rate, src, waitDays: num(q.waitDays) ? q.waitDays : null, apy: num(q.apy) ? q.apy : null, onchain: navOnchain, rows, ws };
   }
 
-  /* ---------- 主网买 stETH → Lido 提现队列赎回 ----------
-   * 买入：KyberSwap 主网聚合报价、Curve 两个池子的直读报价，取买到 stETH 最多的那个；
-   * 赎回：Lido 提现队列按 1:1 兑付、不收费（只有两笔交易的 gas）；申请之后这部分 stETH 不再计收益。
-   * 排队天数用 Lido 官方提现 API 的估计，折成年化，方便和 stETH 的质押 APR 比。 */
-  function stRedeem(q, cfg) {
-    const sizes = (cfg.stRedeem && cfg.stRedeem.sizes) || [];
-    if (!q || !sizes.length) return null;
-    const waitDays = num(q.waitMs) && q.waitMs > 0 ? q.waitMs / 864e5 : null;
-    const gasEth = num(q.gasGwei) ? q.gasGwei * 1e-9 * ((cfg.stRedeem && cfg.stRedeem.gasUnits) || 300000) : null;
-    const rows = sizes.map((x) => {
-      const c = [["kyber", q.kyber && q.kyber[x]], ["curve", q.curve && q.curve[x]], ["curve_ng", q.curve_ng && q.curve_ng[x]]].filter((p) => num(p[1]));
-      if (!c.length) return { eth: x, steth: null, back: null, diff: null, bps: null, apr: null, via: null };
-      const [via, got] = c.reduce((a, b) => (b[1] > a[1] ? b : a));
-      const diff = got - x, bps = (diff / x) * 1e4; // 1:1 赎回，拿回的 ETH = 买到的 stETH
-      return { eth: x, steth: got, back: got, diff, bps: r2(bps), apr: waitDays ? (bps / 1e4) * (365 / waitDays) : null, via };
-    });
-    return { waitDays, waitType: q.waitType || null, apr: num(q.apr) ? q.apr / 100 : null, gasEth, rows };
-  }
+  /* Redemption calculations are isolated and shared with the browser and tests. */
+  function stRedeem(q, cfg, now) { return Redemption.estimate(q, cfg, now); }
 
   /* ---------- 常态基线 ----------
    * 主报价 peg 的近 N 天分布。先按小时分桶取中位数，再对小时序列取分位 ——
@@ -291,6 +275,13 @@
         rec[sym].rt = Object.fromEntries(a.rt.rows.map((r) => [r.eth, r.bps]));
         if (a.rt.ws && a.rt.ws.length) rec[sym].ws = Object.fromEntries(a.rt.ws.map((r) => [r.eth, r.bps]));
         if (a.rt.waitDays != null) rec[sym].wait = a.rt.waitDays;
+        if (sym === "stETH") rec[sym].redemption = {
+          version: 1, calibration: "pending", apr: a.rt.apr, aprFetchedAt: a.rt.aprAt,
+          queue: a.rt.queue, gasGwei: a.rt.gasGwei,
+          rows: a.rt.rows.map((r) => ({ eth: r.eth, steth: r.steth, via: r.via, quoteAt: r.quoteAt || null,
+            gasEth: r.gasEth == null ? null : r.gasEth, eta: r.eta || null,
+            netProfit: r.expected ? r.expected.profit : null, netApr: r.apr, actionable: false })),
+        };
       }
     }
     rec.nav = { wstETH: snap.nav.wstETH, cbETH: snap.nav.cbETH };
@@ -322,7 +313,7 @@
 
     // 公开 RPC：小批量发（大批量会被断开），一个节点不行换下一个
     const sticky = {};
-    async function ethCalls(calls, chain) {
+    async function ethCalls(calls, chain, block = "latest") {
       const list = chain === "base" ? cfg.base.rpcs : cfg.rpcs, rpcUrl = sticky[chain || "eth"];
       const order = rpcUrl ? [rpcUrl, ...list.filter((u) => u !== rpcUrl)] : list;
       let last = null;
@@ -331,7 +322,7 @@
           const out = new Array(calls.length).fill(null), n = cfg.rpcBatchSize || 4;
           for (let i = 0; i < calls.length; i += n) {
             const body = calls.slice(i, i + n).map(([to, data], j) =>
-              ({ jsonrpc: "2.0", id: i + j, method: "eth_call", params: [{ to, data }, "latest"] }));
+              ({ jsonrpc: "2.0", id: i + j, method: "eth_call", params: [{ to, data }, block] }));
             const res = await getJSON(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }, 15000);
             if (!Array.isArray(res)) throw new Error("节点不接受批量请求");
             for (const x of res) if (x && x.id >= 0 && x.id < out.length) out[x.id] = x.result || null;
@@ -344,7 +335,13 @@
       return calls.map(() => null);
     }
 
-    const stSizes = (cfg.stRedeem && cfg.stRedeem.sizes) || [], st = {};
+    const stSizes = (cfg.stRedeem && cfg.stRedeem.sizes) || [], st = { quoteMeta: {}, waits: {} };
+    const quoteMeta = (via, x, extra) => {
+      const now = Math.floor(Date.now() / 1000), remoteAt = extra && Number(extra.routeTimestamp);
+      // Kyber may return cached routes. Prefer its timestamp when present.
+      const quotedAt = Number.isFinite(remoteAt) && remoteAt > 0 ? (remoteAt > 1e12 ? remoteAt / 1000 : remoteAt) : now;
+      (st.quoteMeta[via] = st.quoteMeta[via] || {})[x] = Object.assign({ quotedAt, fetchedAt: now }, extra);
+    };
     const chain = (async () => {
       // 1) 兑付锚 + Curve 的 coin 顺序（每轮实时验证，顺序反了会静默返回倒数）
       const r1 = await ethCalls([
@@ -378,18 +375,42 @@
       if (stSizes.length) {
         const bc = [], bk = [];
         for (const x of stSizes) {
-          const dx = BigInt(x) * E18;
+          const dx = Redemption.toWei(x);
           if (oA) { bk.push(["curve", x]); bc.push([A.curveStEth, "0x5e0d443f" + U(oA[1]) + U(oA[0]) + U(dx)]); }
           if (oB) { bk.push(["curve_ng", x]); bc.push([A.curveStEthNg, "0x5e0d443f" + U(oB[1]) + U(oB[0]) + U(dx)]); }
         }
-        (await ethCalls(bc)).forEach((h, i) => { const w = word0(h); if (w != null) (st[bk[i][0]] = st[bk[i][0]] || {})[bk[i][1]] = Number(w) / 1e18; });
+        (await ethCalls(bc)).forEach((h, i) => {
+          const w = word0(h), [via, x] = bk[i];
+          if (w != null) { (st[via] = st[via] || {})[x] = Number(w) / 1e18; quoteMeta(via, x); }
+        });
         try {
           const g = await getJSON(sticky.eth || cfg.rpcs[0], { method: "POST", headers: { "content-type": "application/json" },
             body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_gasPrice", params: [] }) }, 10000);
-          if (g && g.result) st.gasGwei = Number(BigInt(g.result)) / 1e9;
+          if (g && g.result) { st.gasGwei = Number(BigInt(g.result)) / 1e9; st.gasAt = Math.floor(Date.now() / 1000); }
         } catch (e) { note("gas 价", e); }
       }
       return { stETH: 1, wstETH: rateW ? Number(rateW) / 1e18 : null, cbETH: rateC ? Number(rateC) / 1e18 : null };
+    })();
+
+    // Independent queue observation: pin all three calls to the same explicit block.
+    // This is not the source block used internally by Lido's official ETA service.
+    const queueP = (async () => {
+      if (!stSizes.length || !A.withdrawalQueue) return;
+      await chain;
+      try {
+        const b = await getJSON(sticky.eth || cfg.rpcs[0], { method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_getBlockByNumber", params: ["latest", false] }) }, 8000);
+        const block = b && b.result;
+        if (!block || !/^0x[0-9a-f]+$/i.test(block.number) || !/^0x[0-9a-f]+$/i.test(block.timestamp)) throw new Error("无有效区块时间");
+        const vals = (await ethCalls([
+          [A.withdrawalQueue, "0x2b95b781"], // isBunkerModeActive()
+          [A.withdrawalQueue, "0xb187bd26"], // isPaused()
+          [A.withdrawalQueue, "0xd0fb84e8"], // unfinalizedStETH()
+        ], null, block.number)).map(word0);
+        const bool = (v) => v === 0n ? false : v === 1n ? true : null;
+        st.queue = { at: Math.floor(Date.now() / 1000), blockNumber: Number(BigInt(block.number)), blockTimestamp: Number(BigInt(block.timestamp)),
+          bunker: bool(vals[0]), paused: bool(vals[1]), unfinalizedSteth: vals[2] == null ? null : Number(vals[2]) / 1e18 };
+      } catch (e) { note("lido 链上队列", e); }
     })();
 
     // Base：Aerodrome Slipstream cbETH/WETH，QuoterV2.quoteExactInputSingle((tokenIn,tokenOut,amountIn,int24 tickSpacing,sqrtPriceLimitX96))
@@ -422,7 +443,7 @@
         { name: "kyber stETH", url: cfg.http.kyber, tin: A.stETH, tout: A.ETH, sizes, put: (s, o) => put("stETH", "kyber", s, o / s) },
         { name: "kyber_base cbETH", url: cfg.http.kyberBase, tin: cfg.base.cbETH, tout: A.ETH, sizes, put: (s, o) => put("cbETH", "kyber_base", s, o / s) },
         { name: "kyber cbETH", url: cfg.http.kyber, tin: A.cbETH, tout: A.ETH, sizes, put: (s, o) => put("cbETH", "kyber", s, o / s) },
-        { name: "kyber 买入 stETH", url: cfg.http.kyber, tin: A.ETH, tout: A.stETH, sizes: stSizes, put: (x, o) => { (st.kyber = st.kyber || {})[x] = o; } },
+        { name: "kyber 买入 stETH", url: cfg.http.kyber, tin: A.ETH, tout: A.stETH, sizes: stSizes, put: (x, o, summary) => { (st.kyber = st.kyber || {})[x] = o; quoteMeta("kyber", x, { gasUnits: Number(summary.gas), routeTimestamp: summary.timestamp || null }); } },
         { name: "kyber_base 买入", url: cfg.http.kyberBase, tin: A.ETH, tout: cfg.base.cbETH, sizes: rtSizes, put: (x, o) => { (rt.kyber = rt.kyber || {})[x] = o; } },
       ];
       // 反方向：包装得到的 cbETH 在 Base 上的聚合卖出报价（数量 = X / 兑换率，所以排在最后、等兑换率到手）
@@ -434,12 +455,12 @@
         for (const s of j.sizes) {
           for (let k = 0; k < 2; k++) {
             try {
-              const amt = j.amount ? await j.amount(s) : BigInt(s) * E18;
+              const amt = j.amount ? await j.amount(s) : Redemption.toWei(s);
               if (!amt) throw new Error("没有兑换率");
               const d = await getJSON(`${j.url}?tokenIn=${j.tin}&tokenOut=${j.tout}&amountIn=${amt}`, null, 10000);
               const out = d && d.data && d.data.routeSummary && d.data.routeSummary.amountOut;
               if (!out) throw new Error((d && d.message) || "无报价");
-              j.put(s, Number(BigInt(out)) / 1e18);
+              j.put(s, Number(BigInt(out)) / 1e18, d.data.routeSummary);
               ok++;
               break;
             } catch (e) { last = e; if (k === 0) await new Promise((r) => setTimeout(r, 800)); }
@@ -455,17 +476,32 @@
         rt.rate = +d.conversion_rate; rt.waitDays = +d.redeem_time_estimate_days; rt.apy = +d.apy;
       } catch (e) { note("coinbase 兑换率", e); }
     }
-    // Lido：按最大一档估提现排队时间（官方提现 API），以及 stETH 近 7 天平均 APR
+    // Official ETA is only an unvalidated reference. Query after buy quotes are available,
+    // using the actual amount of stETH purchased, never ETH input or one shared maximum.
+    async function lidoWaits() {
+      let unavailable = null;
+      for (const x of stSizes) {
+        const best = Redemption.selectQuote(st, x, cfg);
+        if (!best) continue;
+        if (unavailable) { st.waits[x] = { status: "unavailable", reason: unavailable }; continue; }
+        try {
+          const d = await getJSON(`${cfg.http.lidoWq}?amount=${encodeURIComponent(best.got.toFixed(12))}`, null, 8000);
+          st.waits[x] = Redemption.parseWait(d, best.got, Math.floor(Date.now() / 1000));
+        } catch (e) {
+          st.waits[x] = { status: "unavailable", reason: `官方参考时间不可用（${e.message}）` };
+          note("lido 排队参考", e);
+          // Do not probe alternate paths, retry a WAF denial, or amplify an outage.
+          unavailable = st.waits[x].reason;
+        }
+      }
+    }
     async function lidoInfo() {
       if (!stSizes.length) return;
       try {
-        const d = await getJSON(`${cfg.http.lidoWq}?amount=${Math.max(...stSizes)}`, null, 10000);
-        const ri = d && d.requestInfo;
-        if (ri && num(ri.finalizationIn)) { st.waitMs = ri.finalizationIn; st.waitType = ri.type || null; }
-      } catch (e) { note("lido 排队估计", e); }
-      try {
         const d = await getJSON(cfg.http.lidoApr, null, 10000);
-        if (d && d.data && num(d.data.smaApr)) st.apr = d.data.smaApr;
+        if (d && d.data && num(d.data.smaApr) && d.data.smaApr >= 0) {
+          st.apr = d.data.smaApr; st.aprAt = Math.floor(Date.now() / 1000);
+        }
       } catch (e) { note("lido APR", e); }
     }
     async function book(sym, id, url, pick) {
@@ -484,7 +520,9 @@
       book("cbETH", "coinbase", cfg.http.coinbaseBook, (d) => d && d.bids),
       cbinfoP,
       lidoInfo(),
+      queueP,
     ]);
+    await lidoWaits();
     return { ts: Math.floor(Date.now() / 1000), nav, px, rt, st, err };
   }
 
