@@ -67,9 +67,9 @@ test("invalid economics parameters do not print NaN or Infinity", () => {
   const c = { ...cfg, stRedeem: { ...cfg.stRedeem, extraHours: -1 } }; const v = L.evaluate(s, quote(), c, t);
   assert.equal(v.rows[0].mainEconomics, null); assert(!L.render(v).includes("NaN"));
 });
-test("UI shows UTC, staleness, limitations, exact six tiers and expandable details", () => {
+test("UI shows Eastern time, staleness, limitations, exact six tiers and expandable details", () => {
   const html = L.render(L.evaluate(s, null, cfg, t + 7200));
-  for (const term of ["2026-10-04 16:16:23 UTC", "10/07", "10/09", "已过期", "不是到账承诺", "1,500", "cutoff-details", "cutoff-economics", "样本外预测校准", "固定快照已过期"]) assert(html.includes(term), term);
+  for (const term of ["2026-10-04 12:16:23 ET", "10/07", "10/09", "已过期", "不是到账承诺", "1,500", "cutoff-details", "cutoff-economics", "样本外预测校准", "固定快照已过期"]) assert(html.includes(term), term);
   assert(!html.includes("NaN")); assert(!html.includes("Infinity"));
 });
 test("missing fixture leaves prices available and explains error", () => { const v = L.evaluate(null, null, cfg, t); assert.equal(v.valid, false); assert(L.render(v).includes("实时价格仍独立刷新")); });

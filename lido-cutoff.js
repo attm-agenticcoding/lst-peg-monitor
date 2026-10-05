@@ -10,7 +10,8 @@
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const n = (x, digits = 4) => x == null || !Number.isFinite(Number(x)) ? "—" : Number(x).toLocaleString("en-US", { maximumFractionDigits: digits });
   const signed = (x) => x == null ? "—" : `${x >= 0 ? "+" : "−"}${n(Math.abs(x), 5)}`;
-  const utc = (x) => new Date(ts(x) * 1000).toISOString().replace("T", " ").replace(".000Z", " UTC");
+  const et = (x) => new Date(ts(x) * 1000).toLocaleString("sv-SE", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }) + " ET";
+  const etDate = (x) => et(x).slice(5, 10).replace("-", "/");
   function validate(s) {
     if (!s || s.schema !== 1 || s.live !== false || s.calibrated !== false || !finite(ts(s.asOf))
       || !Number.isSafeInteger(s.blockNumber) || !/^0x[0-9a-f]{64}$/.test(s.blockHash)
@@ -67,26 +68,26 @@
   function render(v) {
     if (!v.valid) return `<div class="cutoff-head"><h2>Lido 六档赎回批次情景</h2><span class="stale">资料不可用</span></div><p class="empty">${esc(v.reason)}；实时价格仍独立刷新</p>`;
     const s = v.snapshot, main = s.tiers[0].main, stress = s.tiers[0].stress;
-    const date = (c) => utc(c.reference_time_utc).slice(5, 10).replace("-", "/");
+    const date = (c) => etDate(c.reference_time_utc);
     const rows = v.rows.map((r) => `<tr><td class="num">${n(r.steth, 0)}</td><td class="num">${r.split.map((a) => n(a, 0)).join(" + ")}</td><td>${date(r.main)} · 第 ${r.main.eligible_report_index} 批</td><td>${date(r.stress)} · 第 ${r.stress.eligible_report_index} 批</td></tr>`).join("");
-    const cutoffs = s.dailyCutoffs.map((r) => `<tr><td>${utc(r.referenceTime).slice(5, 10)}</td><td class="r num">${n(r.mainSteth)}</td><td class="r num">${n(r.stressSteth)}</td></tr>`).join("");
+    const cutoffs = s.dailyCutoffs.map((r) => `<tr><td>${etDate(r.referenceTime)}</td><td class="r num">${n(r.mainSteth)}</td><td class="r num">${n(r.stressSteth)}</td></tr>`).join("");
     const economics = v.rows.map((r) => `<tr><td class="num">${n(r.steth, 0)}</td>${[r.mainEconomics, r.stressEconomics].map((e, i) => `<td class="num">${signed(e && e.profit)}<span class="vmeta">简单 APR ${e ? n(e.apr * 100, 2) + "%" : "—"}<br>较同周期质押 ${signed(e && e.excessProfit)} ETH<br>资金周期 ${n(r.totalDays[i ? "stress" : "main"], 3)} 天</span></td>`).join("")}<td class="dim">${esc(r.reasons.join("；") || "条件情景，未经预测校准")}</td></tr>`).join("");
     return `<div class="cutoff-head"><h2>Lido 六档赎回批次情景</h2><span class="cutoff-status ${v.stale || v.loadFailed ? "stale" : ""}">${v.stale ? "固定快照 · 已过期" : "固定快照 · 非实时 ETA"}${v.loadFailed ? " · 文件读取失败" : ""}</span></div>
-      <p class="empty">假设在 ${utc(s.asOf)} 加入队尾；${n(s.pendingRequests, 0)} 笔 / ${n(s.pendingSteth)} stETH 待处理，同区块现有现金 ${n(s.physicalCashEth)} ETH</p>
+      <p class="empty">假设在 ${et(s.asOf)} 加入队尾；${n(s.pendingRequests, 0)} 笔 / ${n(s.pendingSteth)} stETH 待处理，同区块现有现金 ${n(s.physicalCashEth)} ETH</p>
       <div class="cutoff-summary"><div><span>已知状态主情景</span><strong>${date(main)} <small>第 ${main.eligible_report_index} 个参考报告</small></strong></div><div><span>每块预留 8 个部分提款槽位的压力情景</span><strong>${date(stress)} <small>第 ${stress.eligible_report_index} 个参考报告</small></strong></div></div>
-      <p class="redemption-warning">上述日期均为 2026 年，参考时点为 12:00:11 UTC，实际报告发布后才可能完成定案，再等待领取。不是到账承诺、概率区间或最坏上限；日期不会随网页时钟滑动。快照距今 ${n(v.ageSeconds / 3600, 1)} 小时，未自动重算队列或共识状态。</p>
+      <p class="redemption-warning">上述日期均为 2026 年，美东参考时点为 ${et(main.reference_time_utc).slice(11)}，实际报告发布后才可能完成定案，再等待领取。不是到账承诺、概率区间或最坏上限；日期不会随网页时钟滑动。快照距今 ${n(v.ageSeconds / 3600, 1)} 小时，未自动重算队列或共识状态。</p>
       <div class="tw"><table class="src cutoff-table"><thead><tr><th>假设申请 stETH</th><th>申请拆分</th><th>主情景参考批次</th><th>压力参考批次</th></tr></thead><tbody>${rows}</tbody></table></div>
       <p class="empty">六档是同一队尾位置的独立假设，不依次叠加。1,500 stETH 至少分两笔，可在同一批完成；全部完成按最后一笔计。</p>
       <details id="cutoff-details" class="cutoff-details"><summary>逐日 funding cutoff、来源与假设</summary>
-        <p class="empty">cutoff = 原队列之后、可全额覆盖的新增名义 stETH 上限，不是当天处理量；以下各日同为 12:00:11 UTC</p>
-        <div class="tw"><table class="src cutoff-table"><thead><tr><th>2026 年 UTC 日期</th><th class="r">主情景 stETH</th><th class="r">压力情景 stETH</th></tr></thead><tbody>${cutoffs}</tbody></table></div>
+        <p class="empty">cutoff = 原队列之后、可全额覆盖的新增名义 stETH 上限，不是当天处理量；以下日期均为美东 ET，参考时点为 ${et(main.reference_time_utc).slice(11)}</p>
+        <div class="tw"><table class="src cutoff-table"><thead><tr><th>2026 年美东日期</th><th class="r">主情景 stETH</th><th class="r">压力情景 stETH</th></tr></thead><tbody>${cutoffs}</tbody></table></div>
         <ul class="cutoff-notes"><li>主情景延续现有 legacy 部分提款负载；静止余额对照得出同批次。压力情景额外每块占用 8 个部分提款槽位，不代表最坏情况。</li><li>建模到账资金被各报告全部接纳；名义兑付无折损；无现金分流；所有 Accounting、份额、共识检查继续通过，正常日报告且不暂停。</li><li>不预测新增退出、未来存入/奖励、罚没、漏块、finality 变化或新提款负载。现有合并来源余额不直接当作提现现金。</li><li>已验证：18 项 FIFO 测试、8 项共识测试、291 项集成断言、20,319 个区块独立回放。这是机制一致性验证，未完成样本外预测校准。</li></ul>
         <p class="empty">执行源 <a href="https://etherscan.io/block/${s.blockNumber}" target="_blank" rel="noopener">#${s.blockNumber}</a> · Beacon slot ${n(s.beaconSlot, 0)}；完整 SSZ root 与后继执行头 EIP-4788 锚一致。配置页面部分读数为 latest/unpinned。<a href="docs/lido-cutoff-scenarios.md">方法及复核依据</a> · <a href="data/lido-cutoff-snapshot.json">下载原始精度快照</a></p>
       </details>
       <details id="cutoff-economics" class="cutoff-details"><summary>六档情景净收益与同周期质押对照</summary>
-        <p class="empty">只合算金额与时点一致的报价；固定快照超过 5 分钟、队列块不一致或报价/gas 缺失即留空。ETH 投入不能当作同数值 stETH。全资金周期从固定申请时点起算，另加报告发布/申请/领取延迟假设 ${n(v.options.extraHours, 2)} 小时（可在上方参数修改），不随当前时钟缩短。</p>
+        <p class="empty">只合算金额与时点一致的报价；固定快照超过 5 分钟、队列块不一致或报价/gas 缺失即留空。ETH 投入不能当作同数值 stETH。全资金周期从固定申请时点起算，另加报告发布/申请/领取延迟假设 ${n(v.options.extraHours, 2)} 小时（可在下方参数修改），不随当前时钟缩短。</p>
         <div class="tw"><table class="src cutoff-economics"><thead><tr><th>stETH</th><th>主情景净利润 ETH</th><th>压力净利润 ETH</th><th>数据限制</th></tr></thead><tbody>${economics}</tbody></table></div>
-        <p class="empty">含按实际数量预算的 swap、授权、申请、领取 gas 与其他成本；压力沿用页面的 gas 倍数、滑点、兑付折损。净回报分母为全部投入，质押对照使用同一资金周期。两种场景均不发出可执行交易提示。当前实时买入测算在下方 stETH 卡片独立展示，使用官方参考或手动等待，不冒充本模型已更新。</p>
+        <p class="empty">含按实际数量预算的 swap、授权、申请、领取 gas 与其他成本；压力沿用页面的 gas 倍数、滑点、兑付折损。净回报分母为全部投入，质押对照使用同一资金周期。两种场景均不发出可执行交易提示。当前实时买入测算在上方“买入 stETH → Lido 赎回”中独立展示，使用官方参考或手动等待，不冒充本模型已更新。</p>
       </details>`;
   }
   return { validate, evaluate, render };
