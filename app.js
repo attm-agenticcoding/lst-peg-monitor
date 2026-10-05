@@ -9,7 +9,7 @@
   const ago = (s) => (!isFinite(s) ? "—" : s < 90 ? `${Math.max(0, Math.round(s))} 秒前`
     : s < 5400 ? `${Math.round(s / 60)} 分钟前` : `${(s / 3600).toFixed(1)} 小时前`);
   const hm = (ts) => new Date(ts * 1000).toLocaleString("zh-CN",
-    { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+    { timeZone: "America/New_York", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }) + " ET";
   const span = (h) => (h < 48 ? `${h} 小时` : `${Math.round(h / 24)} 天`);
   const KIND = { agg: "聚合", dex: "链上", cex: "交易所" };
   let CFG = null, hist = null, histAt = 0, busy = false, timer = null, stOverrides = {}, customAmount = null, lastSnap = null, lastCfg = null, refreshFailed = false;
@@ -102,7 +102,6 @@
       <div class="sect"><h3>各场所卖出执行价 <span class="cnt">相对兑付锚，bps；主报价 = 大额上最好的那家</span></h3>
         <div class="tw"><table class="src"><thead><tr><th>场所</th>${S.map((s, i) => `<th class="r">${i ? "" : "卖 "}${s.toLocaleString()}${i ? "" : " 枚"}</th>`).join("")}</tr></thead>
         <tbody>${rows}<tr class="best"><td>最优（逐档取最好）</td>${best}</tr></tbody></table></div></div>
-      ${sym === "cbETH" ? rtSection(a.rt) : stSection(a.rt)}
     </section>`;
   }
 
@@ -127,35 +126,80 @@
 
   /* ---------- 主网买 stETH → Lido 提现赎回 ---------- */
   const ST_VIA = { kyber: "KyberSwap 聚合", curve: "Curve stETH/ETH", curve_ng: "Curve stETH-ng" };
+  // Display-only gross comparison: quote output already includes pool fees/price impact.
+  function stGrossComparison(r, stakingApr) {
+    const valid = Number.isFinite(r.eth) && r.eth > 0 && Number.isFinite(r.steth) && r.steth > 0;
+    const grossReturn = valid ? r.steth / r.eth - 1 : null;
+    const annualized = grossReturn != null && Number.isFinite(r.totalDays) && r.totalDays > 0 ? grossReturn * 365 / r.totalDays : null;
+    return { bps: grossReturn == null ? null : grossReturn * 1e4, annualized,
+      vsStaking: annualized != null && Number.isFinite(stakingApr) ? annualized - stakingApr : null };
+  }
   function stSection(rt) {
     if (!rt || !rt.rows.length) return "";
     const n = (x, d = 4) => (x == null || !Number.isFinite(x) ? "—" : x.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }));
-    const signed = (x, d = 4) => x == null ? "—" : `${x >= 0 ? "+" : "−"}${n(Math.abs(x), d)}`;
-    const pct = (x) => x == null ? "—" : `${signed(x * 100, 2)}%`;
-    const days = (x) => x == null ? "—" : n(x, 2) + " 天";
+    const signed = (x, d = 4) => x == null || !Number.isFinite(x) ? "—" : `${x >= 0 ? "+" : "−"}${n(Math.abs(x), d)}`;
+    const pct = (x) => x == null || !Number.isFinite(x) ? "—" : `${signed(x * 100, 2)}%`;
+    const days = (x) => x == null || !Number.isFinite(x) ? "—" : n(x, 2);
+    const state = (r) => r.signal === "scenario_pass" ? "情景达标 · 待校准" : r.signal === "below_threshold" ? "未达情景门槛" : "资料不足 · 不提示操作";
+    const waitLabel = (r) => r.waitSource === "manual" ? "手动假设" : r.waitSource === "official_unvalidated" ? "官方参考 · 未验证" : "参考时间不可用";
+    const missing = rt.rows.some((r) => !Number.isFinite(r.steth) || !Number.isFinite(r.totalDays) || !r.expected) || !Number.isFinite(rt.apr);
+    const operationalWarnings = [...new Set(rt.rows.flatMap((r) => r.reasons).filter((x) => /暂停|Bunker|读取失败/.test(x)))];
+    const queueStale = !rt.queue || !Number.isFinite(rt.queue.blockTimestamp) || Date.now() / 1000 - rt.queue.blockTimestamp > rt.options.quoteMaxAgeSeconds;
     const rows = rt.rows.map((r) => {
-      const e = r.expected, c = r.conservative;
-      const state = r.signal === "scenario_pass" ? "情景达标 · 待校准" : r.signal === "below_threshold" ? "未达情景门槛" : "资料不足 · 不提示操作";
-      const waitLabel = r.waitSource === "manual" ? "手动假设" : r.waitSource === "official_unvalidated" ? "官方参考 · 未验证" : "参考时间不可用";
-      return `<tr><td class="num">${n(r.eth, 2)}<span class="vmeta">买到 ${n(r.steth)} stETH</span></td>
-        <td class="r num">${days(r.totalDays)}<span class="vmeta">${waitLabel}<br>保守情景 ${days(r.conservativeDays)}</span></td>
-        <td class="r num">${signed(e && e.profit)}<span class="vmeta">保守 ${signed(c && c.profit)}<br>净回报 ${pct(e && e.netReturn)}</span></td>
-        <td class="r num">${pct(e && e.apr)}<span class="vmeta">保守 ${pct(c && c.apr)}<br>较质押 ${signed(c && c.apr != null && rt.apr != null ? (c.apr - rt.apr) * 100 : null, 2)} 百分点</span></td>
-        <td><b class="${r.signal === "scenario_pass" ? "scenario-match" : "dim"}">${state}</b><span class="vmeta">${esc(ST_VIA[r.via] || "无报价")}<br>${r.quoteAt ? "报价 " + hm(r.quoteAt) : ""}</span></td></tr>
-        <tr class="redemption-detail"><td colspan="5">全部投入 ${n(e && e.cost)} ETH；gas 预算 ${n(r.gasEth, 5)} ETH（保守 ×${rt.options.gasMultiplier}）；
-          同周期质押收益 ${signed(e && e.stakingProfit)} ETH；保守情景超额 ${signed(c && c.excessProfit)} ETH。
-          ${r.gasUnits ? `按 ${r.gasUnits.requests} 个 ≤1000 stETH 申请预算 gas；` : ""}${r.eta && r.eta.calculatedAt ? `官方参考响应计算 ${hm(r.eta.calculatedAt)}；读取 ${hm(r.eta.fetchedAt)}；` : ""}${esc(r.reasons.join("；"))}</td></tr>`;
+      const e = r.expected, gross = stGrossComparison(r, rt.apr);
+      const comparison = gross.vsStaking == null ? "无法比较" : `${gross.vsStaking >= 0 ? "高" : "低"} ${n(Math.abs(gross.vsStaking) * 100, 2)} 个百分点`;
+      return `<tr><th scope="row" class="num conversion">${n(r.eth, 2)} ETH <span class="conversion-out">→ ${n(r.steth)} stETH</span></th>
+        <td data-label="兑换价差" class="r num">${signed(gross.bps, 2)} <span class="unit">bps</span></td>
+        <td data-label="全周期假设 x" class="r num">${days(r.totalDays)} <span class="unit">天</span></td>
+        <td data-label="价差折合年化" class="r num">${pct(gross.annualized)}<span class="vmeta">扣成本后 ${pct(e && e.apr)}</span></td>
+        <td data-label="质押 APR · 7日均值" class="r num">${rt.apr == null ? "—" : n(rt.apr * 100, 2) + "%"}<span class="vmeta">${comparison}</span></td></tr>`;
     }).join("");
-    return `<div class="sect" id="st-redemption"><h3>买入 stETH → 立即申请 Lido 赎回 <span class="cnt">净收益情景 · 独立等待模型待校准</span></h3>
-      <p class="empty">链上未完成队列：${rt.queue && rt.queue.unfinalizedSteth != null ? n(rt.queue.unfinalizedSteth, 0) + " stETH" : "不可用"}；${rt.queue ? `源区块 #${rt.queue.blockNumber} · ${hm(rt.queue.blockTimestamp)} · 读取 ${hm(rt.queue.at)}${Date.now() / 1000 - rt.queue.blockTimestamp > rt.options.quoteMaxAgeSeconds ? " · 已过期" : ""}` : "源区块时间不可用"}。官方 API 内部队列/validator 快照时间：未暴露，时效未知。</p>
-      <p class="redemption-warning">官方时间与赎回页面来自同一估计体系，不能当作准确承诺。当前不发出“可以执行”的提示；情景达标也需要独立历史验证与成交前复核。</p>
-      <div class="tw"><table class="src redemption-table"><thead><tr><th>买入投入 ETH</th><th class="r">全周期等待</th><th class="r">净利润 ETH</th><th class="r">净简单年化 APR</th><th>页面提示</th></tr></thead><tbody>${rows}</tbody></table></div>
-      <p class="empty">质押对照：Lido 近 7 天平均 APR ${rt.apr == null ? "不可用" : n(rt.apr * 100, 2) + "%"}${rt.aprAt ? "（读取 " + hm(rt.aprAt) + "）" : ""}。
-        净利润 = 赎回 ETH − 买入投入 − gas − 额外成本；净回报分母包含所有投入；简单年化 = 净回报 ×365÷全周期天数。排队 stETH 不再获得质押收益。<br>
-        报价已含池费及该数量的价格冲击，不重复扣费；保守情景另留 ${rt.options.slippageBps} bps 成交滑点、${rt.options.haircutBps} bps 兑付折损、较长等待与 gas 预算。
-        名义 1:1 兑付可能受亏损/罚没与取整影响；未来 gas 和等待均可能更差。保守情景是压力假设，不是置信区间。<br>
-        门槛示例：保守净利润 ≥${rt.options.minProfitEth} ETH、净回报 ≥${rt.options.minNetBps} bps、简单年化 ≥质押 APR +${rt.options.premiumPctPoints} 个百分点。
-        <a href="#st-settings">修改本页数量和情景参数</a>。不展示假设持续重复交易的复利 APY；不新增手机推送或自动交易。</p></div>`;
+    const details = rt.rows.map((r) => {
+      const e = r.expected, c = r.conservative;
+      const fact = (label, value) => `<div><dt>${label}</dt><dd>${value}</dd></div>`;
+      const reasons = r.reasons.filter((x) => x !== "独立等待模型尚未校准；报价和 gas 预算均非成交保证");
+      return `<section class="redemption-row-detail"><h4>${n(r.eth, 2)} ETH <span class="dim">${state(r)}</span></h4>
+        <dl class="redemption-facts">
+          ${fact("净利润", signed(e && e.profit) + " ETH")}${fact("净回报", pct(e && e.netReturn))}${fact("买到 stETH", n(r.steth))}${fact("买入路由", esc(ST_VIA[r.via] || "无报价"))}
+          ${fact("保守等待", days(r.conservativeDays) + " 天")}${fact("保守净利润", signed(c && c.profit) + " ETH")}
+          ${fact("保守净回报", pct(c && c.netReturn))}${fact("保守简单年化", pct(c && c.apr))}
+          ${fact("全部投入", n(e && e.cost) + " ETH")}${fact("gas 预算", n(r.gasEth, 5) + " ETH · 保守 ×" + rt.options.gasMultiplier)}
+          ${fact("同周期质押收益", signed(e && e.stakingProfit) + " ETH")}${fact("保守超额收益", signed(c && c.excessProfit) + " ETH")}
+          ${fact("保守年化较质押", signed(c && c.apr != null && rt.apr != null ? (c.apr - rt.apr) * 100 : null, 2) + " 百分点")}
+          ${fact("等待依据", waitLabel(r))}
+        </dl>
+        <p class="empty">${r.quoteAt ? "报价 " + hm(r.quoteAt) + "；" : ""}${r.gasUnits ? `按 ${r.gasUnits.requests} 个 ≤1000 stETH 申请预算 gas；` : ""}${r.eta && r.eta.calculatedAt ? `官方参考响应计算 ${hm(r.eta.calculatedAt)}，读取 ${hm(r.eta.fetchedAt)}` : ""}</p>
+        ${reasons.length ? `<p class="empty">${esc(reasons.join("；"))}</p>` : ""}</section>`;
+    }).join("");
+    return `<details class="card scenario-panel" id="st-redemption"><summary id="st-redemption-summary"><span>买入 stETH → Lido 赎回</span><span class="scenario-caption">价差 ÷ 天数 × 365${missing ? " · 部分数据缺失" : ""}</span></summary>
+      <div class="sect">
+      <p class="redemption-assumption">按名义 1:1 赎回；x 含排队和领取，实际等待或兑付额变化会改变收益。</p>
+      ${operationalWarnings.length ? `<p class="redemption-availability" role="status">${esc(operationalWarnings.join("；"))}</p>` : ""}
+      ${missing || queueStale ? `<p class="redemption-availability" role="status">${queueStale ? "链上队列不可用或已过期。" : ""}${missing ? "缺失或过期的结果显示 —；请设定等待天数或刷新报价。" : ""}</p>` : ""}
+      <div class="tw"><table class="src redemption-table"><caption class="sr-only">ETH 买入 stETH 的兑换价差，以假设等待天数折合简单年化，与 Lido 质押 APR 比较</caption><thead><tr><th scope="col">ETH → stETH</th><th scope="col" class="r">兑换价差</th><th scope="col" class="r">全周期假设 x</th><th scope="col" class="r">价差折合年化</th><th scope="col" class="r">质押 APR · 7日均值</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="redemption-footer"><span>年化 = 价差 bps ÷ 100 ÷ x × 365（%）</span><a id="st-edit-settings" href="#st-settings-panel">修改参数</a></div>
+      <details class="redemption-details" id="st-redemption-details"><summary id="st-redemption-details-summary">成本、等待假设与来源</summary>
+        ${details}
+        <section class="redemption-row-detail"><h4>计算口径与共同假设</h4>
+        <p class="empty">价差 = (买到 stETH ÷ 投入 ETH − 1) ×10,000 bps。1 bps = 0.01%；价差折合年化只用于收益比较，不代表这笔机会能全年重复。排队 stETH 不再计质押收益。</p>
+        <p class="empty">x = 排队假设 + 发布/申请/领取延迟 ${rt.options.extraHours} 小时。质押对照是 Lido 公布的近 7 天平均 APR（非 APY）${rt.aprAt ? "，读取 " + hm(rt.aprAt) : ""}。表中差值是扣成本前的价差年化减质押 APR；“扣成本后”另计 gas 和额外费用。</p>
+        <p class="empty">净利润 = 赎回 ETH − 买入投入 − gas − 额外成本；净回报分母包含全部投入；净简单年化 APR = 净回报 ×365÷全周期天数。等待来自未经独立验证的官方参考或手动假设，不是兑付日期承诺。</p>
+        <p class="empty">报价已含池费及该数量的价格冲击；保守情景另留 ${rt.options.slippageBps} bps 成交滑点、${rt.options.haircutBps} bps 兑付折损、较长等待及 gas 预算。名义 1:1 兑付可能受亏损、罚没和取整影响；未来 gas 与等待可能更差。压力情景不是置信区间。</p>
+        <p class="empty">达标门槛：保守净利润 ≥${rt.options.minProfitEth} ETH、净回报 ≥${rt.options.minNetBps} bps、简单年化 ≥质押 APR +${rt.options.premiumPctPoints} 个百分点。独立等待模型尚未校准；报价和 gas 预算均非成交保证，达标也不代表可以执行。</p>
+        <p class="empty">链上未完成队列：${rt.queue && rt.queue.unfinalizedSteth != null ? n(rt.queue.unfinalizedSteth, 0) + " stETH" : "不可用"}；${rt.queue ? `源区块 #${rt.queue.blockNumber} · ${hm(rt.queue.blockTimestamp)} · 读取 ${hm(rt.queue.at)}${queueStale ? " · 已过期" : ""}` : "源区块时间不可用"}。官方 API 内部队列/validator 快照时间：未暴露，时效未知。${rt.aprAt ? "质押 APR 读取 " + hm(rt.aprAt) + "。" : ""}</p>
+        </section>
+      </details></div></details>`;
+  }
+
+  // Keep disclosure choices stable during the 10-second expiry check and live refresh.
+  const scenarioIds = ["st-redemption", "st-redemption-details", "cb-redemption"];
+  const openScenarios = () => scenarioIds.filter((id) => $(id) && $(id).open);
+  const restoreScenarios = (opened) => { for (const id of opened) if ($(id)) $(id).open = true; };
+  function redrawScenarios(res) {
+    const opened = openScenarios(), focusedId = document.activeElement && document.activeElement.id;
+    $("scenarios").innerHTML = stSection(res.stETH.rt) + (res.cbETH.rt ? `<details class="card scenario-panel" id="cb-redemption"><summary><span>cbETH 买入赎回 / 质押卖出</span><span class="scenario-caption">收益测算</span></summary>${rtSection(res.cbETH.rt)}</details>` : "");
+    restoreScenarios(opened);
+    if (focusedId && $(focusedId) && $(focusedId).focus) $(focusedId).focus({ preventScroll: true });
   }
 
   /* ---------- 反方向：Coinbase 质押包装 → Base 卖出（溢价时看这个） ---------- */
@@ -265,7 +309,10 @@
     const el = $("st-redemption");
     if (!el || !lastSnap || !lastCfg) return;
     const q = Object.assign({}, lastSnap.st, { refreshFailed });
+    const opened = openScenarios(), focusedId = document.activeElement && document.activeElement.id;
     el.outerHTML = stSection(C.stRedeem(q, lastCfg, Math.floor(Date.now() / 1000)));
+    restoreScenarios(opened);
+    if (focusedId && $(focusedId) && $(focusedId).focus) $(focusedId).focus({ preventScroll: true });
   }
 
   /* ---------- 主循环 ---------- */
@@ -280,9 +327,10 @@
       const res = C.evaluate(snap, cfg);
       lastSnap = snap; lastCfg = cfg; refreshFailed = false; redrawCutoff();
       $("cards").innerHTML = C.ASSETS.map((s) => card(s, res[s], snap)).join("");
+      redrawScenarios(res);
       for (const s of C.ASSETS) drawSpark(s, res[s], snap.ts);
       verdict(res, snap);
-      $("clock").textContent = new Date().toLocaleTimeString("zh-CN", { hour12: false });
+      $("clock").textContent = new Date().toLocaleTimeString("zh-CN", { timeZone: "America/New_York", hour12: false }) + " ET";
     } catch (e) {
       refreshFailed = true; redrawRedemption(); redrawCutoff();
       $("vtitle").textContent = "读取失败";
@@ -305,6 +353,9 @@
       }
     };
     fill();
+    document.addEventListener("click", (ev) => {
+      if (ev.target && ev.target.id === "st-edit-settings") $("st-settings-panel").open = true;
+    });
     form.addEventListener("submit", (ev) => {
       ev.preventDefault();
       if (busy) { $("st-settings-status").textContent = "正在读取，请稍后再应用参数"; return; }

@@ -181,10 +181,51 @@ td.dim{color:var(--ink-3)}
 table.src{min-width:540px}
 table.src td.r,table.src th.r{padding-left:14px;white-space:nowrap;width:68px}
 table.src td:first-child{min-width:200px}
-.redemption-table{min-width:700px!important}
-.redemption-detail td{font-size:11px;color:var(--ink-3);white-space:normal!important;padding-bottom:12px!important}
-.redemption-warning{border-left:3px solid var(--watch);background:var(--watch-bg);padding:10px 12px;font-size:12px;color:var(--ink-2)}
-.cutoff-panel{padding:22px 24px;margin-top:20px}
+.scenario-panel>summary{cursor:pointer;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:14px 16px;font-size:13px;font-weight:600;list-style:none}
+.scenario-panel>summary::-webkit-details-marker{display:none}
+.scenario-panel>summary::after{content:"＋";margin-left:auto;color:var(--ink-3)}
+.scenario-panel[open]>summary::after{content:"－"}
+.scenario-panel[open]>summary{border-bottom:1px solid var(--line-soft)}
+.scenario-panel summary:focus-visible,.redemption-details summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.scenario-caption{font-size:11px;font-weight:400;color:var(--ink-2)}
+table.redemption-table{min-width:0;table-layout:auto}
+table.redemption-table th:first-child{min-width:0;width:auto}
+table.redemption-table th,table.redemption-table td,table.redemption-table th.r,table.redemption-table td.r{padding:11px 8px!important;white-space:nowrap;width:auto}
+table.redemption-table th:first-child{padding-left:0!important}
+table.redemption-table th:last-child,table.redemption-table td:last-child{padding-right:0!important}
+table.redemption-table tbody th{font-size:13px;font-weight:500;letter-spacing:0;color:var(--ink);border-bottom:1px solid var(--line-soft)}
+table.redemption-table tr:last-child th{border-bottom:0}
+.redemption-assumption{font-size:12px;color:var(--ink-2);margin:0 0 12px}
+.conversion-out{display:block}
+.redemption-table .unit{font-size:10px;color:var(--ink-2)}
+.redemption-table .vmeta{font-family:"IBM Plex Sans",sans-serif;font-size:10px;color:var(--ink-2);margin-top:4px}
+.redemption-footer{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;color:var(--ink-2);font-size:11px;margin-top:10px}
+.redemption-details{border-top:1px solid var(--line-soft);margin-top:14px;padding-top:12px}
+.redemption-details>summary{cursor:pointer;font-size:12px;color:var(--ink-2);padding:3px 0}
+.redemption-row-detail{padding:14px 0;border-top:1px solid var(--line-soft);margin-top:12px}
+.redemption-row-detail h4{font-size:12px;margin:0 0 10px;display:flex;gap:12px;flex-wrap:wrap}
+.redemption-row-detail .empty{margin-top:8px;line-height:1.7;overflow-wrap:anywhere}
+.redemption-facts{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;margin:0;font-size:11px}
+.redemption-facts>div{display:flex;justify-content:space-between;gap:8px}
+.redemption-facts dt{color:var(--ink-3)}
+.redemption-facts dd{margin:0;text-align:right;color:var(--ink-2)}
+.redemption-availability{font-size:12px;color:var(--watch);margin:0 0 8px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:560px){
+  table.redemption-table,table.redemption-table tbody{display:block;width:100%}
+  table.redemption-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  table.redemption-table tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;padding:14px 0;border-bottom:1px solid var(--line-soft)}
+  table.redemption-table tbody tr:last-child{border-bottom:0}
+  table.redemption-table tbody th,table.redemption-table td,table.redemption-table td.r{display:block;border:0!important;padding:0!important;white-space:normal;width:auto;text-align:left}
+  table.redemption-table tbody th{grid-column:1/-1;font-size:13px}
+  table.redemption-table .conversion-out{display:inline;overflow-wrap:anywhere}
+  table.redemption-table td::before{content:attr(data-label);display:block;color:var(--ink-3);font:10px "IBM Plex Sans",sans-serif;margin-bottom:3px}
+  .redemption-facts{grid-template-columns:1fr}
+  .scenario-caption{flex-basis:calc(100% - 30px);order:2}
+}
+
+.redemption-warning{border-left:3px solid var(--watch);background:var(--watch-bg);padding:10px 12px;font-size:12px;color:var(--ink-2);margin:0 0 10px}
+.cutoff-panel{padding:18px 24px}
 .cutoff-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
 .cutoff-head h2{font-size:18px;margin:0}
 .cutoff-status{font-size:12px}
@@ -232,7 +273,16 @@ table.cutoff-economics td:last-child{white-space:normal;min-width:220px;font-siz
     </div>
   </div>
 
-  <details class="st-settings">
+  <div id="cards"></div>
+
+  <div id="scenarios"></div>
+
+  <details class="card scenario-panel" id="cutoff-section">
+    <summary><span>Lido 固定批次情景</span><span class="scenario-caption">历史快照 · 非实时 ETA</span></summary>
+    <section class="cutoff-panel" id="lido-cutoff" aria-label="Lido 固定快照批次情景"><p class="empty">正在读取固定批次情景…</p></section>
+  </details>
+
+  <details class="st-settings" id="st-settings-panel">
     <summary>stETH 赎回测算参数 · 通用示例，可在本页修改</summary>
     <form id="st-settings">
       <p class="empty">数量留空时比较 50 / 100 / 200 / 300 ETH 通用示例，并非个人持仓。输入只在本页内存保留；报价数量会发送给公开 RPC、KyberSwap 与 Lido API，不发送钱包或余额。</p>
@@ -253,10 +303,6 @@ table.cutoff-economics td:last-child{white-space:normal;min-width:220px;font-siz
       <div class="st-actions"><button class="refresh" type="submit">应用并重新取报价</button><button class="refresh" id="st-reset" type="button">恢复示例</button><span id="st-settings-status" role="status"></span></div>
     </form>
   </details>
-
-  <section class="card cutoff-panel" id="lido-cutoff" aria-label="Lido 固定快照批次情景"><p class="empty">正在读取固定批次情景…</p></section>
-
-  <div id="cards"></div>
 
   <details class="meth">
     <summary>口径与方法</summary>
