@@ -1,0 +1,4271 @@
+{
+  "schema": 1,
+  "purpose": "Real Lido accounting-report transition; all selected source RPC event fields retained exactly. Ledger stores no owners or requestors.",
+  "source": {
+    "network": "ethereum-mainnet",
+    "report_transaction": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+    "report_block": 26118965,
+    "report_block_hash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+    "report_timestamp": 1791116603,
+    "receipt_url": "https://etherscan.io/tx/0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+    "prior_report_transaction": "0x3ea2a7647766dbd8ad8960d3b65b867c76cb66d112a5e8bc3f8784afc5a61579",
+    "prior_report_block": 26111782,
+    "prior_report_block_hash": "0xeae2f60690b00da08a3c9488238e1f7bed51fb391579a9697c454027cd96bb38",
+    "event_acquisition": "Public Flashbots eth_getLogs, contiguous 26109778\u201326119777",
+    "initial_state_derivation": "Prior report TokenRebased/InternalShareRateUpdated plus every intervening core and queue event through initial_state.block",
+    "receipt_sha256": "6a38ada68b40762d1f55db1223e18297700736581e3aadc048c9b57880dcc7b4"
+  },
+  "initial_state": {
+    "schema": 1,
+    "block": 26118959,
+    "hash": "0xc05d43f84cfa699455d1ea34744ae4c4ad8b7d80a872a8be0d5dba12352e2f8b",
+    "timestamp": 1791116531,
+    "pending_requests": [
+      {
+        "request_id": 137256,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790803559,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137257,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790803559,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137258,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790803559,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137259,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790803559,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137260,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790803559,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137261,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790803559,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137262,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790803559,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137263,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790803559,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137264,
+        "amount_steth_wei": "515480258596025884905",
+        "amount_shares_wei": "413957058807407198467",
+        "timestamp": 1790803559,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137265,
+        "amount_steth_wei": "500000000000000000",
+        "amount_shares_wei": "401525618008020663",
+        "timestamp": 1790804903,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137266,
+        "amount_steth_wei": "106123363372310266",
+        "amount_shares_wei": "85222498126313246",
+        "timestamp": 1790807231,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137267,
+        "amount_steth_wei": "11744533375655419812",
+        "amount_shares_wei": "9431462043751735079",
+        "timestamp": 1790811047,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137268,
+        "amount_steth_wei": "15610893674506552",
+        "amount_shares_wei": "12536347460627487",
+        "timestamp": 1790811839,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137269,
+        "amount_steth_wei": "300000000000000000000",
+        "amount_shares_wei": "240915370804812397818",
+        "timestamp": 1790811851,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137270,
+        "amount_steth_wei": "233159116397838849102",
+        "amount_shares_wei": "187238716611692536910",
+        "timestamp": 1790811851,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137271,
+        "amount_steth_wei": "9563800000000000000",
+        "amount_shares_wei": "7680221411010216034",
+        "timestamp": 1790813039,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137272,
+        "amount_steth_wei": "300000000000000000000",
+        "amount_shares_wei": "240915370804812397818",
+        "timestamp": 1790814551,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137273,
+        "amount_steth_wei": "8827479332781795269",
+        "amount_shares_wei": "7088918189096480483",
+        "timestamp": 1790814551,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137274,
+        "amount_steth_wei": "1133496420000000000",
+        "amount_shares_wei": "910255701100757905",
+        "timestamp": 1790814611,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137275,
+        "amount_steth_wei": "108227643859597",
+        "amount_shares_wei": "86912343172553",
+        "timestamp": 1790817419,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137276,
+        "amount_steth_wei": "33828842000000000000",
+        "amount_shares_wei": "27166293381091371484",
+        "timestamp": 1790820011,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137277,
+        "amount_steth_wei": "665596998330899",
+        "amount_shares_wei": "534508492198195",
+        "timestamp": 1790820167,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137278,
+        "amount_steth_wei": "100000000000000000",
+        "amount_shares_wei": "80305123601604132",
+        "timestamp": 1790820875,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137279,
+        "amount_steth_wei": "196000000000000000",
+        "amount_shares_wei": "157398042259144099",
+        "timestamp": 1790821223,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137280,
+        "amount_steth_wei": "10000000000000000",
+        "amount_shares_wei": "8030512360160413",
+        "timestamp": 1790821235,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137281,
+        "amount_steth_wei": "2407833654594909788",
+        "amount_shares_wei": "1933613792443464229",
+        "timestamp": 1790821499,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137282,
+        "amount_steth_wei": "1000000000000000000",
+        "amount_shares_wei": "803051236016041326",
+        "timestamp": 1790822915,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137283,
+        "amount_steth_wei": "58050000000000000000",
+        "amount_shares_wei": "46617124250731198977",
+        "timestamp": 1790823263,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137284,
+        "amount_steth_wei": "5463354238614779260",
+        "amount_shares_wei": "4387353374113076859",
+        "timestamp": 1790825315,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137285,
+        "amount_steth_wei": "11525577341185824",
+        "amount_shares_wei": "9255629129637755",
+        "timestamp": 1790827043,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137286,
+        "amount_steth_wei": "2000000000000000000",
+        "amount_shares_wei": "1606102472032082652",
+        "timestamp": 1790828231,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137287,
+        "amount_steth_wei": "265466625825796907275",
+        "amount_shares_wei": "213183301990414163775",
+        "timestamp": 1790829023,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137288,
+        "amount_steth_wei": "337279911745323792918",
+        "amount_shares_wei": "270853050010463606161",
+        "timestamp": 1790829107,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137289,
+        "amount_steth_wei": "99608700951255203486",
+        "amount_shares_wei": "79990890416857722561",
+        "timestamp": 1790829239,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137290,
+        "amount_steth_wei": "199538000000000000",
+        "amount_shares_wei": "160239237532168854",
+        "timestamp": 1790829791,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137291,
+        "amount_steth_wei": "13456151725756838896",
+        "amount_shares_wei": "10805979275388417028",
+        "timestamp": 1790832155,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137292,
+        "amount_steth_wei": "10025969912143014337",
+        "amount_shares_wei": "8051367530206088924",
+        "timestamp": 1790832695,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137293,
+        "amount_steth_wei": "5862496245920446629",
+        "amount_shares_wei": "4707884856425816836",
+        "timestamp": 1790832707,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137294,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137295,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137296,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137297,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137298,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137299,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137300,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137301,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137302,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137303,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137304,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137305,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137306,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137307,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137308,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137309,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137310,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137311,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137312,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137313,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137314,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137315,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137316,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137317,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137318,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137319,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137320,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137321,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137322,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137323,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137324,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137325,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137326,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137327,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137328,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137329,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137330,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137331,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137332,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137333,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137334,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137335,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137336,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137337,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137338,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137339,
+        "amount_steth_wei": "424700421752588764340",
+        "amount_shares_wei": "341056198624950451346",
+        "timestamp": 1790832827,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137340,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790833019,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137341,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790833019,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137342,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790833019,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137343,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790833019,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137344,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790833019,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137345,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790833019,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137346,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790833019,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137347,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790833019,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137348,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790833019,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137349,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790833019,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137350,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790833019,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137351,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790833019,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137352,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803051236016041326062",
+        "timestamp": 1790833019,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137353,
+        "amount_steth_wei": "39603386074123027185",
+        "amount_shares_wei": "31803548137244975426",
+        "timestamp": 1790833019,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137354,
+        "amount_steth_wei": "26571367001555628766",
+        "amount_shares_wei": "21338169113235101565",
+        "timestamp": 1790833643,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137355,
+        "amount_steth_wei": "100000000000000000",
+        "amount_shares_wei": "80305123601604132",
+        "timestamp": 1790834423,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137356,
+        "amount_steth_wei": "124524656968674802832",
+        "amount_shares_wei": "99999679693167854321",
+        "timestamp": 1790834603,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137357,
+        "amount_steth_wei": "100089359522555130998",
+        "amount_shares_wei": "80376883876641833877",
+        "timestamp": 1790834795,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137358,
+        "amount_steth_wei": "10157367243287940",
+        "amount_shares_wei": "8156886319391230",
+        "timestamp": 1790834807,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137359,
+        "amount_steth_wei": "940092641389068925",
+        "amount_shares_wei": "754942557637076889",
+        "timestamp": 1790835155,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137360,
+        "amount_steth_wei": "1121739198268369",
+        "amount_shares_wei": "900814049657056",
+        "timestamp": 1790836427,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137361,
+        "amount_steth_wei": "999999999999999999999",
+        "amount_shares_wei": "803051236016041326061",
+        "timestamp": 1790836691,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137362,
+        "amount_steth_wei": "999999999999999999999",
+        "amount_shares_wei": "803051236016041326061",
+        "timestamp": 1790836691,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137363,
+        "amount_steth_wei": "999999999999999999999",
+        "amount_shares_wei": "803051236016041326061",
+        "timestamp": 1790836691,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137364,
+        "amount_steth_wei": "999999999999999999999",
+        "amount_shares_wei": "803051236016041326061",
+        "timestamp": 1790836691,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137365,
+        "amount_steth_wei": "999999999999999999999",
+        "amount_shares_wei": "803051236016041326061",
+        "timestamp": 1790836691,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137366,
+        "amount_steth_wei": "999999999999999999999",
+        "amount_shares_wei": "803051236016041326061",
+        "timestamp": 1790836691,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137367,
+        "amount_steth_wei": "999999999999999999999",
+        "amount_shares_wei": "803051236016041326061",
+        "timestamp": 1790836691,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137368,
+        "amount_steth_wei": "999999999999999999999",
+        "amount_shares_wei": "803051236016041326061",
+        "timestamp": 1790836691,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137369,
+        "amount_steth_wei": "999999999999999999999",
+        "amount_shares_wei": "803051236016041326061",
+        "timestamp": 1790836691,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137370,
+        "amount_steth_wei": "999999999999999999999",
+        "amount_shares_wei": "803051236016041326061",
+        "timestamp": 1790836691,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137371,
+        "amount_steth_wei": "999999999999999999999",
+        "amount_shares_wei": "803051236016041326061",
+        "timestamp": 1790836691,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137372,
+        "amount_steth_wei": "337731816862223790963",
+        "amount_shares_wei": "271215952973152123237",
+        "timestamp": 1790836691,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137373,
+        "amount_steth_wei": "10206574521411617",
+        "amount_shares_wei": "8196402284909434",
+        "timestamp": 1790836979,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137374,
+        "amount_steth_wei": "23012100631867272",
+        "amount_shares_wei": "18479895855746538",
+        "timestamp": 1790838695,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137375,
+        "amount_steth_wei": "750000000000000000",
+        "amount_shares_wei": "602288427012030994",
+        "timestamp": 1790838887,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137376,
+        "amount_steth_wei": "117309602312318152468",
+        "amount_shares_wei": "94205621133457351945",
+        "timestamp": 1790839979,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137377,
+        "amount_steth_wei": "5690000000000000000",
+        "amount_shares_wei": "4569361532931275145",
+        "timestamp": 1790841599,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137378,
+        "amount_steth_wei": "151311645923719535009",
+        "amount_shares_wei": "121511004282664573755",
+        "timestamp": 1790842871,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137379,
+        "amount_steth_wei": "1121739198268366",
+        "amount_shares_wei": "900814049657054",
+        "timestamp": 1790843123,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137380,
+        "amount_steth_wei": "879892966567854024",
+        "amount_shares_wei": "706599134364136501",
+        "timestamp": 1790843207,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137381,
+        "amount_steth_wei": "738400000000000000",
+        "amount_shares_wei": "592973032674244915",
+        "timestamp": 1790843735,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137382,
+        "amount_steth_wei": "300817725881182157",
+        "amount_shares_wei": "241572046584418035",
+        "timestamp": 1790844419,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137383,
+        "amount_steth_wei": "10160000000000000000",
+        "amount_shares_wei": "8159000557922979872",
+        "timestamp": 1790844971,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137384,
+        "amount_steth_wei": "7700000000000000",
+        "amount_shares_wei": "6183494517323518",
+        "timestamp": 1790846015,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137385,
+        "amount_steth_wei": "14858387104204193",
+        "amount_shares_wei": "11932046129235986",
+        "timestamp": 1790847239,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137386,
+        "amount_steth_wei": "11660581458219856",
+        "amount_shares_wei": "9364044352689188",
+        "timestamp": 1790848259,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137387,
+        "amount_steth_wei": "4085312722417297575",
+        "amount_shares_wei": "3280715431249269558",
+        "timestamp": 1790850203,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137388,
+        "amount_steth_wei": "399129416898721448",
+        "amount_shares_wei": "320521371570880110",
+        "timestamp": 1790850659,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137389,
+        "amount_steth_wei": "68000000000000000",
+        "amount_shares_wei": "54607484049090810",
+        "timestamp": 1790855747,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137390,
+        "amount_steth_wei": "73759205931143653",
+        "amount_shares_wei": "59232421490566636",
+        "timestamp": 1790856107,
+        "report_timestamp": 1790769611
+      },
+      {
+        "request_id": 137391,
+        "amount_steth_wei": "11531622657849098",
+        "amount_shares_wei": "9259926115377716",
+        "timestamp": 1790857427,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137392,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790858015,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137393,
+        "amount_steth_wei": "918573965666416761116",
+        "amount_shares_wei": "737617532758140867091",
+        "timestamp": 1790858015,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137394,
+        "amount_steth_wei": "502523270759522569258",
+        "amount_shares_wei": "403527629767160508638",
+        "timestamp": 1790858219,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137395,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790858387,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137396,
+        "amount_steth_wei": "10999798107158337857",
+        "amount_shares_wei": "8832869473666640347",
+        "timestamp": 1790858387,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137397,
+        "amount_steth_wei": "131001190477103138593",
+        "amount_shares_wei": "105194332214713716139",
+        "timestamp": 1790859683,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137398,
+        "amount_steth_wei": "3913602292148647832",
+        "amount_shares_wei": "3142633881243288376",
+        "timestamp": 1790860271,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137399,
+        "amount_steth_wei": "19141323414250309414",
+        "amount_shares_wei": "15370537679349275323",
+        "timestamp": 1790860439,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137400,
+        "amount_steth_wei": "1746928543281008438",
+        "amount_shares_wei": "1402788637782553184",
+        "timestamp": 1790861135,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137401,
+        "amount_steth_wei": "221821054994689625570",
+        "amount_shares_wei": "178122944275137088266",
+        "timestamp": 1790861363,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137402,
+        "amount_steth_wei": "6319711483366299267",
+        "amount_shares_wei": "5074746472617525310",
+        "timestamp": 1790862119,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137403,
+        "amount_steth_wei": "300000000000000000000",
+        "amount_shares_wei": "240900861659955590130",
+        "timestamp": 1790862251,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137404,
+        "amount_steth_wei": "81014579152911798720",
+        "amount_shares_wei": "65054939749850424542",
+        "timestamp": 1790862251,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137405,
+        "amount_steth_wei": "190100000000000000000",
+        "amount_shares_wei": "152650846005191858945",
+        "timestamp": 1790863091,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137406,
+        "amount_steth_wei": "263872835685135299397",
+        "amount_shares_wei": "211890644950683238400",
+        "timestamp": 1790863103,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137407,
+        "amount_steth_wei": "93643337132333658948",
+        "amount_shares_wei": "75195868679642977329",
+        "timestamp": 1790863223,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137408,
+        "amount_steth_wei": "400024091478555669295",
+        "amount_shares_wei": "321220494406416530425",
+        "timestamp": 1790863223,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137409,
+        "amount_steth_wei": "51093059118321304517",
+        "amount_shares_wei": "41027873221488843715",
+        "timestamp": 1790864015,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137410,
+        "amount_steth_wei": "3000000000000000000",
+        "amount_shares_wei": "2409008616599555901",
+        "timestamp": 1790864087,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137411,
+        "amount_steth_wei": "19998729947403444236",
+        "amount_shares_wei": "16059037588114160183",
+        "timestamp": 1790864387,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137412,
+        "amount_steth_wei": "1062922144742352782",
+        "amount_shares_wei": "853529535152936065",
+        "timestamp": 1790864903,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137413,
+        "amount_steth_wei": "199959814580739066566",
+        "amount_shares_wei": "160568305432883308620",
+        "timestamp": 1790864951,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137414,
+        "amount_steth_wei": "187201617659104825",
+        "amount_shares_wei": "150323436660719702",
+        "timestamp": 1790865563,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137415,
+        "amount_steth_wei": "3450289495881821082",
+        "amount_shares_wei": "2770592375114081644",
+        "timestamp": 1790865779,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137416,
+        "amount_steth_wei": "1242092811242291",
+        "amount_shares_wei": "997404094966348",
+        "timestamp": 1790865959,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137417,
+        "amount_steth_wei": "69821778577068422929",
+        "amount_shares_wei": "56067088739488036747",
+        "timestamp": 1790866703,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137418,
+        "amount_steth_wei": "42023478483204232",
+        "amount_shares_wei": "33744973921841676",
+        "timestamp": 1790867063,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137419,
+        "amount_steth_wei": "4456429517013302",
+        "amount_shares_wei": "3578525701917880",
+        "timestamp": 1790867951,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137420,
+        "amount_steth_wei": "13202753987596759",
+        "amount_shares_wei": "10601849372988246",
+        "timestamp": 1790868071,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137421,
+        "amount_steth_wei": "1116893673534692",
+        "amount_shares_wei": "896868827790201",
+        "timestamp": 1790869151,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137422,
+        "amount_steth_wei": "1027324599368304",
+        "amount_shares_wei": "824944603974310",
+        "timestamp": 1790869763,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137423,
+        "amount_steth_wei": "800709824569613015149",
+        "amount_shares_wei": "642972288928038848610",
+        "timestamp": 1790872811,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137424,
+        "amount_steth_wei": "124946385875591823",
+        "amount_shares_wei": "100332306729091249",
+        "timestamp": 1790874119,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137425,
+        "amount_steth_wei": "1094685834302829570",
+        "amount_shares_wei": "879035869101663379",
+        "timestamp": 1790874899,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137426,
+        "amount_steth_wei": "175150847395730793",
+        "amount_shares_wei": "140646633527009788",
+        "timestamp": 1790875271,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137427,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790875427,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137428,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790875427,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137429,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790875427,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137430,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790875427,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137431,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790875427,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137432,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790875427,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137433,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790875427,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137434,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790875427,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137435,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790875427,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137436,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790875427,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137437,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790875427,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137438,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790875427,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137439,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790875427,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137440,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790875427,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137441,
+        "amount_steth_wei": "348759965073998145135",
+        "amount_shares_wei": "280055253662740568132",
+        "timestamp": 1790875427,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137442,
+        "amount_steth_wei": "16440018767224541",
+        "amount_shares_wei": "13201382289100775",
+        "timestamp": 1790875703,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137443,
+        "amount_steth_wei": "3073951443521288",
+        "amount_shares_wei": "2468391838150475",
+        "timestamp": 1790876075,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137444,
+        "amount_steth_wei": "115535563355253869218",
+        "amount_shares_wei": "92775389215496822877",
+        "timestamp": 1790876651,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137445,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790878835,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137446,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790878835,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137447,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790878835,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137448,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790878835,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137449,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790878835,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137450,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790878835,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137451,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790878835,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137452,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790878835,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137453,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790878835,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137454,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790878835,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137455,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790878835,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137456,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790878835,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137457,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790878835,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137458,
+        "amount_steth_wei": "22103686305278304154",
+        "amount_shares_wei": "17749323589343012183",
+        "timestamp": 1790878835,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137459,
+        "amount_steth_wei": "18683246087051404",
+        "amount_shares_wei": "15002700269918922",
+        "timestamp": 1790878883,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137460,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790879663,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137461,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790879663,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137462,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790879663,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137463,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790879663,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137464,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790879663,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137465,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790879663,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137466,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790879663,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137467,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790879663,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137468,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790879663,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137469,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790879663,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137470,
+        "amount_steth_wei": "10000000000000",
+        "amount_shares_wei": "8030028721998",
+        "timestamp": 1790881151,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137471,
+        "amount_steth_wei": "17831600719522403",
+        "amount_shares_wei": "14318826593697436",
+        "timestamp": 1790881451,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137472,
+        "amount_steth_wei": "4950000000000000000",
+        "amount_shares_wei": "3974864217389267237",
+        "timestamp": 1790883491,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137473,
+        "amount_steth_wei": "32011563909706721262",
+        "amount_shares_wei": "25705377763103619868",
+        "timestamp": 1790885231,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137474,
+        "amount_steth_wei": "928286359375329617",
+        "amount_shares_wei": "745416612802333663",
+        "timestamp": 1790888003,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137475,
+        "amount_steth_wei": "152269000000000000",
+        "amount_shares_wei": "122272444346999259",
+        "timestamp": 1790888315,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137476,
+        "amount_steth_wei": "23668672223719978",
+        "amount_shares_wei": "19006011776803999",
+        "timestamp": 1790888675,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137477,
+        "amount_steth_wei": "26222584010103696067",
+        "amount_shares_wei": "21056810276615179956",
+        "timestamp": 1790889419,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137478,
+        "amount_steth_wei": "11640169232171052",
+        "amount_shares_wei": "9347089326325700",
+        "timestamp": 1790889875,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137479,
+        "amount_steth_wei": "14594000000000000",
+        "amount_shares_wei": "11719023916884639",
+        "timestamp": 1790890895,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137480,
+        "amount_steth_wei": "1000249025522435174",
+        "amount_shares_wei": "803202840409618480",
+        "timestamp": 1790890967,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137481,
+        "amount_steth_wei": "600000000000000000",
+        "amount_shares_wei": "481801723319911180",
+        "timestamp": 1790891663,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137482,
+        "amount_steth_wei": "8000000000000000",
+        "amount_shares_wei": "6424022977598815",
+        "timestamp": 1790893247,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137483,
+        "amount_steth_wei": "3670945051552577",
+        "amount_shares_wei": "2947779420084552",
+        "timestamp": 1790893919,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137484,
+        "amount_steth_wei": "1264658714962485",
+        "amount_shares_wei": "1015524580467449",
+        "timestamp": 1790896799,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137485,
+        "amount_steth_wei": "200000000000000000",
+        "amount_shares_wei": "160600574439970393",
+        "timestamp": 1790897171,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137486,
+        "amount_steth_wei": "201889395638747836",
+        "amount_shares_wei": "162117764564606779",
+        "timestamp": 1790897207,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137487,
+        "amount_steth_wei": "77804343650000000000",
+        "amount_shares_wei": "62477111420574313927",
+        "timestamp": 1790901011,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137488,
+        "amount_steth_wei": "270681984977841899",
+        "amount_shares_wei": "217358411389964228",
+        "timestamp": 1790901419,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137489,
+        "amount_steth_wei": "140369962362007400",
+        "amount_shares_wei": "112717482947277058",
+        "timestamp": 1790902619,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137490,
+        "amount_steth_wei": "174091874893674880",
+        "amount_shares_wei": "139796275566278226",
+        "timestamp": 1790902799,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137491,
+        "amount_steth_wei": "5000608614588687637",
+        "amount_shares_wei": "4015503080262038739",
+        "timestamp": 1790903435,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137492,
+        "amount_steth_wei": "1159828222732928",
+        "amount_shares_wei": "931345394112990",
+        "timestamp": 1790904131,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137493,
+        "amount_steth_wei": "2039011365189607985",
+        "amount_shares_wei": "1637331982695396468",
+        "timestamp": 1790905571,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137494,
+        "amount_steth_wei": "108389787164131971731",
+        "amount_shares_wei": "87037310409928620865",
+        "timestamp": 1790905727,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137495,
+        "amount_steth_wei": "3612674000000000000",
+        "amount_shares_wei": "2900987598321728005",
+        "timestamp": 1790906411,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137496,
+        "amount_steth_wei": "9866517407992369",
+        "amount_shares_wei": "7922841817227710",
+        "timestamp": 1790906411,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137497,
+        "amount_steth_wei": "37359766743815054656",
+        "amount_shares_wei": "29999999999999999999",
+        "timestamp": 1790907563,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137498,
+        "amount_steth_wei": "125071563321128360219",
+        "amount_shares_wei": "100432824577391729494",
+        "timestamp": 1790908667,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137499,
+        "amount_steth_wei": "15008442980803221611",
+        "amount_shares_wei": "12051822820832694673",
+        "timestamp": 1790908991,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137500,
+        "amount_steth_wei": "200109814197643521820",
+        "amount_shares_wei": "160688755556086463657",
+        "timestamp": 1790909795,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137501,
+        "amount_steth_wei": "100043348935853357899",
+        "amount_shares_wei": "80335096539982250243",
+        "timestamp": 1790909831,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137502,
+        "amount_steth_wei": "20032369154054894809",
+        "amount_shares_wei": "16086049967673799358",
+        "timestamp": 1790910407,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137503,
+        "amount_steth_wei": "1000000000000000000",
+        "amount_shares_wei": "803002872199851967",
+        "timestamp": 1790910539,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137504,
+        "amount_steth_wei": "6065525929505300",
+        "amount_shares_wei": "4870634742795432",
+        "timestamp": 1790911055,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137505,
+        "amount_steth_wei": "7000000000000000000",
+        "amount_shares_wei": "5621020105398963769",
+        "timestamp": 1790911415,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137506,
+        "amount_steth_wei": "30094002244772876183",
+        "amount_shares_wei": "24165570238541412109",
+        "timestamp": 1790911571,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137507,
+        "amount_steth_wei": "800000000000000000",
+        "amount_shares_wei": "642402297759881573",
+        "timestamp": 1790914151,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137508,
+        "amount_steth_wei": "3705140345159639840",
+        "amount_shares_wei": "2975238339066741676",
+        "timestamp": 1790914655,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137509,
+        "amount_steth_wei": "4341825360873128",
+        "amount_shares_wei": "3486498235371280",
+        "timestamp": 1790916071,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137510,
+        "amount_steth_wei": "1077003108661735",
+        "amount_shares_wei": "864836589623542",
+        "timestamp": 1790916239,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137511,
+        "amount_steth_wei": "100000000000000000",
+        "amount_shares_wei": "80300287219985196",
+        "timestamp": 1790918591,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137512,
+        "amount_steth_wei": "10479541574916550",
+        "amount_shares_wei": "8415101983995749",
+        "timestamp": 1790918639,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137513,
+        "amount_steth_wei": "64600000000000000",
+        "amount_shares_wei": "51873985544110437",
+        "timestamp": 1790918699,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137514,
+        "amount_steth_wei": "250122790862101330371",
+        "amount_shares_wei": "200849319464910256013",
+        "timestamp": 1790920823,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137515,
+        "amount_steth_wei": "5641846624090762131",
+        "amount_shares_wei": "4530419043655920525",
+        "timestamp": 1790921243,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137516,
+        "amount_steth_wei": "51853197436314130",
+        "amount_shares_wei": "41638266474106246",
+        "timestamp": 1790921699,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137517,
+        "amount_steth_wei": "8774716798419355695",
+        "amount_shares_wei": "7046122791871032096",
+        "timestamp": 1790921855,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137518,
+        "amount_steth_wei": "2857243426659016",
+        "amount_shares_wei": "2294374678181336",
+        "timestamp": 1790921975,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137519,
+        "amount_steth_wei": "1435270076074777518",
+        "amount_shares_wei": "1152525993470546381",
+        "timestamp": 1790922143,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137520,
+        "amount_steth_wei": "6367199265046683",
+        "amount_shares_wei": "5112879297701272",
+        "timestamp": 1790923547,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137521,
+        "amount_steth_wei": "17244871527799116",
+        "amount_shares_wei": "13847681367540139",
+        "timestamp": 1790923739,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137522,
+        "amount_steth_wei": "11218067591579690",
+        "amount_shares_wei": "9008140496570566",
+        "timestamp": 1790924843,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137523,
+        "amount_steth_wei": "16000000000000000000",
+        "amount_shares_wei": "12848045955197631473",
+        "timestamp": 1790925119,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137524,
+        "amount_steth_wei": "8253298833725329676",
+        "amount_shares_wei": "6627422668605128195",
+        "timestamp": 1790925275,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137525,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790925695,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137526,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790925695,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137527,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790925695,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137528,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790925695,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137529,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "803002872199851967101",
+        "timestamp": 1790925695,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137530,
+        "amount_steth_wei": "245775554077385611559",
+        "amount_shares_wei": "197358475840650684281",
+        "timestamp": 1790925695,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137531,
+        "amount_steth_wei": "3992000000000000",
+        "amount_shares_wei": "3205587465821809",
+        "timestamp": 1790927039,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137532,
+        "amount_steth_wei": "1032165751181584343",
+        "amount_shares_wei": "828832062785129976",
+        "timestamp": 1790927231,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137533,
+        "amount_steth_wei": "2005860832872520784",
+        "amount_shares_wei": "1610712010029821432",
+        "timestamp": 1790928191,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137534,
+        "amount_steth_wei": "190083783218079503070",
+        "amount_shares_wei": "152637823882731861279",
+        "timestamp": 1790928335,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137535,
+        "amount_steth_wei": "64756415238639804019",
+        "amount_shares_wei": "51999587429994024968",
+        "timestamp": 1790928623,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137536,
+        "amount_steth_wei": "352304213483685993",
+        "amount_shares_wei": "282901295315509667",
+        "timestamp": 1790929031,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137537,
+        "amount_steth_wei": "1504873083418720441",
+        "amount_shares_wei": "1208417408281479938",
+        "timestamp": 1790929919,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137538,
+        "amount_steth_wei": "10853523043362820",
+        "amount_shares_wei": "8715410177307622",
+        "timestamp": 1790930159,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137539,
+        "amount_steth_wei": "152000000000000000",
+        "amount_shares_wei": "122056436574377498",
+        "timestamp": 1790931779,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137540,
+        "amount_steth_wei": "212584428948470555",
+        "amount_shares_wei": "170705907030587211",
+        "timestamp": 1790931815,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137541,
+        "amount_steth_wei": "5424533593980653",
+        "amount_shares_wei": "4355916056311049",
+        "timestamp": 1790932751,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137542,
+        "amount_steth_wei": "4000000000000000000",
+        "amount_shares_wei": "3212011488799407868",
+        "timestamp": 1790932931,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137543,
+        "amount_steth_wei": "51637769411163410554",
+        "amount_shares_wei": "41465277151157877329",
+        "timestamp": 1790935343,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137544,
+        "amount_steth_wei": "710000000000000000",
+        "amount_shares_wei": "570132039261894896",
+        "timestamp": 1790936207,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137545,
+        "amount_steth_wei": "2053000000000000000",
+        "amount_shares_wei": "1648564896626296088",
+        "timestamp": 1790937335,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137546,
+        "amount_steth_wei": "1000000000000000000",
+        "amount_shares_wei": "803002872199851967",
+        "timestamp": 1790938079,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137547,
+        "amount_steth_wei": "12092986977058657",
+        "amount_shares_wei": "9710703276053506",
+        "timestamp": 1790938955,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137548,
+        "amount_steth_wei": "113600000000000000",
+        "amount_shares_wei": "91221126281903183",
+        "timestamp": 1790939423,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137549,
+        "amount_steth_wei": "1157053398873305",
+        "amount_shares_wei": "929117202583864",
+        "timestamp": 1790940551,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137550,
+        "amount_steth_wei": "29480602344995936",
+        "amount_shares_wei": "23673008357213427",
+        "timestamp": 1790940599,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137551,
+        "amount_steth_wei": "1447000000000000000",
+        "amount_shares_wei": "1161945156073185796",
+        "timestamp": 1790941283,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137552,
+        "amount_steth_wei": "23595787038836379090",
+        "amount_shares_wei": "18947484764001652402",
+        "timestamp": 1790941907,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137553,
+        "amount_steth_wei": "2085680346262189708",
+        "amount_shares_wei": "1674807308539320120",
+        "timestamp": 1790941919,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137554,
+        "amount_steth_wei": "1085456340218283",
+        "amount_shares_wei": "871624558842820",
+        "timestamp": 1790943035,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137555,
+        "amount_steth_wei": "1500163073171451508",
+        "amount_shares_wei": "1204635256524832250",
+        "timestamp": 1790943191,
+        "report_timestamp": 1790856011
+      },
+      {
+        "request_id": 137556,
+        "amount_steth_wei": "555119256218538922",
+        "amount_shares_wei": "445735040000597602",
+        "timestamp": 1790943863,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137557,
+        "amount_steth_wei": "555119256218538922",
+        "amount_shares_wei": "445735040000597602",
+        "timestamp": 1790944907,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137558,
+        "amount_steth_wei": "776252425600354991",
+        "amount_shares_wei": "623294728294060453",
+        "timestamp": 1790946143,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137559,
+        "amount_steth_wei": "43172869960179867",
+        "amount_shares_wei": "34665814062601247",
+        "timestamp": 1790946755,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137560,
+        "amount_steth_wei": "2645876882639",
+        "amount_shares_wei": "2124516533894",
+        "timestamp": 1790947967,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137561,
+        "amount_steth_wei": "395666490832865727",
+        "amount_shares_wei": "317701858010944710",
+        "timestamp": 1790948675,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137562,
+        "amount_steth_wei": "1196231079166651546",
+        "amount_shares_wei": "960518126419298392",
+        "timestamp": 1790948939,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137563,
+        "amount_steth_wei": "128327000000000000",
+        "amount_shares_wei": "103040634669747970",
+        "timestamp": 1790949611,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137564,
+        "amount_steth_wei": "200126000000000000000",
+        "amount_shares_wei": "160691904695956286762",
+        "timestamp": 1790949887,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137565,
+        "amount_steth_wei": "531493643302103753",
+        "amount_shares_wei": "426764767576468033",
+        "timestamp": 1790949947,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137566,
+        "amount_steth_wei": "287763794737997111686",
+        "amount_shares_wei": "231060992969354102284",
+        "timestamp": 1790950547,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137567,
+        "amount_steth_wei": "3144564353933807003",
+        "amount_shares_wei": "2524939465499898406",
+        "timestamp": 1790950571,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137568,
+        "amount_steth_wei": "90422712349039263",
+        "amount_shares_wei": "72605248069424696",
+        "timestamp": 1790952275,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137569,
+        "amount_steth_wei": "11938293657585993",
+        "amount_shares_wei": "9585896618416136",
+        "timestamp": 1790954315,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137570,
+        "amount_steth_wei": "1900000000000000000",
+        "amount_shares_wei": "1525611959077365983",
+        "timestamp": 1790954579,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137571,
+        "amount_steth_wei": "20000000000000000000",
+        "amount_shares_wei": "16059073253445957722",
+        "timestamp": 1790954951,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137572,
+        "amount_steth_wei": "13023593081002902",
+        "amount_shares_wei": "10457341765544876",
+        "timestamp": 1790955047,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137573,
+        "amount_steth_wei": "908062120169371754",
+        "amount_shares_wei": "729131805323969353",
+        "timestamp": 1790955383,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137574,
+        "amount_steth_wei": "1040167915506444400",
+        "amount_shares_wei": "835206637550108806",
+        "timestamp": 1790956331,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137575,
+        "amount_steth_wei": "132859188508105652",
+        "amount_shares_wei": "106679772032252701",
+        "timestamp": 1790958071,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137576,
+        "amount_steth_wei": "31688762970581",
+        "amount_shares_wei": "25444608292782",
+        "timestamp": 1790959823,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137577,
+        "amount_steth_wei": "10854188208447794",
+        "amount_shares_wei": "8715410177307623",
+        "timestamp": 1790960303,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137578,
+        "amount_steth_wei": "6691070077478510061",
+        "amount_shares_wei": "5372619225908385648",
+        "timestamp": 1790961551,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137579,
+        "amount_steth_wei": "43420914524107412",
+        "amount_shares_wei": "34864982353712822",
+        "timestamp": 1790961875,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137580,
+        "amount_steth_wei": "1000000000000000000",
+        "amount_shares_wei": "802953662672297886",
+        "timestamp": 1790963279,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137581,
+        "amount_steth_wei": "6693698786460934",
+        "amount_shares_wei": "5374729957413922",
+        "timestamp": 1790963567,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137582,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "802953662672297886141",
+        "timestamp": 1790964131,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137583,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "802953662672297886141",
+        "timestamp": 1790964131,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137584,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "802953662672297886141",
+        "timestamp": 1790964131,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137585,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "802953662672297886141",
+        "timestamp": 1790964131,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137586,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "802953662672297886141",
+        "timestamp": 1790964131,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137587,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "802953662672297886141",
+        "timestamp": 1790964131,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137588,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "802953662672297886141",
+        "timestamp": 1790964131,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137589,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "802953662672297886141",
+        "timestamp": 1790964131,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137590,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "802953662672297886141",
+        "timestamp": 1790964131,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137591,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "802953662672297886141",
+        "timestamp": 1790964131,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137592,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "802953662672297886141",
+        "timestamp": 1790964131,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137593,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "802953662672297886141",
+        "timestamp": 1790964131,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137594,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "802953662672297886141",
+        "timestamp": 1790964131,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137595,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "802953662672297886141",
+        "timestamp": 1790964131,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137596,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "802953662672297886141",
+        "timestamp": 1790964131,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137597,
+        "amount_steth_wei": "1000000000000000000000",
+        "amount_shares_wei": "802953662672297886141",
+        "timestamp": 1790964131,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137598,
+        "amount_steth_wei": "148109937402219266647",
+        "amount_shares_wei": "118925416715276724913",
+        "timestamp": 1790964131,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137599,
+        "amount_steth_wei": "92542633232831345",
+        "amount_shares_wei": "74307446307641043",
+        "timestamp": 1790964311,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137600,
+        "amount_steth_wei": "249080375739719572897",
+        "amount_shares_wei": "199999999999999999999",
+        "timestamp": 1790964539,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137601,
+        "amount_steth_wei": "1582895476307181401",
+        "amount_shares_wei": "1270991720328262825",
+        "timestamp": 1790965895,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137602,
+        "amount_steth_wei": "116045056130402401",
+        "amount_shares_wei": "93178802854919003",
+        "timestamp": 1790971955,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137603,
+        "amount_steth_wei": "416840779589019870",
+        "amount_shares_wei": "334703830722179534",
+        "timestamp": 1790972543,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137604,
+        "amount_steth_wei": "454795468367252810",
+        "amount_shares_wei": "365179687092248836",
+        "timestamp": 1790973815,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137605,
+        "amount_steth_wei": "2004425068080751173",
+        "amount_shares_wei": "1609460449967609202",
+        "timestamp": 1790975915,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137606,
+        "amount_steth_wei": "294304000000000000",
+        "amount_shares_wei": "236312474739107957",
+        "timestamp": 1790979503,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137607,
+        "amount_steth_wei": "10943557807143378686",
+        "amount_shares_wei": "8787169823911796455",
+        "timestamp": 1790980523,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137608,
+        "amount_steth_wei": "124798000000000000",
+        "amount_shares_wei": "100207011194177431",
+        "timestamp": 1790981567,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137609,
+        "amount_steth_wei": "5057746518966026344",
+        "amount_shares_wei": "4061136092271835599",
+        "timestamp": 1790983067,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137610,
+        "amount_steth_wei": "1021040011553179080",
+        "amount_shares_wei": "819847817011590491",
+        "timestamp": 1790983883,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137611,
+        "amount_steth_wei": "1314919115064608139",
+        "amount_shares_wei": "1055819119558943813",
+        "timestamp": 1790984495,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137612,
+        "amount_steth_wei": "14668653410675674600",
+        "amount_shares_wei": "11778248982572527494",
+        "timestamp": 1790984687,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137613,
+        "amount_steth_wei": "10000000000000000000",
+        "amount_shares_wei": "8029536626722978861",
+        "timestamp": 1790987315,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137614,
+        "amount_steth_wei": "42118320590000000000",
+        "amount_shares_wei": "33819059783346558480",
+        "timestamp": 1790987411,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137615,
+        "amount_steth_wei": "527886038882052612",
+        "amount_shares_wei": "423868028393915198",
+        "timestamp": 1790987843,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137616,
+        "amount_steth_wei": "103315682417616469",
+        "amount_shares_wei": "82957705608713071",
+        "timestamp": 1790988263,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137617,
+        "amount_steth_wei": "8395436218133930",
+        "amount_shares_wei": "6741146261082303",
+        "timestamp": 1790989403,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137618,
+        "amount_steth_wei": "2093926031008736206",
+        "amount_shares_wei": "1681325575963332334",
+        "timestamp": 1790991035,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137619,
+        "amount_steth_wei": "1089873890003139592",
+        "amount_shares_wei": "875118231828926039",
+        "timestamp": 1790991227,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137620,
+        "amount_steth_wei": "4723653911257280076",
+        "amount_shares_wei": "3792875209240358600",
+        "timestamp": 1790993723,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137621,
+        "amount_steth_wei": "39005808259953802",
+        "amount_shares_wei": "31319856607823275",
+        "timestamp": 1790998487,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137622,
+        "amount_steth_wei": "68216666699700850",
+        "amount_shares_wei": "54774822381820172",
+        "timestamp": 1790999795,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137623,
+        "amount_steth_wei": "5202676117551285153",
+        "amount_shares_wei": "4177507844285495042",
+        "timestamp": 1791005747,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137624,
+        "amount_steth_wei": "70000000000000",
+        "amount_shares_wei": "56206756387060",
+        "timestamp": 1791005987,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137625,
+        "amount_steth_wei": "2003939411147756718",
+        "amount_shares_wei": "1609070489954459109",
+        "timestamp": 1791006491,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137626,
+        "amount_steth_wei": "820099644780999366",
+        "amount_shares_wei": "658502013533153886",
+        "timestamp": 1791007343,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137627,
+        "amount_steth_wei": "231052110",
+        "amount_shares_wei": "185524137",
+        "timestamp": 1791012539,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137628,
+        "amount_steth_wei": "410215916487009040",
+        "amount_shares_wei": "329384372629717377",
+        "timestamp": 1791013775,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137629,
+        "amount_steth_wei": "54832298383181240143",
+        "amount_shares_wei": "44027794819515694277",
+        "timestamp": 1791014519,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137630,
+        "amount_steth_wei": "1000000000000000",
+        "amount_shares_wei": "802953662672297",
+        "timestamp": 1791017243,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137631,
+        "amount_steth_wei": "1588268149492724335",
+        "amount_shares_wei": "1275305727940935766",
+        "timestamp": 1791017399,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137632,
+        "amount_steth_wei": "10000000000000000",
+        "amount_shares_wei": "8029536626722978",
+        "timestamp": 1791018851,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137633,
+        "amount_steth_wei": "176748226078399",
+        "amount_shares_wei": "141920635500481",
+        "timestamp": 1791019355,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137634,
+        "amount_steth_wei": "2507217361398326833",
+        "amount_shares_wei": "2013179363450360903",
+        "timestamp": 1791019379,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137635,
+        "amount_steth_wei": "5060247927735547882",
+        "amount_shares_wei": "4063144607605163524",
+        "timestamp": 1791020387,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137636,
+        "amount_steth_wei": "43398928319865365",
+        "amount_shares_wei": "34847328450488409",
+        "timestamp": 1791020891,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137637,
+        "amount_steth_wei": "6269819372233173",
+        "amount_shares_wei": "5034374429228353",
+        "timestamp": 1791020975,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137638,
+        "amount_steth_wei": "1085182749170993",
+        "amount_shares_wei": "871351463115642",
+        "timestamp": 1791025151,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137639,
+        "amount_steth_wei": "5380036613327666",
+        "amount_shares_wei": "4319920103982514",
+        "timestamp": 1791025523,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137640,
+        "amount_steth_wei": "9378064317831414347",
+        "amount_shares_wei": "7530151092779118865",
+        "timestamp": 1791025931,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137641,
+        "amount_steth_wei": "1135407327659180023",
+        "amount_shares_wei": "911679472368904433",
+        "timestamp": 1791026711,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137642,
+        "amount_steth_wei": "159511948128574798",
+        "amount_shares_wei": "128080702989832726",
+        "timestamp": 1791027803,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137643,
+        "amount_steth_wei": "58492732080699885",
+        "amount_shares_wei": "46966953463907392",
+        "timestamp": 1791028067,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137644,
+        "amount_steth_wei": "61136855031569643",
+        "amount_shares_wei": "49090061671864148",
+        "timestamp": 1791028391,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137645,
+        "amount_steth_wei": "5427614315513426",
+        "amount_shares_wei": "4358122794214102",
+        "timestamp": 1791028427,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137646,
+        "amount_steth_wei": "58487714313810755",
+        "amount_shares_wei": "46962924429605329",
+        "timestamp": 1791028535,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137647,
+        "amount_steth_wei": "125043126854280522",
+        "amount_shares_wei": "100403836699641315",
+        "timestamp": 1791029003,
+        "report_timestamp": 1790942411
+      },
+      {
+        "request_id": 137648,
+        "amount_steth_wei": "59610305277739221487",
+        "amount_shares_wei": "47861443036980911952",
+        "timestamp": 1791030143,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137649,
+        "amount_steth_wei": "510000000000000000",
+        "amount_shares_wei": "409481814178456305",
+        "timestamp": 1791032159,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137650,
+        "amount_steth_wei": "11671642077870965",
+        "amount_shares_wei": "9371225828408255",
+        "timestamp": 1791033875,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137651,
+        "amount_steth_wei": "2500000000000000000",
+        "amount_shares_wei": "2007263794992432871",
+        "timestamp": 1791033911,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137652,
+        "amount_steth_wei": "693516328315701",
+        "amount_shares_wei": "556828086825676",
+        "timestamp": 1791034163,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137653,
+        "amount_steth_wei": "4611869505860793778",
+        "amount_shares_wei": "3702895474537605219",
+        "timestamp": 1791035999,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137654,
+        "amount_steth_wei": "58800000000000000001",
+        "amount_shares_wei": "47210844458222021129",
+        "timestamp": 1791037307,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137655,
+        "amount_steth_wei": "10640871755764854",
+        "amount_shares_wei": "8543614649001741",
+        "timestamp": 1791037463,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137656,
+        "amount_steth_wei": "12437687829691045865",
+        "amount_shares_wei": "9986288189582737925",
+        "timestamp": 1791037775,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137657,
+        "amount_steth_wei": "10753776742117526",
+        "amount_shares_wei": "8634266685553674",
+        "timestamp": 1791039155,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137658,
+        "amount_steth_wei": "108548390588349154",
+        "amount_shares_wei": "87154101773076242",
+        "timestamp": 1791039467,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137659,
+        "amount_steth_wei": "752730894965728498",
+        "amount_shares_wei": "604371789134783427",
+        "timestamp": 1791040523,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137660,
+        "amount_steth_wei": "10901603190354796",
+        "amount_shares_wei": "8752957356549272",
+        "timestamp": 1791040595,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137661,
+        "amount_steth_wei": "1082892758937693",
+        "amount_shares_wei": "869460571550039",
+        "timestamp": 1791041651,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137662,
+        "amount_steth_wei": "1115522061799775",
+        "amount_shares_wei": "895658818866399",
+        "timestamp": 1791042467,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137663,
+        "amount_steth_wei": "640038376361249452",
+        "amount_shares_wei": "513890344110270645",
+        "timestamp": 1791043943,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137664,
+        "amount_steth_wei": "10805065777598614",
+        "amount_shares_wei": "8675446935154182",
+        "timestamp": 1791044003,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137665,
+        "amount_steth_wei": "27012664443996540",
+        "amount_shares_wei": "21688617337885460",
+        "timestamp": 1791044603,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137666,
+        "amount_steth_wei": "15000000000000000000",
+        "amount_shares_wei": "12043582769954597226",
+        "timestamp": 1791046895,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137667,
+        "amount_steth_wei": "814247936107964350",
+        "amount_shares_wei": "653764160918731412",
+        "timestamp": 1791047543,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137668,
+        "amount_steth_wei": "3458720140924834441",
+        "amount_shares_wei": "2777025486355818163",
+        "timestamp": 1791047579,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137669,
+        "amount_steth_wei": "5058901230278861128",
+        "amount_shares_wei": "4061819712792573735",
+        "timestamp": 1791050099,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137670,
+        "amount_steth_wei": "612750196394820707",
+        "amount_shares_wei": "491980513839130548",
+        "timestamp": 1791051419,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137671,
+        "amount_steth_wei": "2652738194363519311",
+        "amount_shares_wei": "2129898134055796707",
+        "timestamp": 1791052463,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137672,
+        "amount_steth_wei": "41029897508910215352",
+        "amount_shares_wei": "32943131112754274663",
+        "timestamp": 1791052511,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137673,
+        "amount_steth_wei": "13612457631304478460",
+        "amount_shares_wei": "10929517345674372405",
+        "timestamp": 1791053903,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137674,
+        "amount_steth_wei": "3583284095262635",
+        "amount_shares_wei": "2877038572637161",
+        "timestamp": 1791054035,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137675,
+        "amount_steth_wei": "97153707396995241",
+        "amount_shares_wei": "78005247762910825",
+        "timestamp": 1791055175,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137676,
+        "amount_steth_wei": "2171175908760177",
+        "amount_shares_wei": "1743249117685638",
+        "timestamp": 1791056279,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137677,
+        "amount_steth_wei": "427307970344022550",
+        "amount_shares_wei": "343087927273302665",
+        "timestamp": 1791057995,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137678,
+        "amount_steth_wei": "106720158573",
+        "amount_shares_wei": "85686204199",
+        "timestamp": 1791058367,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137679,
+        "amount_steth_wei": "1006966599676216",
+        "amount_shares_wei": "808499039318682",
+        "timestamp": 1791058619,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137680,
+        "amount_steth_wei": "23934175927466365130",
+        "amount_shares_wei": "19216881920873067124",
+        "timestamp": 1791058691,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137681,
+        "amount_steth_wei": "251110924284293387",
+        "amount_shares_wei": "201618346737179285",
+        "timestamp": 1791061907,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137682,
+        "amount_steth_wei": "5100000000000000000",
+        "amount_shares_wei": "4094818141784563057",
+        "timestamp": 1791062651,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137683,
+        "amount_steth_wei": "100000000000000000000",
+        "amount_shares_wei": "80290551799697314845",
+        "timestamp": 1791064091,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137684,
+        "amount_steth_wei": "90210089557401677371",
+        "amount_shares_wei": "72430178684638931954",
+        "timestamp": 1791064979,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137685,
+        "amount_steth_wei": "710000000000000000",
+        "amount_shares_wei": "570062917777850935",
+        "timestamp": 1791065015,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137686,
+        "amount_steth_wei": "2359355255155025236",
+        "amount_shares_wei": "1894339353279126289",
+        "timestamp": 1791065087,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137687,
+        "amount_steth_wei": "80157526860667954994",
+        "amount_shares_wei": "64358920625420893296",
+        "timestamp": 1791065447,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137688,
+        "amount_steth_wei": "223822443178207555",
+        "amount_shares_wei": "179708274679346825",
+        "timestamp": 1791065723,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137689,
+        "amount_steth_wei": "21431876015149682836",
+        "amount_shares_wei": "17207771513590660837",
+        "timestamp": 1791070547,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137690,
+        "amount_steth_wei": "491296809033396798",
+        "amount_shares_wei": "394464918947219452",
+        "timestamp": 1791072251,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137691,
+        "amount_steth_wei": "5290149990000000000",
+        "amount_shares_wei": "4247490618002632321",
+        "timestamp": 1791073811,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137692,
+        "amount_steth_wei": "5000000000000000000",
+        "amount_shares_wei": "4014527589984865742",
+        "timestamp": 1791073955,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137693,
+        "amount_steth_wei": "16107963823207530421",
+        "amount_shares_wei": "12933173037348946218",
+        "timestamp": 1791074207,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137694,
+        "amount_steth_wei": "7508874516389989629",
+        "amount_shares_wei": "6028916783156375864",
+        "timestamp": 1791074771,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137695,
+        "amount_steth_wei": "1000000000000000",
+        "amount_shares_wei": "802905517996973",
+        "timestamp": 1791077855,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137696,
+        "amount_steth_wei": "2147484580499196031",
+        "amount_shares_wei": "1724227219496219570",
+        "timestamp": 1791078671,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137697,
+        "amount_steth_wei": "1121942780894491",
+        "amount_shares_wei": "900814049657055",
+        "timestamp": 1791080339,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137698,
+        "amount_steth_wei": "21704956401082526",
+        "amount_shares_wei": "17427029262312883",
+        "timestamp": 1791081359,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137699,
+        "amount_steth_wei": "5075412517045307077",
+        "amount_shares_wei": "4075076716046583587",
+        "timestamp": 1791081359,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137700,
+        "amount_steth_wei": "10852478200541261",
+        "amount_shares_wei": "8713514631156440",
+        "timestamp": 1791081563,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137701,
+        "amount_steth_wei": "7472859340870315498",
+        "amount_shares_wei": "5999999999999999999",
+        "timestamp": 1791081719,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137702,
+        "amount_steth_wei": "17071106454196195839",
+        "amount_shares_wei": "13706485570387868188",
+        "timestamp": 1791082295,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137703,
+        "amount_steth_wei": "2170729002592367",
+        "amount_shares_wei": "1742890294257477",
+        "timestamp": 1791084419,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137704,
+        "amount_steth_wei": "2170729002592367",
+        "amount_shares_wei": "1742890294257477",
+        "timestamp": 1791089843,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137705,
+        "amount_steth_wei": "400000000000000000",
+        "amount_shares_wei": "321162207198789259",
+        "timestamp": 1791092111,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137706,
+        "amount_steth_wei": "1002274094269624860",
+        "amount_shares_wei": "804731400834500244",
+        "timestamp": 1791092375,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137707,
+        "amount_steth_wei": "1001045006657298813",
+        "amount_shares_wei": "803744559608461937",
+        "timestamp": 1791092711,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137708,
+        "amount_steth_wei": "156778703972826846465",
+        "amount_shares_wei": "125878486524196651222",
+        "timestamp": 1791093071,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137709,
+        "amount_steth_wei": "5873401336210169",
+        "amount_shares_wei": "4715786342253939",
+        "timestamp": 1791094319,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137710,
+        "amount_steth_wei": "300166010971942",
+        "amount_shares_wei": "241004946524512",
+        "timestamp": 1791096851,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137711,
+        "amount_steth_wei": "1005218218166265336",
+        "amount_shares_wei": "807095254156779633",
+        "timestamp": 1791098099,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137712,
+        "amount_steth_wei": "345982727003313416",
+        "amount_shares_wei": "277791440642600707",
+        "timestamp": 1791098831,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137713,
+        "amount_steth_wei": "1009999999998",
+        "amount_shares_wei": "810934573175",
+        "timestamp": 1791103043,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137714,
+        "amount_steth_wei": "3516898739843134706",
+        "amount_shares_wei": "2823737404456654179",
+        "timestamp": 1791105527,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137715,
+        "amount_steth_wei": "150000000000000000",
+        "amount_shares_wei": "120435827699545972",
+        "timestamp": 1791108707,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137716,
+        "amount_steth_wei": "145965853144976560523",
+        "amount_shares_wei": "117196788929237517456",
+        "timestamp": 1791108755,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137717,
+        "amount_steth_wei": "7854549099621495102",
+        "amount_shares_wei": "6306460813464255574",
+        "timestamp": 1791109655,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137718,
+        "amount_steth_wei": "21707290025923698",
+        "amount_shares_wei": "17428902942574795",
+        "timestamp": 1791110579,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137719,
+        "amount_steth_wei": "532452669376408104",
+        "amount_shares_wei": "427509186314536030",
+        "timestamp": 1791111131,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137720,
+        "amount_steth_wei": "112161885057599",
+        "amount_shares_wei": "90055396421688",
+        "timestamp": 1791111827,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137721,
+        "amount_steth_wei": "14199726990283864",
+        "amount_shares_wei": "11401039154549466",
+        "timestamp": 1791112223,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137722,
+        "amount_steth_wei": "1075479755488119",
+        "amount_shares_wei": "863508630175446",
+        "timestamp": 1791113963,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137723,
+        "amount_steth_wei": "4000000000000000000",
+        "amount_shares_wei": "3211622071987892593",
+        "timestamp": 1791114299,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137724,
+        "amount_steth_wei": "10855879543800898",
+        "amount_shares_wei": "8716245588428204",
+        "timestamp": 1791114455,
+        "report_timestamp": 1791028811
+      },
+      {
+        "request_id": 137725,
+        "amount_steth_wei": "54155998249255863",
+        "amount_shares_wei": "43482149826961949",
+        "timestamp": 1791115775,
+        "report_timestamp": 1791028811
+      }
+    ],
+    "last_request_id": 137725,
+    "last_finalized_id": 137255,
+    "last_report_timestamp": 1791028811,
+    "last_report_transaction": "0x3ea2a7647766dbd8ad8960d3b65b867c76cb66d112a5e8bc3f8784afc5a61579",
+    "core_buffer_wei": "2540068805421774432086",
+    "cl_balance_wei": "9835487486863086000000000",
+    "deposited_post_report_wei": "0",
+    "total_shares_wei": "7902648076112759637747323",
+    "external_shares_wei": "3641465460240815749555",
+    "reserve_stored_wei": "0",
+    "reserve_target_wei": "0",
+    "queue_resume_since": 1684163759,
+    "queue_bunker_since": 115792089237316195423570985008687907853269984665640564039457584007913129639935,
+    "config": {
+      "genesis_time": 1606824023,
+      "seconds_per_slot": 12,
+      "slots_per_epoch": 32,
+      "initial_epoch": 201600,
+      "epochs_per_frame": 225,
+      "fast_lane_length_slots": 100,
+      "request_timestamp_margin": 7680,
+      "quality": "conditional_unpinned_seed"
+    }
+  },
+  "logs": [
+    {
+      "address": "0x852ded011285fe67063a08005c71a85690503cee",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0xae450e88023eed9b024e5054c5323a157fb0cc6c57c6d1eb6e0657583f1e1f50",
+      "logIndex": "0x7",
+      "removed": false,
+      "topics": [
+        "0xf73febded7d4502284718948a3e1d75406151c6326bde069424a584a4f6af87a",
+        "0x0000000000000000000000000000000000000000000000000000000000ea569f"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x00000000000000000000000000000000000000000000006c709ce8fad7f3db73",
+      "logIndex": "0x8",
+      "removed": false,
+      "topics": [
+        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+        "0x000000000000000000000000889edc2edab5f40e902b864ad4d7ade8e412f9b1",
+        "0x000000000000000000000000e76c52750019b80b43e36df30bf4060eb73f573a"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x000000000000000000000000000000000000000000000057112638d14d0aebdc",
+      "logIndex": "0x9",
+      "removed": false,
+      "topics": [
+        "0x9d9c909296d9c674451c0c24f02cb64981eb3b727f99865939192f880a755dcb",
+        "0x000000000000000000000000889edc2edab5f40e902b864ad4d7ade8e412f9b1",
+        "0x000000000000000000000000e76c52750019b80b43e36df30bf4060eb73f573a"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "logIndex": "0xb",
+      "removed": false,
+      "topics": [
+        "0xd87d7ff193e5d1560bdbe21e4e14d13dde0de4e49a03812517640af0a2d5c42c"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x00000000000000000000000000000000000000000007e7faf39fa75a6dd0f600000000000000000000000000000000000000000000003ad4c2c3abf55e380000",
+      "logIndex": "0xc",
+      "removed": false,
+      "topics": [
+        "0xc091cf4d34e62bb075bf8dadd00496528c94b8f3fdec3affd7414840847017d2",
+        "0x000000000000000000000000000000000000000000000000000000006ac23fcb"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x00000000000000000000000000000000000000000000006c717dace6bd76949600000000000000000000000000000000000000000000006c7723057d2be3d58a000000000000000000000000000000000000000000000057112638d14d0aebdc",
+      "logIndex": "0xe",
+      "removed": false,
+      "topics": [
+        "0x8b2a1e1ad5e0578c3dd82494156e985dade827a87c573b5c1c7716a32162ad64",
+        "0x000000000000000000000000e76c52750019b80b43e36df30bf4060eb73f573a"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x000000000000000000000000000000000000000000000000cf87830e36a62b8f",
+      "logIndex": "0xf",
+      "removed": false,
+      "topics": [
+        "0xd27f9b0c98bdee27044afa149eadcd2047d6399cb6613a45c5b87e6aca76e6b5"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x000000000000000000000000000000000000000000000011974b19a89bb00800",
+      "logIndex": "0x10",
+      "removed": false,
+      "topics": [
+        "0x6e5086f7e1ab04bd826e77faae35b1bcfe31bd144623361a40ea4af51670b1c3"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0x889edc2edab5f40e902b864ad4d7ade8e412f9b1",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x00000000000000000000000000000000000000000000006c6b935b8bbd400000000000000000000000000000000000000000000000000057112638d14d0aebdc000000000000000000000000000000000000000000000000000000006ac2453b",
+      "logIndex": "0x11",
+      "removed": false,
+      "topics": [
+        "0x197874c72af6a06fb0aa4fab45fd39c7cb61ac0992159872dc3295207da7e9eb",
+        "0x0000000000000000000000000000000000000000000000000000000000021828",
+        "0x0000000000000000000000000000000000000000000000000000000000021829"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0x889edc2edab5f40e902b864ad4d7ade8e412f9b1",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x000000000000000000000000000000000000000000000000000000000002182800000000000000000000000000000000000000000000000000000000000219fd",
+      "logIndex": "0x12",
+      "removed": false,
+      "topics": [
+        "0x6bd5c950a8d8df17f772f5af37cb3655737899cbf903264b9795592da439661c"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x0000000000000000000000000000000000000000000822bed8543fe8eb63cc000000000000000000000000000000000000000000000822cfb663534fcc08f600000000000000000000000000000000000000000000000011974b19a89bb00800000000000000000000000000000000000000000000000000cf87830e36a62b8f00000000000000000000000000000000000000000000002fadc871d68cc29ae5",
+      "logIndex": "0x13",
+      "removed": false,
+      "topics": [
+        "0x92dd3cb149a1eebd51fd8c2a3653fd96f30c4ac01d4f850fc16d46abd6c3e92f",
+        "0x000000000000000000000000000000000000000000000000000000006ac23fcb"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x00000000000000000000000000000000000000000000000386e35e695eb2bc80",
+      "logIndex": "0x14",
+      "removed": false,
+      "topics": [
+        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x00000000000000000000000023ed611be0e1a820978875c0122f92260804cddf"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x000000000000000000000000000000000000000000000002d4e4054a5a625a24",
+      "logIndex": "0x15",
+      "removed": false,
+      "topics": [
+        "0x9d9c909296d9c674451c0c24f02cb64981eb3b727f99865939192f880a755dcb",
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x00000000000000000000000023ed611be0e1a820978875c0122f92260804cddf"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x000000000000000000000000000000000000000000000000f04fb907caaf1c3b",
+      "logIndex": "0x16",
+      "removed": false,
+      "topics": [
+        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+        "0x00000000000000000000000023ed611be0e1a820978875c0122f92260804cddf",
+        "0x00000000000000000000000055032650b14df07b85bf18a3a3ec8e0af2e028d5"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x000000000000000000000000000000000000000000000000c0ef9530ad26298c",
+      "logIndex": "0x17",
+      "removed": false,
+      "topics": [
+        "0x9d9c909296d9c674451c0c24f02cb64981eb3b727f99865939192f880a755dcb",
+        "0x00000000000000000000000023ed611be0e1a820978875c0122f92260804cddf",
+        "0x00000000000000000000000055032650b14df07b85bf18a3a3ec8e0af2e028d5"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x0000000000000000000000000000000000000000000000000c17cf81b1859346",
+      "logIndex": "0x18",
+      "removed": false,
+      "topics": [
+        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+        "0x00000000000000000000000023ed611be0e1a820978875c0122f92260804cddf",
+        "0x000000000000000000000000ae7b191a31f627b4eb1d4dac64eab9976995b433"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x00000000000000000000000000000000000000000000000009b57ece7936af29",
+      "logIndex": "0x19",
+      "removed": false,
+      "topics": [
+        "0x9d9c909296d9c674451c0c24f02cb64981eb3b727f99865939192f880a755dcb",
+        "0x00000000000000000000000023ed611be0e1a820978875c0122f92260804cddf",
+        "0x000000000000000000000000ae7b191a31f627b4eb1d4dac64eab9976995b433"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x0000000000000000000000000000000000000000000000002c9838f6e749a4af",
+      "logIndex": "0x1a",
+      "removed": false,
+      "topics": [
+        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+        "0x00000000000000000000000023ed611be0e1a820978875c0122f92260804cddf",
+        "0x000000000000000000000000da7de2ecddfccc6c3af10108db212acbbf9ea83f"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x00000000000000000000000000000000000000000000000023cd9a2259783503",
+      "logIndex": "0x1b",
+      "removed": false,
+      "topics": [
+        "0x9d9c909296d9c674451c0c24f02cb64981eb3b727f99865939192f880a755dcb",
+        "0x00000000000000000000000023ed611be0e1a820978875c0122f92260804cddf",
+        "0x000000000000000000000000da7de2ecddfccc6c3af10108db212acbbf9ea83f"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x00000000000000000000000000000000000000000000000032bcc5ca6c33b6bc",
+      "logIndex": "0x1c",
+      "removed": false,
+      "topics": [
+        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+        "0x00000000000000000000000023ed611be0e1a820978875c0122f92260804cddf",
+        "0x000000000000000000000000da5f930ce326eb5205085d66c72a4e79d60cb8c1"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x00000000000000000000000000000000000000000000000028bc22d34039b1b7",
+      "logIndex": "0x1d",
+      "removed": false,
+      "topics": [
+        "0x9d9c909296d9c674451c0c24f02cb64981eb3b727f99865939192f880a755dcb",
+        "0x00000000000000000000000023ed611be0e1a820978875c0122f92260804cddf",
+        "0x000000000000000000000000da5f930ce326eb5205085d66c72a4e79d60cb8c1"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x0000000000000000000000000000000000000000000000022b26d71e8f00b192",
+      "logIndex": "0x1e",
+      "removed": false,
+      "topics": [
+        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+        "0x00000000000000000000000023ed611be0e1a820978875c0122f92260804cddf",
+        "0x0000000000000000000000003e40d73eb977dc6a537af587d48316fee66e9c8c"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x000000000000000000000000000000000000000000000001bdb534559a539ab5",
+      "logIndex": "0x1f",
+      "removed": false,
+      "topics": [
+        "0x9d9c909296d9c674451c0c24f02cb64981eb3b727f99865939192f880a755dcb",
+        "0x00000000000000000000000023ed611be0e1a820978875c0122f92260804cddf",
+        "0x0000000000000000000000003e40d73eb977dc6a537af587d48316fee66e9c8c"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x0000000000000000000000000000000000000000000000002c9838f6e749a4af",
+      "logIndex": "0x22",
+      "removed": false,
+      "topics": [
+        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+        "0x000000000000000000000000da7de2ecddfccc6c3af10108db212acbbf9ea83f",
+        "0x000000000000000000000000d99cc66fec647e68294c6477b40fc7e0f6f618d0"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x00000000000000000000000000000000000000000000000023cd9a2259783503",
+      "logIndex": "0x23",
+      "removed": false,
+      "topics": [
+        "0x9d9c909296d9c674451c0c24f02cb64981eb3b727f99865939192f880a755dcb",
+        "0x000000000000000000000000da7de2ecddfccc6c3af10108db212acbbf9ea83f",
+        "0x000000000000000000000000d99cc66fec647e68294c6477b40fc7e0f6f618d0"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x00000000000000000000000000000000000000000000000032bcc5ca6c33b6bc",
+      "logIndex": "0x24",
+      "removed": false,
+      "topics": [
+        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+        "0x000000000000000000000000da5f930ce326eb5205085d66c72a4e79d60cb8c1",
+        "0x000000000000000000000000367d23c756599c20dcc8d6943f4976e8f88d60d7"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x00000000000000000000000000000000000000000000000028bc22d34039b1b7",
+      "logIndex": "0x25",
+      "removed": false,
+      "topics": [
+        "0x9d9c909296d9c674451c0c24f02cb64981eb3b727f99865939192f880a755dcb",
+        "0x000000000000000000000000da5f930ce326eb5205085d66c72a4e79d60cb8c1",
+        "0x000000000000000000000000367d23c756599c20dcc8d6943f4976e8f88d60d7"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x0000000000000000000000000000000000000000000000000000000000015180000000000000000000000000000000000000000000068973691ec09454f5267b00000000000000000000000000000000000000000008243e67a076c4135a3d3a00000000000000000000000000000000000000000006891f2cdc8d0d624c94c30000000000000000000000000000000000000000000823f544ae965b4aa1b70c000000000000000000000000000000000000000000000002d4e4054a5a625a24",
+      "logIndex": "0x2a",
+      "removed": false,
+      "topics": [
+        "0xff08c3ef606d198e316ef5b822193c489965899eb4e3c248cea1a4626c3eda50",
+        "0x000000000000000000000000000000000000000000000000000000006ac23fcb"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    },
+    {
+      "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+      "blockHash": "0x88b62ea1e9c016373073f64cbe473f91aec6c822ce651b44a7690d789e6f219a",
+      "blockNumber": "0x18e8b35",
+      "blockTimestamp": "0x6ac2453b",
+      "data": "0x000000000000000000000000000000000000000000068859c56066462e249b100000000000000000000000000000000000000000000822ff642bc52658cb90e5000000000000000000000000000000000000000000000002d4e4054a5a625a24",
+      "logIndex": "0x2b",
+      "removed": false,
+      "topics": [
+        "0xaf00d86be4cd299db16aa59803992e174fa88b67d81a0c7dd0148f9a75606a8d",
+        "0x000000000000000000000000000000000000000000000000000000006ac23fcb"
+      ],
+      "transactionHash": "0x153711d03ddbe713f46d1732c00dad58f345e64f461cf3c1bcd02e8be7817245",
+      "transactionIndex": "0x1"
+    }
+  ],
+  "expected": {
+    "last_finalized_id": 137257,
+    "last_request_id": 137725,
+    "last_report_timestamp": 1791115211,
+    "total_shares_wei": "7901094207520922607064259",
+    "external_shares_wei": "3641465460240815749555",
+    "core_buffer_wei": "879519355394551093989",
+    "cl_balance_wei": "9835798635797599000000000",
+    "deposited_post_report_wei": "0"
+  },
+  "expected_pending_ids": [
+    137258,
+    137259,
+    137260,
+    137261,
+    137262,
+    137263,
+    137264,
+    137265,
+    137266,
+    137267,
+    137268,
+    137269,
+    137270,
+    137271,
+    137272,
+    137273,
+    137274,
+    137275,
+    137276,
+    137277,
+    137278,
+    137279,
+    137280,
+    137281,
+    137282,
+    137283,
+    137284,
+    137285,
+    137286,
+    137287,
+    137288,
+    137289,
+    137290,
+    137291,
+    137292,
+    137293,
+    137294,
+    137295,
+    137296,
+    137297,
+    137298,
+    137299,
+    137300,
+    137301,
+    137302,
+    137303,
+    137304,
+    137305,
+    137306,
+    137307,
+    137308,
+    137309,
+    137310,
+    137311,
+    137312,
+    137313,
+    137314,
+    137315,
+    137316,
+    137317,
+    137318,
+    137319,
+    137320,
+    137321,
+    137322,
+    137323,
+    137324,
+    137325,
+    137326,
+    137327,
+    137328,
+    137329,
+    137330,
+    137331,
+    137332,
+    137333,
+    137334,
+    137335,
+    137336,
+    137337,
+    137338,
+    137339,
+    137340,
+    137341,
+    137342,
+    137343,
+    137344,
+    137345,
+    137346,
+    137347,
+    137348,
+    137349,
+    137350,
+    137351,
+    137352,
+    137353,
+    137354,
+    137355,
+    137356,
+    137357,
+    137358,
+    137359,
+    137360,
+    137361,
+    137362,
+    137363,
+    137364,
+    137365,
+    137366,
+    137367,
+    137368,
+    137369,
+    137370,
+    137371,
+    137372,
+    137373,
+    137374,
+    137375,
+    137376,
+    137377,
+    137378,
+    137379,
+    137380,
+    137381,
+    137382,
+    137383,
+    137384,
+    137385,
+    137386,
+    137387,
+    137388,
+    137389,
+    137390,
+    137391,
+    137392,
+    137393,
+    137394,
+    137395,
+    137396,
+    137397,
+    137398,
+    137399,
+    137400,
+    137401,
+    137402,
+    137403,
+    137404,
+    137405,
+    137406,
+    137407,
+    137408,
+    137409,
+    137410,
+    137411,
+    137412,
+    137413,
+    137414,
+    137415,
+    137416,
+    137417,
+    137418,
+    137419,
+    137420,
+    137421,
+    137422,
+    137423,
+    137424,
+    137425,
+    137426,
+    137427,
+    137428,
+    137429,
+    137430,
+    137431,
+    137432,
+    137433,
+    137434,
+    137435,
+    137436,
+    137437,
+    137438,
+    137439,
+    137440,
+    137441,
+    137442,
+    137443,
+    137444,
+    137445,
+    137446,
+    137447,
+    137448,
+    137449,
+    137450,
+    137451,
+    137452,
+    137453,
+    137454,
+    137455,
+    137456,
+    137457,
+    137458,
+    137459,
+    137460,
+    137461,
+    137462,
+    137463,
+    137464,
+    137465,
+    137466,
+    137467,
+    137468,
+    137469,
+    137470,
+    137471,
+    137472,
+    137473,
+    137474,
+    137475,
+    137476,
+    137477,
+    137478,
+    137479,
+    137480,
+    137481,
+    137482,
+    137483,
+    137484,
+    137485,
+    137486,
+    137487,
+    137488,
+    137489,
+    137490,
+    137491,
+    137492,
+    137493,
+    137494,
+    137495,
+    137496,
+    137497,
+    137498,
+    137499,
+    137500,
+    137501,
+    137502,
+    137503,
+    137504,
+    137505,
+    137506,
+    137507,
+    137508,
+    137509,
+    137510,
+    137511,
+    137512,
+    137513,
+    137514,
+    137515,
+    137516,
+    137517,
+    137518,
+    137519,
+    137520,
+    137521,
+    137522,
+    137523,
+    137524,
+    137525,
+    137526,
+    137527,
+    137528,
+    137529,
+    137530,
+    137531,
+    137532,
+    137533,
+    137534,
+    137535,
+    137536,
+    137537,
+    137538,
+    137539,
+    137540,
+    137541,
+    137542,
+    137543,
+    137544,
+    137545,
+    137546,
+    137547,
+    137548,
+    137549,
+    137550,
+    137551,
+    137552,
+    137553,
+    137554,
+    137555,
+    137556,
+    137557,
+    137558,
+    137559,
+    137560,
+    137561,
+    137562,
+    137563,
+    137564,
+    137565,
+    137566,
+    137567,
+    137568,
+    137569,
+    137570,
+    137571,
+    137572,
+    137573,
+    137574,
+    137575,
+    137576,
+    137577,
+    137578,
+    137579,
+    137580,
+    137581,
+    137582,
+    137583,
+    137584,
+    137585,
+    137586,
+    137587,
+    137588,
+    137589,
+    137590,
+    137591,
+    137592,
+    137593,
+    137594,
+    137595,
+    137596,
+    137597,
+    137598,
+    137599,
+    137600,
+    137601,
+    137602,
+    137603,
+    137604,
+    137605,
+    137606,
+    137607,
+    137608,
+    137609,
+    137610,
+    137611,
+    137612,
+    137613,
+    137614,
+    137615,
+    137616,
+    137617,
+    137618,
+    137619,
+    137620,
+    137621,
+    137622,
+    137623,
+    137624,
+    137625,
+    137626,
+    137627,
+    137628,
+    137629,
+    137630,
+    137631,
+    137632,
+    137633,
+    137634,
+    137635,
+    137636,
+    137637,
+    137638,
+    137639,
+    137640,
+    137641,
+    137642,
+    137643,
+    137644,
+    137645,
+    137646,
+    137647,
+    137648,
+    137649,
+    137650,
+    137651,
+    137652,
+    137653,
+    137654,
+    137655,
+    137656,
+    137657,
+    137658,
+    137659,
+    137660,
+    137661,
+    137662,
+    137663,
+    137664,
+    137665,
+    137666,
+    137667,
+    137668,
+    137669,
+    137670,
+    137671,
+    137672,
+    137673,
+    137674,
+    137675,
+    137676,
+    137677,
+    137678,
+    137679,
+    137680,
+    137681,
+    137682,
+    137683,
+    137684,
+    137685,
+    137686,
+    137687,
+    137688,
+    137689,
+    137690,
+    137691,
+    137692,
+    137693,
+    137694,
+    137695,
+    137696,
+    137697,
+    137698,
+    137699,
+    137700,
+    137701,
+    137702,
+    137703,
+    137704,
+    137705,
+    137706,
+    137707,
+    137708,
+    137709,
+    137710,
+    137711,
+    137712,
+    137713,
+    137714,
+    137715,
+    137716,
+    137717,
+    137718,
+    137719,
+    137720,
+    137721,
+    137722,
+    137723,
+    137724,
+    137725
+  ]
+}
