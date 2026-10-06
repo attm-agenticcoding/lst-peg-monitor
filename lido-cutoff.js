@@ -1,4 +1,4 @@
-/* Verified point-in-time mechanism scenarios; a scheduled collector may replace them. */
+/* Verified point-in-time mechanism scenarios; a daily collector may replace them. */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory(require("./redemption.js"), require("./display-time.js"));
   else root.LidoCutoff = factory(root.Redemption, root.DisplayTime);
@@ -28,14 +28,13 @@
     if (!validate(s)) return { valid: false, actionable: false, reason: "情景文件不可用或格式无效" };
     const sourceAt = ts(s.asOf), age = now - sourceAt, o = R.options(cfg);
     const stale = !finite(now) || age < 0 || age > s.maxEconomicAgeSeconds;
-    const scheduled = s.refresh && ["twice-daily", "daily", "hourly"].includes(s.refresh.mode);
+    const scheduled = s.refresh && ["daily", "hourly"].includes(s.refresh.mode);
     const daily = scheduled && s.refresh.mode === "daily";
-    const twiceDaily = scheduled && s.refresh.mode === "twice-daily";
     const refreshFailed = scheduled && s.refresh.state === "error";
-    // Scheduled operational freshness and five-minute quote compatibility are different.
+    // Daily operational freshness and five-minute quote compatibility are different.
     // Collection/publication still require a source younger than 90 minutes.
     // Neither a lease nor a failed attempt changes the underlying asOf.
-    const sourceStale = !finite(now) || age < 0 || age > (scheduled ? (twiceDaily ? 70200 : daily ? 91800 : 5400) : s.maxEconomicAgeSeconds);
+    const sourceStale = !finite(now) || age < 0 || age > (scheduled ? (daily ? 91800 : 5400) : s.maxEconomicAgeSeconds);
     const common = [];
     if (loadFailed) common.push("情景文件本轮读取失败");
     if (refreshFailed) common.push("最近重算失败，保留上次成功情景");
@@ -71,7 +70,7 @@
         match.gasEth * o.gasMultiplier, o.extraCostEth, totalDays.stress, q.apr / 100);
       return { ...tier, mainEconomics: main, stressEconomics: stress, totalDays, quote: match, reasons, actionable: false };
     });
-    return { valid: true, snapshot: s, rows, ageSeconds: Math.max(0, age), stale, sourceStale, scheduled, daily, twiceDaily, hourly: scheduled && !daily && !twiceDaily, refreshFailed, loadFailed, options: o, actionable: false };
+    return { valid: true, snapshot: s, rows, ageSeconds: Math.max(0, age), stale, sourceStale, scheduled, daily, hourly: scheduled && !daily, refreshFailed, loadFailed, options: o, actionable: false };
   }
   function render(v) {
     if (!v.valid) return `<div class="cutoff-head"><h2>Lido 六档赎回批次情景</h2><span class="stale">资料不可用</span></div><p class="empty">${esc(v.reason)}；实时价格仍独立刷新</p>`;
@@ -80,7 +79,7 @@
     const batch = (c) => c ? `${date(c)} · 第 ${c.eligible_report_index} 批` : "模拟期内未覆盖";
     const rows = v.rows.map((r) => `<tr><td class="num">${n(r.steth, 0)}</td><td class="num">${r.split.map((a) => n(a, 0)).join(" + ")}</td><td>${batch(r.main)}</td><td>${batch(r.stress)}</td></tr>`).join("");
     const cutoffs = s.dailyCutoffs.map((r) => `<tr><td>${T.formatTimestamp(r.referenceTime)}</td><td class="r num">${n(r.mainSteth)}</td><td class="r num">${n(r.stressSteth)}</td></tr>`).join("");
-    const cadence = v.twiceDaily ? "每日 12:00 / 18:00 UTC 重算" : v.daily ? "每日 00:00 UTC 重算" : "每小时重算";
+    const cadence = v.daily ? "每日 00:00 UTC 重算" : "每小时重算";
     const status = v.scheduled ? (v.refreshFailed ? "重算失败 · 保留上次成功快照" : s.refresh.state === "pending" ? cadence + " · 等待首次重算" : v.sourceStale ? cadence + " · 已超过更新周期" : s.refresh.state === "running" ? "重算中 · 上次成功快照" : cadence + " · 非实时条件情景") : (v.stale ? "固定快照 · 已过期" : "固定快照 · 非实时 ETA");
     const error = v.refreshFailed ? `<p class="redemption-warning">最近尝试 ${s.refresh.attemptAt ? T.formatTimestamp(s.refresh.attemptAt) : "未知时间"}；${esc(s.refresh.error || "数据来源或完整性校验未通过")}。原快照时点和批次保持不变。</p>` : "";
     const lastSuccess = v.scheduled && s.refresh.lastSuccessAt ? `<p class="empty">最近成功重算 ${T.formatTimestamp(s.refresh.lastSuccessAt)}；快照来源时点见下方</p>` : "";
@@ -88,7 +87,7 @@
     return `<div class="cutoff-head"><h2>Lido 六档赎回批次情景</h2><span class="cutoff-status ${v.sourceStale || v.refreshFailed || v.loadFailed ? "stale" : ""}">${status}${v.loadFailed ? " · 文件读取失败" : ""}</span></div>${error}${lastSuccess}
       <p class="empty">快照来源时点 ${T.formatTimestamp(s.asOf)}；假设此时加入队尾；${n(s.pendingRequests, 0)} 笔 / ${n(s.pendingSteth)} stETH 待处理，同区块现有现金 ${n(s.physicalCashEth)} ETH${s.scenarioAvailableCashEth != null ? "，扣除储备及未入账余额后情景起始现金 " + n(s.scenarioAvailableCashEth) + " ETH" : ""}</p>
       <div class="cutoff-summary"><div><span>已知状态主情景 · 100 stETH</span><strong>${date(main)} <small>${main ? "第 " + main.eligible_report_index + " 个参考报告" : ""}</small></strong></div><div><span>每块预留 8 个部分提款槽位的压力情景 · 100 stETH</span><strong>${date(stress)} <small>${stress ? "第 " + stress.eligible_report_index + " 个参考报告" : ""}</small></strong></div></div>
-      <p class="redemption-warning">各批次参考时间见下表；实际报告发布后才可能完成定案，再等待领取。不是到账承诺、概率区间或最坏上限；日期不会随网页时钟滑动。快照距今 ${n(v.ageSeconds / 3600, 1)} 小时。${v.scheduled ? (v.twiceDaily ? "每天 12:00 和 18:00 UTC 尝试重算；额外单次更新按请求执行。" : v.daily ? "每天 00:00 UTC 尝试重算；额外单次更新按请求执行。" : "每小时尝试重算。") + "重算覆盖队列、共识现金流和六档完整完成批次；来源延迟或失败保留原时点。日内仍是上述时点的历史情景，非实时 ETA。" : "尚未完成自动重算；当前仍为固定历史快照。"}${s.horizonEnd ? "模拟截止 " + T.formatTimestamp(s.horizonEnd) + "。" : ""}</p>
+      <p class="redemption-warning">各批次参考时间见下表；实际报告发布后才可能完成定案，再等待领取。不是到账承诺、概率区间或最坏上限；日期不会随网页时钟滑动。快照距今 ${n(v.ageSeconds / 3600, 1)} 小时。${v.scheduled ? (v.daily ? "每天 00:00 UTC 尝试重算；额外单次更新按请求执行。" : "每小时尝试重算。") + "重算覆盖队列、共识现金流和六档完整完成批次；来源延迟或失败保留原时点。日内仍是上述时点的历史情景，非实时 ETA。" : "尚未完成自动重算；当前仍为固定历史快照。"}${s.horizonEnd ? "模拟截止 " + T.formatTimestamp(s.horizonEnd) + "。" : ""}</p>
       <div class="tw"><table class="src cutoff-table"><thead><tr><th>假设申请 stETH</th><th>申请拆分</th><th>主情景参考批次</th><th>压力参考批次</th></tr></thead><tbody>${rows}</tbody></table></div>
       <p class="empty">六档是同一队尾位置的独立假设，不依次叠加。1,500 stETH 至少分两笔，可在同一批完成；全部完成按最后一笔计。</p>
       <details id="cutoff-details" class="cutoff-details"><summary>逐日 funding cutoff、来源与假设</summary>

@@ -186,27 +186,4 @@ test("failed daily attempt displays failure and original source", () => {
   const html=L.render(L.evaluate(x, null, cfg, t+3600));
   assert(html.includes("重算失败"));assert(html.includes("RPC timeout"));assert(html.includes("2026-10-04 12:16:23 EDT"));
 });
-test("twice-daily UTC cadence retains original source and strict economics", () => {
-  const x = clone(s); x.refresh = {mode: "twice-daily", state: "ok", scheduleUtc: ["12:00", "18:00"], expectedIntervalSeconds: 64800, maxOperationalAgeSeconds: 70200};
-  const v = L.evaluate(x, quote(), cfg, t + 7200);
-  assert(v.twiceDaily); assert(v.scheduled); assert(!v.hourly); assert(!v.daily);
-  assert.equal(v.sourceStale, false); assert(v.stale);
-  assert.equal(v.rows[0].mainEconomics, null);
-  const html = L.render(v);
-  assert(html.includes("每日 12:00 / 18:00 UTC 重算"));
-  assert(html.includes("每天 12:00 和 18:00 UTC 尝试重算"));
-  assert(!html.includes("00:00 UTC")); assert(!html.includes("每小时"));
-  assert(!L.evaluate(x, null, cfg, t + 70200).sourceStale);
-  assert(L.evaluate(x, null, cfg, t + 70201).sourceStale);
-  x.refresh.maxOperationalAgeSeconds = 999999; // metadata cannot loosen the fixed UI gate
-  assert(L.evaluate(x, null, cfg, t + 70201).sourceStale);
-  assert.equal(v.snapshot.asOf, s.asOf); assert.deepEqual(v.snapshot.tiers, s.tiers);
-});
-test("failed twice-daily attempt retains error and old source", () => {
-  const x = clone(s); x.refresh = {mode: "twice-daily", state: "error", attemptAt: "2026-10-07T12:00:17Z", error: "RPC timeout"};
-  const html = L.render(L.evaluate(x, null, cfg, t + 3600));
-  assert(html.includes("重算失败")); assert(html.includes("RPC timeout"));
-  assert(html.includes("每天 12:00 和 18:00 UTC"));
-  assert(html.includes("2026-10-04 12:16:23 EDT"));
-});
 console.log(`${count} cutoff integration tests passed`);

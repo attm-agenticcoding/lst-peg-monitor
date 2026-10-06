@@ -12,7 +12,7 @@ from pathlib import Path
 import time
 import re
 from refresh import (SNAPSHOT_PATH, STATE_PATH, blob_sha, validate_lease, second,
-                     cadence_metadata, scheduled_slot_key, MAX_SOURCE_AGE)
+                     EXPECTED_INTERVAL_SECONDS, MAX_SOURCE_AGE, MAX_OPERATIONAL_AGE)
 
 
 def validate_scenario(output):
@@ -71,20 +71,16 @@ def validate_result(result, current, now):
     output = parsed[SNAPSHOT_PATH]
     refresh = output.get('refresh', {})
     existing_refresh = existing.get('refresh', {})
-    if any(refresh.get(key) != value for key, value in cadence_metadata().items()):
+    if (refresh.get('mode') != 'daily' or refresh.get('expectedIntervalSeconds') != EXPECTED_INTERVAL_SECONDS
+            or refresh.get('scheduleUtc') != '00:00'
+            or refresh.get('maxSourceAgeSeconds') != MAX_SOURCE_AGE
+            or refresh.get('maxOperationalAgeSeconds') != MAX_OPERATIONAL_AGE):
         raise ValueError('refresh cadence or freshness policy changed')
-    # A manual result must not consume a scheduled occurrence or discard another manual
+    # A manual result must not consume a scheduled day or discard another manual
     # idempotency key. Acquisition determines the trigger; publication preserves it.
-    for key in ('trigger', 'attemptAt', 'attemptSlot', 'attemptDay', 'attemptHour', 'manualAttemptIds', 'lastManualRequestId'):
+    for key in ('trigger', 'attemptAt', 'attemptDay', 'manualAttemptIds', 'lastManualRequestId'):
         if refresh.get(key) != existing_refresh.get(key):
             raise ValueError('refresh attempt identity changed: ' + key)
-    lease = existing_refresh['lease']
-    if existing_refresh.get('trigger') == 'scheduled':
-        slot = existing_refresh.get('attemptSlot')
-        if (slot is None or lease.get('requestKey') != slot
-                or lease.get('trigger') != 'scheduled'
-                or scheduled_slot_key(lease['acquiredAtEpoch'], slot) != slot):
-            raise ValueError('scheduled occurrence identity is not bound to its lease')
     if output.get('refresh', {}).get('lease') is not None:
         raise ValueError('finished output must release the lease')
     if result['stage'] == 'failed':
