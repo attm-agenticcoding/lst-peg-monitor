@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lido'))
 from refresh import (propose_lease, validate_lease, failure_snapshot, blob_sha,
                      hour_key, day_key, manifest, SNAPSHOT_PATH, STATE_PATH, Rpc,
-                     MAX_SOURCE_AGE, MAX_OPERATIONAL_AGE, scheduled_slot_key, second, cadence_metadata)
+                     MAX_SOURCE_AGE, MAX_OPERATIONAL_AGE)
 from scenarios import report_references, build_scenarios
 from publication import validate_result
 
@@ -19,7 +19,7 @@ class RefreshTests(unittest.TestCase):
     def setUp(self):
         self.old = json.loads((ROOT / 'tests/fixtures/lido-cutoff-20261004.json').read_text())
         self.inputs = json.loads((ROOT / 'tests/fixtures/lido-scenario-inputs-20261004.json').read_text())
-        self.now = second('2026-10-04T18:00:00Z')
+        self.now = 1791135600  # 2026-10-04 17:40 UTC
 
     def test_existing_results_reproduce_exactly(self):
         i = self.inputs
@@ -67,112 +67,58 @@ class RefreshTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 validate_lease(leased, at, who)
 
-    def test_overlap_and_same_slot_are_idempotent(self):
+    def test_overlap_and_same_day_are_idempotent(self):
         leased, _ = propose_lease(self.old, self.now, 'A')
         self.assertIsNone(propose_lease(leased, self.now + 1, 'B')[0])
         failed = failure_snapshot(leased, self.now + 10, 'source unavailable')
         self.assertIsNone(propose_lease(failed, self.now + 100, 'B')[0])
-        self.assertIsNone(propose_lease(failed, self.now + 3599, 'B')[0])
-        self.assertIsNotNone(propose_lease(failed, self.now + 18 * 3600, 'B')[0])
+        self.assertIsNone(propose_lease(failed, self.now + 3600, 'B')[0])
+        self.assertIsNotNone(propose_lease(failed, self.now + 86400, 'B')[0])
 
-    def test_both_slots_same_day_and_next_day_are_independent(self):
-        at = second('2026-10-04T12:00:00Z')
+    def test_next_utc_midnight_is_a_new_scheduled_day(self):
+        from refresh import second
+        at = second('2026-10-04T23:59:59Z')
         leased, _ = propose_lease(self.old, at, 'A')
-        failed = failure_snapshot(leased, at + 10, 'source unavailable')
-        new, reason = propose_lease(failed, at + 6 * 3600, 'B')
+        failed = failure_snapshot(leased, at, 'source unavailable')
+        new, reason = propose_lease(failed, at + 1, 'B')
         self.assertIsNone(reason)
-        self.assertEqual(new['refresh']['attemptSlot'], '2026-10-04T18:00:00Z')
-        done = failure_snapshot(new, at + 6 * 3600 + 10, 'source unavailable')
-        next_day, reason = propose_lease(done, at + 86400, 'C')
-        self.assertIsNone(reason)
-        self.assertEqual(next_day['refresh']['attemptSlot'], '2026-10-05T12:00:00Z')
+        self.assertEqual(new['refresh']['attemptDay'], '2026-10-05')
 
-    def test_only_current_exact_utc_occurrence_and_bounded_delay_are_eligible(self):
-        for time in ('2026-10-04T00:00:00Z', '2026-10-04T11:59:59Z',
-                     '2026-10-04T13:00:00Z', '2026-10-04T17:59:59Z',
-                     '2026-10-04T19:00:00Z', '2026-10-05T00:00:00Z'):
-            self.assertIsNone(propose_lease(self.old, second(time), 'A')[0])
-        self.assertEqual(scheduled_slot_key(self.now + 3599), '2026-10-04T18:00:00Z')
-        self.assertIsNone(propose_lease(self.old, self.now, 'A',
-                                       scheduled_slot='2026-10-04T12:00:00Z')[0])
-        self.assertIsNone(propose_lease(self.old, self.now, 'A',
-                                       scheduled_slot='2026-10-05T12:00:00Z')[0])
-        for invalid in ('2026-10-04T18:01:00Z', '2026-10-04T14:00:00-04:00', 'bad', 1):
-            with self.assertRaises(ValueError):
-                propose_lease(self.old, self.now, 'A', scheduled_slot=invalid)
-
-    def test_scheduled_cli_requires_original_occurrence_before_any_file_or_network_access(self):
-        import subprocess
-        result = subprocess.run([sys.executable, str(ROOT / 'scripts/lido/refresh.py'),
-                                 'prepare-lease', '--root', '/missing-root',
-                                 '--output', '/tmp/unused-lido-schedule-test.json'],
-                                capture_output=True, text=True)
-        self.assertEqual(result.returncode, 2)
-        self.assertIn('requires --scheduled-slot', result.stderr)
-
-    def test_publication_binds_slot_to_original_durable_lease(self):
-        from refresh import canonical
-        for field, value in [('requestKey', '2026-10-04T12:00:00Z'),
-                             ('trigger', 'manual'), ('acquiredAtEpoch', self.now + 3600)]:
-            result, current = self.publication_fixture()
-            existing = json.loads(current[SNAPSHOT_PATH])
-            existing['refresh']['lease'][field] = value
-            current[SNAPSHOT_PATH] = canonical(existing).encode()
-            result['files'][0]['expectedGitBlobSha'] = blob_sha(current[SNAPSHOT_PATH])
-            with self.assertRaisesRegex(ValueError, 'occurrence identity'):
-                validate_result(result, current, self.now + 10)
-
-    def test_fixed_utc_slots_do_not_shift_at_new_york_dst_boundary(self):
-        for day in ('2026-10-31', '2026-11-01', '2026-11-02', '2027-03-14'):
-            for hour in ('12', '18'):
-                slot = day + 'T' + hour + ':00:00Z'
-                self.assertEqual(scheduled_slot_key(second(slot)), slot)
-
-    def test_twice_daily_metadata_keeps_acquisition_and_operational_freshness_separate(self):
+    def test_daily_metadata_keeps_acquisition_and_operational_freshness_separate(self):
         leased, _ = propose_lease(self.old, self.now, 'A')
         refresh = leased['refresh']
-        self.assertEqual(refresh['mode'], 'twice-daily')
-        self.assertEqual(refresh['expectedIntervalSeconds'], 64800)
-        self.assertEqual(refresh['scheduleUtc'], ['12:00', '18:00'])
+        self.assertEqual(refresh['mode'], 'daily')
+        self.assertEqual(refresh['expectedIntervalSeconds'], 86400)
+        self.assertEqual(refresh['scheduleUtc'], '00:00')
         self.assertEqual(refresh['maxSourceAgeSeconds'], 5400)
-        self.assertEqual(refresh['maxOperationalAgeSeconds'], 70200)
+        self.assertEqual(refresh['maxOperationalAgeSeconds'], 91800)
 
-    def test_legacy_daily_and_hourly_keys_do_not_consume_new_slot(self):
+    def test_historical_hourly_metadata_does_not_consume_daily_attempt(self):
         old = copy.deepcopy(self.old)
-        old['refresh'] = {'mode': 'daily', 'attemptDay': day_key(self.now),
-                          'attemptHour': hour_key(self.now)}
+        old['refresh'] = {'mode': 'hourly', 'attemptHour': hour_key(self.now)}
         leased, reason = propose_lease(old, self.now, 'A')
         self.assertIsNone(reason)
-        self.assertEqual(leased['refresh']['attemptSlot'], scheduled_slot_key(self.now))
-        self.assertEqual(leased['refresh']['attemptDay'], old['refresh']['attemptDay'])
+        self.assertEqual(leased['refresh']['attemptDay'], day_key(self.now))
         self.assertEqual(leased['refresh']['attemptHour'], old['refresh']['attemptHour'])
 
-    def test_manual_then_scheduled_same_slot_has_independent_keys(self):
+    def test_manual_then_daily_same_day_has_independent_keys(self):
         manual, _ = propose_lease(self.old, self.now, 'M', trigger='manual', manual_request_id='request-1')
-        self.assertNotIn('attemptSlot', manual['refresh'])
+        self.assertNotIn('attemptDay', manual['refresh'])
         finished = failure_snapshot(manual, self.now + 10, 'source unavailable')
-        scheduled, reason = propose_lease(finished, self.now + 11, 'D')
+        daily, reason = propose_lease(finished, self.now + 11, 'D')
         self.assertIsNone(reason)
-        self.assertEqual(scheduled['refresh']['attemptSlot'], scheduled_slot_key(self.now))
-        self.assertEqual(scheduled['refresh']['manualAttemptIds'], ['request-1'])
+        self.assertEqual(daily['refresh']['attemptDay'], day_key(self.now))
+        self.assertEqual(daily['refresh']['manualAttemptIds'], ['request-1'])
 
-    def test_scheduled_then_manual_does_not_consume_next_slot(self):
-        scheduled, _ = propose_lease(self.old, self.now, 'D')
-        done = failure_snapshot(scheduled, self.now + 1, 'source unavailable')
+    def test_daily_then_manual_does_not_consume_next_day(self):
+        daily, _ = propose_lease(self.old, self.now, 'D')
+        done = failure_snapshot(daily, self.now + 1, 'source unavailable')
         manual, reason = propose_lease(done, self.now + 2, 'M', trigger='manual', manual_request_id='request-2')
         self.assertIsNone(reason)
-        self.assertEqual(manual['refresh']['attemptSlot'], scheduled['refresh']['attemptSlot'])
+        self.assertEqual(manual['refresh']['attemptDay'], daily['refresh']['attemptDay'])
         finished = failure_snapshot(manual, self.now + 3, 'source unavailable')
         self.assertIsNone(propose_lease(finished, self.now + 4, 'D2')[0])
-        self.assertIsNotNone(propose_lease(finished, self.now + 18 * 3600, 'D3')[0])
-
-    def test_active_manual_lease_blocks_next_slot_then_retries_same_slot(self):
-        manual, _ = propose_lease(self.old, self.now - 10, 'M', trigger='manual', manual_request_id='request-1')
-        self.assertIsNone(propose_lease(manual, self.now, 'A')[0])
-        done = failure_snapshot(manual, self.now + 60, 'source unavailable')
-        scheduled, reason = propose_lease(done, self.now + 61, 'A', scheduled_slot='2026-10-04T18:00:00Z')
-        self.assertIsNone(reason)
-        self.assertEqual(scheduled['refresh']['lease']['requestKey'], scheduled['refresh']['attemptSlot'])
+        self.assertIsNotNone(propose_lease(finished, self.now + 86400, 'D3')[0])
 
     def test_manual_collision_and_retried_request_are_idempotent(self):
         manual, _ = propose_lease(self.old, self.now, 'M1', trigger='manual', manual_request_id='request-1')
@@ -310,9 +256,7 @@ class RefreshTests(unittest.TestCase):
         self.assertEqual(len(entries), 2)
 
     def test_publication_rejects_changed_attempt_identity_and_freshness(self):
-        for field, changed in [('trigger', 'manual'), ('attemptSlot', '2026-10-05T12:00:00Z'),
-                               ('attemptDay', '2026-10-05'), ('attemptHour', '2026-10-05T12:00:00Z'),
-                               ('scheduleUtc', ['00:00']),
+        for field, changed in [('trigger', 'manual'), ('attemptDay', '2026-10-05'),
                                ('manualAttemptIds', ['unrequested']), ('maxSourceAgeSeconds', 86400),
                                ('expectedIntervalSeconds', 3600)]:
             result, current = self.success_fixture()
@@ -325,15 +269,15 @@ class RefreshTests(unittest.TestCase):
 
     def test_manual_publication_preserves_scheduled_key(self):
         from refresh import canonical
-        daily, _ = propose_lease(self.old, self.now, 'D')
-        done = failure_snapshot(daily, self.now + 1, 'source unavailable')
-        manual, _ = propose_lease(done, self.now + 2, 'M', trigger='manual', manual_request_id='request-1')
+        daily, _ = propose_lease(self.old, self.now - 60, 'D')
+        done = failure_snapshot(daily, self.now - 59, 'source unavailable')
+        manual, _ = propose_lease(done, self.now, 'M', trigger='manual', manual_request_id='request-1')
         current = {SNAPSHOT_PATH: canonical(manual).encode(), STATE_PATH: b'{}'}
         failed = failure_snapshot(manual, self.now + 5, 'source unavailable')
         result = manifest('failed', 'M', current, {SNAPSHOT_PATH: failed})
         result['localVerificationOnly'] = False
         self.assertEqual(len(validate_result(result, current, self.now + 10)), 1)
-        self.assertEqual(failed['refresh']['attemptSlot'], daily['refresh']['attemptSlot'])
+        self.assertEqual(failed['refresh']['attemptDay'], daily['refresh']['attemptDay'])
 
     def test_manual_success_uses_same_atomic_publication_gate(self):
         from refresh import canonical
@@ -348,7 +292,7 @@ class RefreshTests(unittest.TestCase):
         result = manifest('complete', 'M', current, files)
         result['localVerificationOnly'] = False
         self.assertEqual(len(validate_result(result, current, self.now)), 2)
-        self.assertEqual(output['refresh']['attemptSlot'], previous['refresh']['attemptSlot'])
+        self.assertEqual(output['refresh']['attemptDay'], previous['refresh']['attemptDay'])
 
     def test_success_rejects_changed_checkpoint_and_misalignment(self):
         result, current = self.success_fixture(); current[STATE_PATH] = b'{ }'
