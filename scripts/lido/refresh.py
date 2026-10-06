@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare a daily or explicitly requested manual lease, then collect a snapshot.
+"""Prepare a twice-daily or explicitly requested manual lease, then collect a snapshot.
 
 Only the small, explicit manifest is eligible for publication. External writers
 must acquire the lease with a GitHub contents-SHA compare-and-swap, and publish
@@ -30,7 +30,10 @@ STATE_PATH = 'data/lido-collector-state.json'
 MAX_RUN_SECONDS = 1500
 LEASE_SECONDS = 2100
 MAX_SOURCE_AGE = 5400
-EXPECTED_INTERVAL_SECONDS = 86400
+SCHEDULE_UTC = ['12:00', '18:00']
+DAY_SECONDS = 86400
+EXPECTED_INTERVAL_SECONDS = 18 * 3600  # longest gap: 18:00 to next-day 12:00
+MAX_SCHEDULE_DELAY_SECONDS = 3600
 MAX_OPERATIONAL_AGE = EXPECTED_INTERVAL_SECONDS + MAX_SOURCE_AGE
 MAX_MANUAL_ATTEMPTS = 128
 RPC_URL = 'https://rpc.flashbots.net/'
@@ -59,15 +62,44 @@ def second(value):
 
 
 def hour_key(now):
-    """Historical metadata helper; never used for daily scheduling decisions."""
+    """Historical metadata helper; never used for scheduled occurrence decisions."""
     return utc(now - now % 3600)
 
 
 def day_key(now):
-    return utc(now - now % EXPECTED_INTERVAL_SECONDS)[:10]
+    return utc(now - now % DAY_SECONDS)[:10]
 
 
-def propose_lease(snapshot, now, run_id, *, trigger='scheduled', manual_request_id=None):
+def scheduled_slot_key(now, requested=None):
+    """Only the current 12:00/18:00 UTC occurrence, with a bounded late wake.
+
+    Pin requested to the original scheduled occurrence for delivery retries.
+    Never reinterpret a stale occurrence as a newer slot or backfill it.
+    """
+    day_start = now - now % DAY_SECONDS
+    candidates = [day_start + hour * 3600 for hour in (12, 18)]
+    if requested is None:
+        eligible = [at for at in candidates if 0 <= now - at < MAX_SCHEDULE_DELAY_SECONDS]
+        return utc(eligible[0]) if eligible else None
+    if not isinstance(requested, str):
+        raise ValueError('scheduled slot must be an exact UTC occurrence')
+    try:
+        at = second(requested)
+    except (ValueError, TypeError):
+        raise ValueError('scheduled slot must be an exact UTC occurrence') from None
+    if utc(at) != requested or at % DAY_SECONDS not in (12 * 3600, 18 * 3600):
+        raise ValueError('scheduled slot must be exactly 12:00 or 18:00 UTC')
+    return requested if 0 <= now - at < MAX_SCHEDULE_DELAY_SECONDS else None
+
+
+def cadence_metadata():
+    return {'mode': 'twice-daily', 'expectedIntervalSeconds': EXPECTED_INTERVAL_SECONDS,
+            'scheduleUtc': list(SCHEDULE_UTC), 'maxSourceAgeSeconds': MAX_SOURCE_AGE,
+            'maxOperationalAgeSeconds': MAX_OPERATIONAL_AGE}
+
+
+def propose_lease(snapshot, now, run_id, *, trigger='scheduled', manual_request_id=None,
+                  scheduled_slot=None):
     if trigger not in ('scheduled', 'manual'):
         raise ValueError('invalid refresh trigger')
     if trigger == 'manual':
@@ -75,29 +107,32 @@ def propose_lease(snapshot, now, run_id, *, trigger='scheduled', manual_request_
             raise ValueError('manual refresh requires a stable explicit manual request ID')
     elif manual_request_id is not None:
         raise ValueError('manual request ID is only valid for an explicit manual trigger')
+    if trigger == 'manual' and scheduled_slot is not None:
+        raise ValueError('scheduled slot is only valid for a scheduled trigger')
+    slot = scheduled_slot_key(now, scheduled_slot) if trigger == 'scheduled' else None
+    if trigger == 'scheduled' and slot is None:
+        return None, 'outside the scheduled occurrence start window; no backfill'
     refresh = snapshot.get('refresh', {})
     if refresh.get('accessBlocked') is True:
         return None, 'source access was denied; resolve authorization before another attempt'
     lease = refresh.get('lease', {})
     if lease and int(lease.get('expiresAtEpoch', 0)) > now:
         return None, 'another refresh owns an unexpired lease'
-    if trigger == 'scheduled' and refresh.get('attemptDay') == day_key(now):
-        return None, 'this UTC day has already been attempted'
+    if trigger == 'scheduled' and refresh.get('attemptSlot') == slot:
+        return None, 'this UTC scheduled occurrence has already been attempted'
     manual_attempts = list(refresh.get('manualAttemptIds', []))
     if trigger == 'manual' and manual_request_id in manual_attempts:
         return None, 'this explicit manual request has already been attempted'
     result = deepcopy(snapshot)
     result['refresh'] = {
-        **refresh, 'mode': 'daily', 'state': 'running',
-        'expectedIntervalSeconds': EXPECTED_INTERVAL_SECONDS, 'scheduleUtc': '00:00',
-        'maxSourceAgeSeconds': MAX_SOURCE_AGE, 'maxOperationalAgeSeconds': MAX_OPERATIONAL_AGE,
+        **refresh, **cadence_metadata(), 'state': 'running',
         'attemptAt': utc(now), 'trigger': trigger, 'error': None,
         'lease': {'runId': run_id, 'acquiredAtEpoch': now,
                   'expiresAtEpoch': now + LEASE_SECONDS, 'trigger': trigger,
-                  'requestKey': day_key(now) if trigger == 'scheduled' else manual_request_id},
+                  'requestKey': slot if trigger == 'scheduled' else manual_request_id},
     }
     if trigger == 'scheduled':
-        result['refresh']['attemptDay'] = day_key(now)
+        result['refresh']['attemptSlot'] = slot
     else:
         result['refresh']['manualAttemptIds'] = (manual_attempts + [manual_request_id])[-MAX_MANUAL_ATTEMPTS:]
         result['refresh']['lastManualRequestId'] = manual_request_id
@@ -200,9 +235,7 @@ def public_snapshot(old, state, execution, beacon, scenarios, now, run_id, prove
                           'beaconStateSsz': summary['state_sha256'],
                           'scenarioAudit': digest(scenarios['scenarioAudit']),
                           'acquisition': digest(provenance)},
-        'refresh': {**old.get('refresh', {}), 'mode': 'daily', 'state': 'ok',
-                    'expectedIntervalSeconds': EXPECTED_INTERVAL_SECONDS, 'scheduleUtc': '00:00',
-                    'maxSourceAgeSeconds': MAX_SOURCE_AGE, 'maxOperationalAgeSeconds': MAX_OPERATIONAL_AGE,
+        'refresh': {**old.get('refresh', {}), **cadence_metadata(), 'state': 'ok',
                     'finishedAt': utc(now), 'lastSuccessAt': utc(now),
                     'lastSuccessSnapshotAsOf': utc(int(state['timestamp'])),
                     'runId': run_id, 'lease': None, 'error': None},
@@ -261,11 +294,15 @@ def main():
                         help='prepare-lease only: manual requires a current explicit user request')
     parser.add_argument('--manual-request-id', default=None,
                         help='prepare-lease only: stable idempotency key for the authorized manual request')
+    parser.add_argument('--scheduled-slot', default=None,
+                        help='prepare-lease only: original occurrence, e.g. 2026-10-07T12:00:00Z')
     parser.add_argument('--keep-source', action='store_true',
                         help='retain large raw SSZ for an explicitly requested local audit')
     args = parser.parse_args()
-    if args.stage != 'prepare-lease' and (args.trigger != 'scheduled' or args.manual_request_id is not None):
-        parser.error('trigger and manual request ID belong to prepare-lease; run uses its durable lease')
+    if args.stage != 'prepare-lease' and (args.trigger != 'scheduled' or args.manual_request_id is not None or args.scheduled_slot is not None):
+        parser.error('trigger and request keys belong to prepare-lease; run uses its durable lease')
+    if args.stage == 'prepare-lease' and args.trigger == 'scheduled' and args.scheduled_slot is None:
+        parser.error('scheduled prepare-lease requires --scheduled-slot from the original scheduled occurrence')
     run_id = args.run_id or str(uuid.uuid4())
     now = int(time.time())
     base = {name: (args.root / name).read_bytes() for name in (SNAPSHOT_PATH, STATE_PATH)
@@ -274,7 +311,7 @@ def main():
     args.output.parent.mkdir(parents=True, exist_ok=True)
     if args.stage == 'prepare-lease':
         proposed, skipped = propose_lease(old, now, run_id, trigger=args.trigger,
-                                         manual_request_id=args.manual_request_id)
+                                         manual_request_id=args.manual_request_id, scheduled_slot=args.scheduled_slot)
         result = manifest('skipped' if skipped else 'acquire', run_id, base,
                           {} if skipped else {SNAPSHOT_PATH: proposed}, result=skipped)
         args.output.write_text(canonical(result))

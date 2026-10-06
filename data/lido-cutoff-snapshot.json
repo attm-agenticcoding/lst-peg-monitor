@@ -152,12 +152,15 @@
     "inflow_source/eip4788_state_anchor.json": "c45611cf3f9262ca6a418ba75e99500ca0434816243f4d041f60e29ce5295b4f"
   },
   "refresh": {
-    "mode": "daily",
+    "mode": "twice-daily",
     "state": "error",
-    "scheduleUtc": "00:00",
-    "expectedIntervalSeconds": 86400,
+    "scheduleUtc": [
+      "12:00",
+      "18:00"
+    ],
+    "expectedIntervalSeconds": 64800,
     "maxSourceAgeSeconds": 5400,
-    "maxOperationalAgeSeconds": 91800,
+    "maxOperationalAgeSeconds": 70200,
     "lastSuccessAt": null,
     "lease": null,
     "error": "eth_getLogs: HTTP 504; source access failed",
