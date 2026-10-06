@@ -153,13 +153,22 @@
   },
   "refresh": {
     "mode": "daily",
-    "state": "pending",
+    "state": "running",
     "scheduleUtc": "00:00",
     "expectedIntervalSeconds": 86400,
     "maxSourceAgeSeconds": 5400,
     "maxOperationalAgeSeconds": 91800,
     "lastSuccessAt": null,
-    "lease": null,
-    "error": null
+    "lease": {
+      "runId": "96d7f751-9fbe-45d1-8515-7e61ef355f60",
+      "acquiredAtEpoch": 1791244817,
+      "expiresAtEpoch": 1791246917,
+      "trigger": "scheduled",
+      "requestKey": "2026-10-06"
+    },
+    "error": null,
+    "attemptAt": "2026-10-06T00:00:17Z",
+    "trigger": "scheduled",
+    "attemptDay": "2026-10-06"
   }
 }
