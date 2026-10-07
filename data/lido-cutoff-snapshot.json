@@ -153,24 +153,18 @@
   },
   "refresh": {
     "mode": "daily",
-    "state": "running",
+    "state": "error",
     "scheduleUtc": "00:00",
     "expectedIntervalSeconds": 86400,
     "maxSourceAgeSeconds": 5400,
     "maxOperationalAgeSeconds": 91800,
     "lastSuccessAt": null,
-    "lease": {
-      "runId": "123ef03d-e31e-4bd2-80ea-a7cb4e188fd3",
-      "acquiredAtEpoch": 1791381704,
-      "expiresAtEpoch": 1791383804,
-      "trigger": "manual",
-      "requestKey": "manual-20261007-recovery-fix-5c1d1168"
-    },
-    "error": null,
+    "lease": null,
+    "error": "bounded RPC budget cannot cover event headers and final checks",
     "attemptAt": "2026-10-07T14:01:44Z",
     "trigger": "manual",
     "attemptDay": "2026-10-07",
-    "finishedAt": "2026-10-07T13:30:56Z",
+    "finishedAt": "2026-10-07T14:12:55Z",
     "accessBlocked": false,
     "manualAttemptIds": [
       "manual-20261007-diagnostic-fb355c4d",
