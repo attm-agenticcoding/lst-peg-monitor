@@ -543,6 +543,13 @@ def collect_at(state, block, block_hash, rpc, *, chunk_blocks=1000, max_calls=25
     headers = {s["block"]: seed_header, block: target}
     observed_hashes = {}
     timestamp_events = {TOPICS[n] for n in ("WithdrawalRequested", "WithdrawalsFinalized", "Paused", "Resumed", "ETHDistributed")}
+    needed_headers = {key(log)[0] for log in logs
+                      if log.get("topics", [None])[0] in timestamp_events} - headers.keys()
+    if hasattr(rpc, "fetch_headers"):
+        fetched = rpc.fetch_headers(needed_headers)
+        if set(fetched) != needed_headers:
+            raise ExecutionError("Incomplete event header acquisition")
+        headers.update(fetched)
     for log in logs:
         height = key(log)[0]
         old_hash = observed_hashes.setdefault(height, log["blockHash"].lower())

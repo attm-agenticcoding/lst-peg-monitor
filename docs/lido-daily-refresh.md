@@ -15,6 +15,13 @@ It advances `data/lido-collector-state.json` using complete bounded event ranges
 then reads balances at that exact execution block. The retained checkpoint is
 sufficient after restart; no private scratch directory or old raw SSZ is needed.
 
+The execution source is the public, account-free MEV Blocker endpoint
+`https://rpc.mevblocker.io`, documented by the provider at
+<https://docs.mevblocker.io/how-to/integrate/Wallets>. The collector uses only the
+three approved read methods below; it does not submit transactions. There is no
+automatic provider fallback, redirect following, API key or historical-response
+cache. Switching this source requires explicit approval and source validation.
+
 The integer consensus model produces known-state cash arrivals at 14 upcoming
 reference reports for recurring-legacy and eight-reserved-slot stress scenarios.
 The integer FIFO engine then recomputes six independent hypothetical joins of
@@ -136,6 +143,26 @@ case the prior checkpoint is retained and a bounded backfill/review is needed.
 Do not silently drop events, advance a partial checkpoint or enlarge source
 access to make a daily run appear successful.
 
+Only the unique event headers whose timestamps affect the model are fetched
+concurrently, with at most four requests in flight. IDs, admission, evidence and
+the 256-call budget are shared and synchronized. The header batch first reserves
+six calls for the three same-block balances and final seed/target/child rereads;
+those final rereads are always new requests. An error stops new admission and
+discards the batch. A read returning after the deadline is rejected, and the
+final result has an independent deadline check. Already admitted reads may finish
+network teardown after cancellation; their late responses cannot produce a
+successful result or trigger more reads.
+The work directory retains a bounded `rpc-audit.json` even on acquisition
+failure, including the actual request parameters and any still-in-flight IDs.
+Cancellation by another request is distinguished from a source's own error.
+
+Log acquisition, queue replay and the consensus/FIFO models retain their previous
+semantics. Logs and canonical/finalized execution headers are provider-attested,
+not proofs of every historical receipt or independently verified BLS finality.
+Agreement between bounded samples, repeated queries or split ranges does not
+prove all historical logs are complete. The collector still rejects missing responses, inconsistent hashes, missing
+queue IDs, unsupported changes or invalid accounting, and retains the historical configuration's conditional provenance.
+
 ## Offline verification
 
 ```sh
@@ -148,3 +175,6 @@ daily-before-manual, manual retry collisions, active leases, source denial,
 source-age checks, unchanged economics restrictions, failure preservation and
 atomic publication. Optional raw-state historical regression requires an
 external audit fixture; it is not required for routine fresh collection.
+Concurrency tests additionally cover out-of-order responses, request-ID races,
+global budget admission, cancellation/denial, late responses, redirects and
+equivalence with sequential event replay.
