@@ -175,7 +175,7 @@ class RefreshTests(unittest.TestCase):
         import time
         from execution import RpcError
         raw = json.dumps({'jsonrpc': '2.0', 'id': 1, 'error': {'code': -32005, 'message': 'limit'}}).encode()
-        with patch('urllib.request.urlopen', return_value=io.BytesIO(raw)):
+        with patch('refresh.open_rpc', return_value=io.BytesIO(raw)):
             with self.assertRaises(RpcError) as captured:
                 Rpc(time.monotonic() + 30)('eth_getLogs', [])
         self.assertEqual(captured.exception.code, -32005)
@@ -186,7 +186,7 @@ class RefreshTests(unittest.TestCase):
         import time
         from execution import RpcError
         raw = json.dumps({'jsonrpc': '2.0', 'id': 99, 'result': []}).encode()
-        with patch('urllib.request.urlopen', return_value=io.BytesIO(raw)):
+        with patch('refresh.open_rpc', return_value=io.BytesIO(raw)):
             with self.assertRaisesRegex(RpcError, 'envelope'):
                 Rpc(time.monotonic() + 30)('eth_getLogs', [])
 

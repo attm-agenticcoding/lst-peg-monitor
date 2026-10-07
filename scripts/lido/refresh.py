@@ -7,6 +7,7 @@ the final files in one non-force, fast-forward commit after checking lease owner
 This command never uses a wallet, credentials, eth_call, or private user data.
 """
 import argparse
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from copy import deepcopy
 from datetime import datetime, timezone
 import fcntl
@@ -17,6 +18,7 @@ import re
 from pathlib import Path
 import signal
 import tempfile
+import threading
 import time
 import urllib.request
 import urllib.error
@@ -33,8 +35,10 @@ MAX_SOURCE_AGE = 5400
 EXPECTED_INTERVAL_SECONDS = 86400
 MAX_OPERATIONAL_AGE = EXPECTED_INTERVAL_SECONDS + MAX_SOURCE_AGE
 MAX_MANUAL_ATTEMPTS = 128
-RPC_URL = 'https://rpc.flashbots.net/'
+RPC_URL = 'https://rpc.mevblocker.io'
 ALLOWED_RPC = {'eth_getLogs', 'eth_getBlockByNumber', 'eth_getBalance'}
+MAX_RPC_CALLS = 256
+HEADER_WORKERS = 4
 
 
 def canonical(value):
@@ -134,40 +138,162 @@ def manifest(stage, run_id, base, files, result=None, error=None):
     }
 
 
+class RpcRedirectError(urllib.error.HTTPError):
+    """The configured source requested an unapproved destination."""
+
+
+class NoRpcRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        # A new source needs explicit review, even if the original source points at it.
+        raise RpcRedirectError(req.full_url, code, 'RPC redirect refused', headers, fp)
+
+
+def open_rpc(request, *, timeout):
+    return urllib.request.build_opener(NoRpcRedirect()).open(request, timeout=timeout)
+
+
 class Rpc:
     def __init__(self, deadline):
         self.deadline, self.calls, self.evidence = deadline, 0, []
+        self.failures = []
+        self._requests = []
+        self._lock = threading.Lock()
+        self._error = None
+
+    def cancel(self, error=None):
+        with self._lock:
+            if self._error is None:
+                self._error = error if error is not None else RuntimeError('RPC collection cancelled')
+            return self._error
+
+    def _record_failure(self, request, error, kind='source'):
+        with self._lock:
+            self.failures.append({'request': request, 'error': str(error)[:500],
+                                  'kind': kind,
+                                  'code': None if kind == 'cancelled' else getattr(error, 'code', None),
+                                  'denied': kind != 'cancelled' and bool(getattr(error, 'denied', False))})
+            self.failures.sort(key=lambda row: row['request']['id'])
+
+    def diagnostics(self):
+        with self._lock:
+            completed = {r['request']['id'] for r in self.evidence + self.failures}
+            return deepcopy({'source': RPC_URL, 'capturedAt': utc(int(time.time())),
+                             'calls': self.calls, 'requests': self._requests,
+                             'responses': self.evidence, 'failures': self.failures,
+                             'inFlightIds': [r['id'] for r in self._requests if r['id'] not in completed]})
+
+    def _check(self):
+        if self._error is not None:
+            raise self._error
+        if time.monotonic() >= self.deadline:
+            raise TimeoutError('bounded RPC deadline exhausted')
+
+    def fetch_headers(self, numbers):
+        """Fetch only the model's timestamp headers, never its final rechecks.
+
+        Admit at most four reads at once. Every admitted request consumes the
+        shared budget. A failed/cancelled batch is discarded in its entirety.
+        """
+        from execution import _header
+        numbers = sorted(set(numbers))
+        if any(type(n) is not int or n < 0 for n in numbers):
+            raise ValueError('invalid event header number')
+        with self._lock:
+            self._check()
+            # Three pinned balances and three final seed/target/child rechecks.
+            if self.calls + len(numbers) + 6 > MAX_RPC_CALLS:
+                raise RuntimeError('bounded RPC budget cannot cover event headers and final checks')
+        if not numbers:
+            return {}
+        pool = ThreadPoolExecutor(max_workers=HEADER_WORKERS)
+        pending, answer = {}, {}
+        remaining = iter(numbers)
+        try:
+            for number in list(numbers)[:HEADER_WORKERS]:
+                next(remaining)
+                pending[pool.submit(_header, self, number)] = number
+            while pending:
+                with self._lock:
+                    self._check()
+                done, _ = wait(pending, timeout=max(0, self.deadline - time.monotonic()),
+                               return_when=FIRST_COMPLETED)
+                if not done:
+                    raise TimeoutError('bounded RPC deadline exhausted')
+                # Check all completed futures before admitting replacement work.
+                for future in done:
+                    answer[pending.pop(future)] = future.result()
+                with self._lock:
+                    self._check()
+                for _ in range(len(done)):
+                    number = next(remaining, None)
+                    if number is None:
+                        break
+                    pending[pool.submit(_header, self, number)] = number
+            with self._lock:
+                self._check()
+            return answer
+        except BaseException as error:
+            first_error = self.cancel(error)
+            for future in pending:
+                future.cancel()
+            # Do not extend the calculation deadline waiting for network teardown.
+            # In-flight calls cannot admit more work or return an accepted result.
+            raise first_error
+        finally:
+            pool.shutdown(wait=False, cancel_futures=True)
 
     def __call__(self, method, params):
         from execution import RpcError
         if method not in ALLOWED_RPC:
             raise RuntimeError('RPC method outside approved collector scope: ' + method)
-        self.calls += 1
-        remaining = self.deadline - time.monotonic()
-        if self.calls > 256 or remaining <= 0:
-            raise RuntimeError('bounded RPC budget exhausted')
-        request = {'jsonrpc': '2.0', 'id': self.calls, 'method': method, 'params': params}
+        with self._lock:
+            self._check()
+            if self.calls >= MAX_RPC_CALLS:
+                raise RuntimeError('bounded RPC budget exhausted')
+            self.calls += 1
+            ident = self.calls
+            remaining = self.deadline - time.monotonic()
+            request = {'jsonrpc': '2.0', 'id': ident, 'method': method, 'params': params}
+            self._requests.append(deepcopy(request))
         req = urllib.request.Request(RPC_URL, data=json.dumps(request).encode(),
-                                     headers={'Content-Type': 'application/json'})
+                                     headers={'Content-Type': 'application/json',
+                                              'User-Agent': 'lst-peg-monitor/1.0'})
         # HTTP 401/403 and JSON-RPC errors stop the run. No provider/method bypass.
         try:
-            with urllib.request.urlopen(req, timeout=min(40, remaining)) as response:
+            with open_rpc(req, timeout=min(40, remaining)) as response:
                 raw = response.read(20 * 1024 * 1024 + 1)
+            with self._lock:
+                self._check()
+            if len(raw) > 20 * 1024 * 1024:
+                raise RuntimeError('RPC result exceeds bounded response size')
+            value = json.loads(raw)
+            if not isinstance(value, dict) or value.get('id') != ident or value.get('jsonrpc') != '2.0':
+                raise RpcError('mismatched JSON-RPC response envelope')
+            if 'error' in value or 'result' not in value:
+                error = value.get('error', {})
+                code = error.get('code') if isinstance(error, dict) else None
+                raise RpcError('RPC source failed: ' + str(error or 'missing result'),
+                               code=code, denied=code in (401, 403))
+            with self._lock:
+                self._check()
+                self.evidence.append({'request': request, 'responseSha256': hashlib.sha256(raw).hexdigest()})
+                self.evidence.sort(key=lambda row: row['request']['id'])
+            return value['result']
         except urllib.error.HTTPError as error:
-            raise RpcError(f'{method}: HTTP {error.code}; source access failed',
-                           code=error.code, denied=error.code in (401, 403)) from error
-        if len(raw) > 20 * 1024 * 1024:
-            raise RuntimeError('RPC result exceeds bounded response size')
-        value = json.loads(raw)
-        if value.get('id') != self.calls or value.get('jsonrpc') != '2.0':
-            raise RpcError('mismatched JSON-RPC response envelope')
-        if 'error' in value or 'result' not in value:
-            error = value.get('error', {})
-            code = error.get('code') if isinstance(error, dict) else None
-            raise RpcError('RPC source failed: ' + str(error or 'missing result'),
-                           code=code, denied=code in (401, 403))
-        self.evidence.append({'request': request, 'responseSha256': hashlib.sha256(raw).hexdigest()})
-        return value['result']
+            failed = RpcError(f'{method}: HTTP {error.code}; source access failed',
+                              code=error.code, denied=(error.code in (401, 403)
+                                                       or isinstance(error, RpcRedirectError)))
+            self._record_failure(request, failed)
+            raise self.cancel(failed) from error
+        except Exception as error:
+            with self._lock:
+                cancelled = error is self._error
+            self._record_failure(request, error, kind='cancelled' if cancelled else 'source')
+            # Only the documented log-result size limit permits bounded splitting.
+            if not (method == 'eth_getLogs' and isinstance(error, RpcError)
+                    and error.code == -32005 and not error.denied):
+                raise self.cancel(error)
+            raise
 
 
 def public_snapshot(old, state, execution, beacon, scenarios, now, run_id, provenance):
@@ -228,7 +354,18 @@ def collect(root, old, run_id, workdir, now=None):
         raise RuntimeError('source has not advanced beyond the last successful snapshot')
     if timestamp > current or current - timestamp > MAX_SOURCE_AGE:
         raise RuntimeError('consensus source snapshot is future-dated or older than 90 minutes')
-    execution = collect_at(state, summary['block_number'], summary['block_hash'], rpc)
+    try:
+        execution = collect_at(state, summary['block_number'], summary['block_hash'], rpc)
+    except BaseException:
+        # Also preserve failed attempts; in-flight teardown is labelled explicitly.
+        # A diagnostic disk error must not conceal a source-access denial.
+        try:
+            (workdir / 'rpc-audit.json').write_text(canonical(rpc.diagnostics()))
+        except OSError as audit_error:
+            print(json.dumps({'step': 'rpc_audit_write_failed', 'error': str(audit_error)[:300]}), flush=True)
+        raise
+    else:
+        (workdir / 'rpc-audit.json').write_text(canonical(rpc.diagnostics()))
     print(json.dumps({'step': 'execution_replayed', 'rpcCalls': rpc.calls}), flush=True)
     if not execution['validation'].get('complete', False):
         raise RuntimeError('execution reconstruction is incomplete')
@@ -240,7 +377,8 @@ def collect(root, old, run_id, workdir, now=None):
                               execution['execution_anchor'], summary=summary)
     print(json.dumps({'step': 'scenarios_simulated', 'referenceReports': len(refs)}), flush=True)
     scenarios = build_scenarios(state, execution['snapshot'], refs, beacon)
-    provenance = {'beaconAcquisition': acquisition, 'rpc': rpc.evidence}
+    provenance = {'beaconAcquisition': acquisition, 'rpcSource': RPC_URL,
+                  'rpc': rpc.evidence, 'rpcFailures': rpc.failures}
     finished = int(time.time()) if now is None else now
     if finished - timestamp > MAX_SOURCE_AGE:
         raise RuntimeError('snapshot exceeded 90-minute age before calculation finished')
@@ -288,34 +426,39 @@ def main():
         old['refresh'] = {**old.get('refresh', {}), 'attemptAt': utc(now), 'trigger': 'verification'}
     workdir = args.workdir or Path(tempfile.mkdtemp(prefix='lido-refresh-'))
     workdir.mkdir(parents=True, exist_ok=True)
-    lock = open(workdir / 'collector.lock', 'a')
-    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    def expired(_signum, _frame):
-        raise TimeoutError('collector exceeded the 25-minute deadline')
-    signal.signal(signal.SIGALRM, expired)
-    signal.alarm(MAX_RUN_SECONDS)
-    try:
-        snapshot, state = collect(args.root, old, run_id, workdir)
-        if args.stage == 'run':
-            validate_lease(old, int(time.time()), run_id)
-        result = manifest('complete', run_id, base, {SNAPSHOT_PATH: snapshot, STATE_PATH: state},
-                          result={'asOf': snapshot['asOf'], 'blockNumber': snapshot['blockNumber']})
-        code = 0
-    except Exception as error:
-        snapshot = failure_snapshot(old, int(time.time()), error)
-        result = manifest('failed', run_id, base, {SNAPSHOT_PATH: snapshot}, error=str(error)[:500])
-        code = 1
-    finally:
-        signal.alarm(0)
-    result['localVerificationOnly'] = args.stage == 'once'
-    args.output.write_text(canonical(result))
-    # Source bytes are reproducible acquisition scratch, not a durable input.
-    # The output manifest and small audit remain available for a blocked publish.
-    # Do not let recurring or manual runs accumulate large raw SSZ files.
-    if not args.keep_source:
-        (workdir / 'state.ssz').unlink(missing_ok=True)
-    print(canonical({k: result[k] for k in ('stage', 'runId', 'result', 'error')}))
-    return code
+    with open(workdir / 'collector.lock', 'a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        def expired(_signum, _frame):
+            raise TimeoutError('collector exceeded the 25-minute deadline')
+        signal.signal(signal.SIGALRM, expired)
+        hard_deadline = time.monotonic() + MAX_RUN_SECONDS
+        signal.alarm(MAX_RUN_SECONDS)
+        try:
+            snapshot, state = collect(args.root, old, run_id, workdir)
+            if time.monotonic() >= hard_deadline:
+                raise TimeoutError('collector exceeded the 25-minute deadline')
+            if args.stage == 'run':
+                validate_lease(old, int(time.time()), run_id)
+            result = manifest('complete', run_id, base, {SNAPSHOT_PATH: snapshot, STATE_PATH: state},
+                              result={'asOf': snapshot['asOf'], 'blockNumber': snapshot['blockNumber']})
+            if time.monotonic() >= hard_deadline:
+                raise TimeoutError('collector exceeded the 25-minute deadline')
+            code = 0
+        except Exception as error:
+            snapshot = failure_snapshot(old, int(time.time()), error)
+            result = manifest('failed', run_id, base, {SNAPSHOT_PATH: snapshot}, error=str(error)[:500])
+            code = 1
+        finally:
+            signal.alarm(0)
+        result['localVerificationOnly'] = args.stage == 'once'
+        args.output.write_text(canonical(result))
+        # Source bytes are reproducible acquisition scratch, not a durable input.
+        # The output manifest and small audit remain available for a blocked publish.
+        # Do not let recurring or manual runs accumulate large raw SSZ files.
+        if not args.keep_source:
+            (workdir / 'state.ssz').unlink(missing_ok=True)
+        print(canonical({k: result[k] for k in ('stage', 'runId', 'result', 'error')}))
+        return code
 
 
 if __name__ == '__main__':
