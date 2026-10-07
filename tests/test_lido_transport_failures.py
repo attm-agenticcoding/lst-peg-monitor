@@ -68,7 +68,10 @@ class TransportFailureTests(unittest.TestCase):
                     self.rpc.fetch_headers([101, 102])
             finally:
                 self.rpc.drain()
-        return self.journal.diagnostics()['failures']
+        # Worker scheduling can reserve either header first. Assertions below
+        # address the two source outcomes by header, not by admission ID.
+        return sorted(self.journal.diagnostics()['failures'],
+                      key=lambda row: row['request']['params'][0])
 
     def test_real_nested_urllib_wrapper_of_known_peer_is_cancelled_and_stays_paused(self):
         failures = self.concurrent_failures(lambda first: first)

@@ -22,7 +22,8 @@ import tempfile
 import threading
 import time
 from urllib.parse import urlsplit
-from acquisition_errors import safe_exception, sanitized_text
+from acquisition_errors import (safe_exception, sanitized_text, transport_read_timeout,
+                                TIMEOUT_RETRY_POLICY)
 from rpc_budget import DEFAULT_RPC_CALLS, MANUAL_CATCHUP_RPC_CALLS, lease_rpc_budget
 
 MAX_CALLS = DEFAULT_RPC_CALLS
@@ -302,6 +303,7 @@ class RunJournal:
                        'base_blobs': {name: _blob(raw) for name, raw in base_blobs.items()},
                        'code_digests': code_digests(code_root), 'lease': deepcopy(lease),
                        'rpc_call_budget': lease_rpc_budget(json_value(base_blobs[SNAPSHOT_PATH])),
+                       'timeout_retry_policy': deepcopy(TIMEOUT_RETRY_POLICY),
                        'start_wall': now['wall'], 'start_monotonic': now['monotonic'],
                        'deadline_wall': now['wall'] + MAX_SECONDS,
                        'deadline_monotonic': now['monotonic'] + MAX_SECONDS,
@@ -406,6 +408,9 @@ class RunJournal:
         self._cache_reuses = []
         self._abort_only = False
         self._current_code_root = None
+        # A sealed allowance is consumed even if interruption prevents dispatch.
+        # Replaying the ledger restores both granted and admitted retries.
+        self._timeout_retries = {}
 
     @property
     def context(self):
@@ -467,6 +472,7 @@ class RunJournal:
                     or c['deadline_monotonic'] != c['start_monotonic'] + MAX_SECONDS
                     or not isinstance(c['clock_identity'], str) or not c['clock_identity']
                     or set(c['base_blobs']) != {SNAPSHOT_PATH, STATE_PATH}
+                    or c.get('timeout_retry_policy') != TIMEOUT_RETRY_POLICY
                     or not c['code_digests']):
                 raise Corrupt('invalid immutable original run context')
             for blob in c['base_blobs'].values():
@@ -561,6 +567,21 @@ class RunJournal:
                     or sha(encoded(req)) != data['requestSha256']):
                 raise Corrupt('invalid durable attempt reservation')
             self._scope(data['role'], req['method'], req['params'])
+            key = self._request_key(req['method'], req['params'])
+            retry = self._timeout_retries.get(key)
+            pending = (data['role'] == 'event_header' and retry is not None
+                       and retry['retry_id'] is None)
+            if data['role'] == 'event_header' and retry is not None and not pending:
+                raise Corrupt('identical header timeout retry was already admitted')
+            if pending:
+                if (data.get('timeoutRetryOf') != retry['id']
+                        or row['stamp']['monotonic'] < retry['not_before']
+                        or row['stamp']['monotonic'] - retry['failed_at']
+                           < TIMEOUT_RETRY_POLICY['cooldown_seconds']):
+                    raise Corrupt('timeout retry is unlinked or precedes its fixed cooldown')
+                retry['retry_id'] = ident
+            elif 'timeoutRetryOf' in data:
+                raise Corrupt('timeout retry allowance was already used or never granted')
             self.requests[ident] = deepcopy(data)
         elif kind == 'response':
             ident = data['id']
@@ -580,7 +601,27 @@ class RunJournal:
             self.failures[ident] = deepcopy(data)
             self._local_live.discard(ident)
             category, code = data['category'], data.get('code')
-            if category in ('limit_exceeded', 'rpc_limit'):
+            if 'timeoutRetry' in data:
+                key = self._request_key(self.requests[ident]['request']['method'],
+                                        self.requests[ident]['request']['params'])
+                retry = data['timeoutRetry']
+                if (category != 'transport_read_timeout' or code is not None or data.get('denied')
+                        or data.get('phase') not in ('open', 'read')
+                        or data.get('knownCancellation') is not False
+                        or self.requests[ident]['role'] != 'event_header'
+                        or self.status not in ('anchors', 'collecting') or self.denied
+                        or key in self._timeout_retries
+                        or len(self._timeout_retries) >= TIMEOUT_RETRY_POLICY['per_run']
+                        or retry != {'key': key, 'cooldown_seconds': TIMEOUT_RETRY_POLICY['cooldown_seconds']}):
+                    raise Corrupt('invalid bounded timeout retry allowance')
+                start, cooldown = row['stamp']['monotonic'], retry['cooldown_seconds']
+                not_before = start + cooldown
+                # A rounded-down absolute timestamp must not shorten cooldown.
+                if not_before - start < cooldown:
+                    not_before = math.nextafter(not_before, math.inf)
+                self._timeout_retries[key] = {'id': ident, 'failed_at': start, 'not_before': not_before,
+                                              'retry_id': None}
+            elif category in ('limit_exceeded', 'rpc_limit'):
                 if self.requests[ident]['request']['method'] != 'eth_getLogs' or code != -32005:
                     raise Corrupt('only log -32005 permits bounded split')
             elif category != 'cancelled':
@@ -710,9 +751,69 @@ class RunJournal:
                 raise Stopped('four current-process RPC reservations already live')
             request = {'jsonrpc': '2.0', 'id': self.calls + 1, 'method': method, 'params': deepcopy(params)}
             raw = encoded(request)
-            self._append('reserve', role=role, request=request, requestSha256=sha(raw), epoch=self.epoch)
+            retry = self._timeout_retries.get(self._request_key(method, params))
+            metadata = {}
+            if role == 'event_header' and retry is not None:
+                if retry['retry_id'] is not None:
+                    raise Stopped('identical header timeout retry was already admitted')
+                now = self._stamp()['monotonic']
+                if (now < retry['not_before']
+                        or now - retry['failed_at'] < TIMEOUT_RETRY_POLICY['cooldown_seconds']):
+                    raise Stopped('fixed timeout retry cooldown has not elapsed')
+                metadata['timeoutRetryOf'] = retry['id']
+            self._append('reserve', role=role, request=request, requestSha256=sha(raw),
+                         epoch=self.epoch, **metadata)
             self._local_live.add(request['id'])
             return request['id'], raw
+
+    @staticmethod
+    def _request_key(method, params):
+        return sha(encoded([method, params]))
+
+    def timeout_retry_not_before(self, role, method, params):
+        with self._mutex:
+            retry = self._timeout_retries.get(self._request_key(method, params))
+            return (retry['not_before'] if role == 'event_header' and retry is not None
+                    and retry['retry_id'] is None else None)
+
+    def retry_timeout(self, ident, error, phase):
+        """Seal one failed attempt and its allowance together, or fail closed.
+
+        This never resets a counter, renews a deadline or changes the endpoint.
+        The existing independent seal protects the allowance and reservation
+        through interruption/resume, including interruption during cooldown.
+        """
+        with self._mutex:
+            if not transport_read_timeout(error, phase):
+                return False
+            try:
+                now = self.check()
+                remaining = self.remaining_seconds
+            except Stopped:
+                return False
+            if (ident not in self.requests or ident in self.responses or ident in self.failures
+                    or ident not in self._active_callbacks
+                    or self.requests[ident]['epoch'] != self.epoch
+                    or self.requests[ident]['role'] != 'event_header'
+                    or self.status not in ('anchors', 'collecting') or self.denied):
+                return False
+            req = self.requests[ident]
+            key = self._request_key(req['request']['method'], req['request']['params'])
+            cooldown = TIMEOUT_RETRY_POLICY['cooldown_seconds']
+            if (key in self._timeout_retries
+                    or len(self._timeout_retries) >= TIMEOUT_RETRY_POLICY['per_run']
+                    or self.calls + 1 + 6 > self.max_calls
+                    or remaining <= cooldown
+                    or now['wall'] + cooldown - self._source['inspection']['timestamp'] > MAX_SOURCE_AGE):
+                return False
+            # The failure and one-use allowance share a single sealed record.
+            # Cooldown is measured from that record's original clock stamp.
+            detail = safe_exception(error)
+            self._append('failure', id=ident, category='transport_read_timeout', code=None,
+                         error=detail['message'], denied=False, exception=detail, phase=phase,
+                         knownCancellation=False,
+                         timeoutRetry={'key': key, 'cooldown_seconds': cooldown})
+            return True
 
     def start_callback(self, ident):
         with self._mutex:
@@ -946,7 +1047,7 @@ class RunJournal:
             failures = [{'request': deepcopy(self.requests[ident]['request']),
                          'error': data['error'], 'kind': data['category'],
                          'code': data['code'], 'denied': data['denied'],
-                         **{k: deepcopy(data[k]) for k in ('exception', 'phase', 'knownCancellation') if k in data}}
+                         **{k: deepcopy(data[k]) for k in ('exception', 'phase', 'knownCancellation', 'timeoutRetry') if k in data}}
                         for ident, data in sorted(self.failures.items())]
             completed = set(self.responses) | set(self.failures)
             return {'source': self._context['endpoint'],
@@ -956,6 +1057,7 @@ class RunJournal:
                     'responses': responses, 'failures': failures,
                     'inFlightIds': sorted(set(self.requests) - completed),
                     'status': self.status, 'epoch': self.epoch, 'denied': self.denied,
+                    'timeoutRetries': deepcopy(self._timeout_retries),
                     'seal': deepcopy(self.seal), 'cacheReuses': deepcopy(self._cache_reuses)}
 
     def close(self):
