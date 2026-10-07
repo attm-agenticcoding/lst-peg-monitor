@@ -2,6 +2,7 @@
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 import io
 import json
+import math
 from pathlib import Path
 import sys
 import threading
@@ -287,12 +288,17 @@ class RpcPacingTests(unittest.TestCase):
 
 
 class DurablePacingTests(unittest.TestCase):
+    clock_start = math.nextafter(127.0, math.inf)
+
     def setUp(self):
         self.fixture = integration.RecoveryIntegrationTests(
             'test_unapproved_method_never_reaches_transport_or_spends_budget')
         self.fixture.setUp()
         self.addCleanup(self.fixture.doCleanups)
         self.clock = self.fixture.clock
+        # Exercise both idle-time rounding and a sub-ULP pacing remainder,
+        # independently of the test runner's uptime.
+        self.clock.monotonic = self.clock_start
         self.waits = []
 
     def auto_wait(self, condition, seconds):
@@ -313,7 +319,9 @@ class DurablePacingTests(unittest.TestCase):
         stamps = [row['stamp']['monotonic'] for row in journal.records if row['kind'] == 'reserve']
         self.assertEqual(len(stamps), journal.calls)
         self.assertTrue(all(b - a >= 2 for a, b in zip(stamps, stamps[1:])))
-        self.assertEqual(len(self.waits), journal.calls - 1)
+        # A strict interval can require a second tiny wait after rounding.
+        # The contract is the actual admission gap, not wait callback count.
+        self.assertTrue(all(delay > 0 for delay in self.waits))
         self.assertEqual(journal.last_admission_monotonic, stamps[-1])
         self.fixture.assert_fresh_suffix(transport.requests)
         self.assertEqual(journal.deadline, journal.context['start_monotonic'] + 1500)
@@ -349,14 +357,21 @@ class DurablePacingTests(unittest.TestCase):
         journal.pause('offline interruption')
         journal.close()
         self.clock.advance(40)
+        idle_end = self.clock.monotonic
         journal = self.fixture.reopen()
         resumed = self.rpc(journal)
+        waits_before = list(self.waits)
         with patch('refresh.open_rpc', side_effect=self.fixture.transport()):
             resumed('eth_getBlockByNumber', ['0x64', False])
+            self.assertEqual(self.waits, waits_before)
+            self.assertEqual(journal.last_admission_monotonic, idle_end)
             resumed('eth_getBlockByNumber', ['0x69', False])
-        self.assertEqual(self.waits, [2])
+        self.assertGreater(len(self.waits), len(waits_before))
+        self.assertTrue(all(delay > 0 for delay in self.waits))
         stamps = [row['stamp']['monotonic'] for row in journal.records if row['kind'] == 'reserve']
-        self.assertEqual([b - a for a, b in zip(stamps, stamps[1:])], [40, 2])
+        self.assertEqual(len(stamps), 3)
+        self.assertEqual(stamps[1], idle_end)
+        self.assertGreaterEqual(stamps[2] - stamps[1], 2)
 
     def test_durable_deadline_rejects_waiting_admission_without_new_reservation(self):
         journal = self.fixture.create()
