@@ -153,15 +153,22 @@
   },
   "refresh": {
     "mode": "daily",
-    "state": "error",
+    "state": "running",
     "scheduleUtc": "00:00",
     "expectedIntervalSeconds": 86400,
     "maxSourceAgeSeconds": 5400,
     "maxOperationalAgeSeconds": 91800,
     "lastSuccessAt": null,
-    "lease": null,
-    "error": "Execution approval review repeatedly interrupted acquisition and reviewed same-run recovery. No complete queue replay or model result was produced within the available original time window; previous successful data retained.",
-    "attemptAt": "2026-10-07T14:39:41Z",
+    "lease": {
+      "runId": "1ac48985-2908-4249-8035-508af45f5c41",
+      "acquiredAtEpoch": 1791389940,
+      "expiresAtEpoch": 1791392040,
+      "trigger": "manual",
+      "rpcCallBudget": 320,
+      "requestKey": "manual-20261007-actions-catchup-01"
+    },
+    "error": null,
+    "attemptAt": "2026-10-07T16:19:00Z",
     "trigger": "manual",
     "attemptDay": "2026-10-07",
     "finishedAt": "2026-10-07T15:03:06Z",
@@ -172,8 +179,9 @@
       "manual-20261007-production-retry-dbe4e9a1",
       "manual-20261007-recovery-630ba06b",
       "manual-20261007-recovery-fix-5c1d1168",
-      "manual-20261007-catchup-6614fbc0"
+      "manual-20261007-catchup-6614fbc0",
+      "manual-20261007-actions-catchup-01"
     ],
-    "lastManualRequestId": "manual-20261007-catchup-6614fbc0"
+    "lastManualRequestId": "manual-20261007-actions-catchup-01"
   }
 }
