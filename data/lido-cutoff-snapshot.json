@@ -153,17 +153,23 @@
   },
   "refresh": {
     "mode": "daily",
-    "state": "error",
+    "state": "running",
     "scheduleUtc": "00:00",
     "expectedIntervalSeconds": 86400,
     "maxSourceAgeSeconds": 5400,
     "maxOperationalAgeSeconds": 91800,
     "lastSuccessAt": null,
-    "lease": null,
-    "error": "eth_getLogs: HTTP 504; source access failed",
-    "attemptAt": "2026-10-06T00:00:17Z",
+    "lease": {
+      "runId": "a0daeea2-639e-4706-8af3-c6be2e3e47bc",
+      "acquiredAtEpoch": 1791331266,
+      "expiresAtEpoch": 1791333366,
+      "trigger": "scheduled",
+      "requestKey": "2026-10-07"
+    },
+    "error": null,
+    "attemptAt": "2026-10-07T00:01:06Z",
     "trigger": "scheduled",
-    "attemptDay": "2026-10-06",
+    "attemptDay": "2026-10-07",
     "finishedAt": "2026-10-06T00:04:12Z",
     "accessBlocked": false
   }
