@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""One explicit manual request, one same-run collector, exact-head publication.
+"""One daily or explicit manual attempt, one collector, exact-head publication.
 
-Only this controller receives the ephemeral GitHub token. No automatic source
-retry, resume, dispatch, credentials on disk, or cross-runner artifacts.
+Only this controller receives the ephemeral GitHub token. No replacement run,
+resume, self-dispatch, credentials on disk, or cross-runner artifacts.
 """
 import argparse
 import base64
@@ -23,8 +23,9 @@ import urllib.request
 import uuid
 
 from publication import validate_result
-from refresh import (SNAPSHOT_PATH, STATE_PATH, blob_sha, canonical,
+from refresh import (SNAPSHOT_PATH, STATE_PATH, blob_sha, canonical, day_key, second,
                      failure_snapshot, manifest, propose_lease, validate_lease)
+from rpc_budget import DEFAULT_RPC_CALLS
 
 REPOSITORY = 'attm-agenticcoding/lst-peg-monitor'
 REQUEST_PATH = '.github/lido-manual-request.json'
@@ -35,6 +36,7 @@ PAGES = 'https://attm-agenticcoding.github.io/lst-peg-monitor/'
 SHA = re.compile(r'[0-9a-f]{40}')
 MAX_BYTES = 8 * 1024 * 1024
 CAS_ATTEMPTS = 3
+DAILY_CRON = '0 0 * * *'
 
 
 class Stopped(RuntimeError):
@@ -101,11 +103,56 @@ def read_request(raw):
 def validate_invocation(env):
     if (env.get('GITHUB_ACTIONS') != 'true' or env.get('GITHUB_REPOSITORY') != REPOSITORY
             or env.get('GITHUB_REF') != 'refs/heads/main'
-            or env.get('GITHUB_EVENT_NAME') not in ('push', 'workflow_dispatch')):
-        raise Stopped('only this repository main manual-request workflow is allowed')
+            or env.get('GITHUB_EVENT_NAME') not in ('push', 'workflow_dispatch', 'schedule')):
+        raise Stopped('only this repository main daily/manual workflow is allowed')
     checked_sha(env.get('GITHUB_SHA'))
     if env.get('GITHUB_SERVER_URL') != 'https://github.com' or env.get('GITHUB_API_URL') != API:
         raise Stopped('unexpected GitHub server')
+
+
+def validate_schedule_day(schedule, now):
+    # Never turn an old queued run into today's attempt or backdate a lease.
+    if schedule['requestKey'] != day_key(now):
+        raise Stopped('scheduled run crossed its original UTC creation day; no catch-up allowed')
+
+
+def scheduled_request(api, environment, now):
+    """Bind a genuine first schedule attempt to GitHub's original creation day.
+
+    GitHub does not expose a documented nominal occurrence timestamp. The
+    original run's UTC creation day is explicit audit evidence, not an inferred
+    on-time cron occurrence. Queueing across midnight and reruns fail closed.
+    """
+    event = json.loads(Path(environment['GITHUB_EVENT_PATH']).read_bytes())
+    run_id = environment.get('GITHUB_RUN_ID', '')
+    if (environment.get('GITHUB_EVENT_NAME') != 'schedule'
+            or event.get('schedule') != DAILY_CRON
+            or not re.fullmatch(r'[1-9][0-9]*', run_id)
+            or environment.get('GITHUB_RUN_ATTEMPT') != '1'):
+        raise Stopped('only the original daily 00:00 UTC schedule event is allowed')
+    run = api.workflow_run(run_id)
+    if (type(run.get('id')) is not int or str(run['id']) != run_id
+            or run.get('event') != 'schedule' or run.get('run_attempt') != 1
+            or type(run.get('run_attempt')) is not int
+            or run.get('path') != WORKFLOW_PATH or run.get('head_branch') != 'main'
+            or run.get('head_sha') != environment.get('GITHUB_SHA')
+            or run.get('repository', {}).get('full_name') != REPOSITORY):
+        raise Stopped('GitHub run provenance does not match the original daily schedule')
+    created_at = run.get('created_at')
+    if not isinstance(created_at, str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z', created_at):
+        raise Stopped('scheduled run lacks an exact UTC creation timestamp')
+    try:
+        created = second(created_at)
+    except ValueError:
+        raise Stopped('scheduled run has an invalid UTC creation timestamp') from None
+    if created > now:
+        raise Stopped('scheduled run creation timestamp is in the future')
+    request = {'trigger': 'scheduled', 'requestKey': day_key(created),
+               'rpcCallBudget': DEFAULT_RPC_CALLS, 'schedule': DAILY_CRON,
+               'githubRunId': run_id, 'githubRunAttempt': 1, 'createdAt': created_at,
+               'githubHeadSha': run['head_sha'], 'utcDayBasis': 'github_run_created_at'}
+    validate_schedule_day(request, now)
+    return request
 
 
 def is_code(path):
@@ -139,9 +186,14 @@ class GitHub:
         self._opener = opener or urllib.request.build_opener(NoRedirect())
         self._blobs = {}
 
-    def request(self, method, path, payload=None, *, public=False):
+    def request(self, method, path, payload=None, *, public=False, public_run=False):
         # Do not accept arbitrary URLs or forward a repository token to Pages.
-        if public:
+        if public_run:
+            allowed_run = r'/repos/' + re.escape(REPOSITORY) + r'/actions/runs/[1-9][0-9]*'
+            if public or method != 'GET' or payload is not None or not re.fullmatch(allowed_run, path):
+                raise Stopped('unexpected public workflow-run read')
+            url = API + path
+        elif public:
             if path not in DATA_PATHS or method != 'GET' or payload is not None:
                 raise Stopped('unexpected public read')
             url = PAGES + path
@@ -153,7 +205,7 @@ class GitHub:
                    'X-GitHub-Api-Version': '2022-11-28', 'Cache-Control': 'no-cache'}
         if payload is not None:
             headers['Content-Type'] = 'application/json'
-        if not public:
+        if not public and not public_run:
             headers['Authorization'] = 'Bearer ' + self._token
         raw = None if payload is None else json.dumps(payload).encode()
         req = urllib.request.Request(url, data=raw, headers=headers, method=method)
@@ -173,6 +225,11 @@ class GitHub:
 
     def rest(self, path, method='GET', payload=None):
         return self.request(method, '/repos/' + REPOSITORY + path, payload)
+
+    def workflow_run(self, run_id):
+        # Public repository metadata requires no token or new Actions permission.
+        return self.request('GET', '/repos/' + REPOSITORY + '/actions/runs/' + run_id,
+                            public_run=True)
 
     def validate_push(self, before, after):
         before, after = checked_sha(before), checked_sha(after)
@@ -347,8 +404,14 @@ class Controller:
         self.run_id = None
         self.published = False
         self.child_stopped = True
+        self.trigger = 'manual'
+        self.schedule = None
         self.audit = {'schema': 1, 'repository': REPOSITORY, 'revisions': [], 'commits': [],
-                      'repositoryPublished': False, 'pagesVerified': False}
+                      'repositoryPublished': False, 'pagesVerified': False,
+                      'githubEventName': self.environment.get('GITHUB_EVENT_NAME'),
+                      'githubRunId': self.environment.get('GITHUB_RUN_ID'),
+                      'githubRunAttempt': self.environment.get('GITHUB_RUN_ATTEMPT'),
+                      'githubHeadSha': self.environment.get('GITHUB_SHA')}
 
     def observe(self, stage, revision):
         self.audit['revisions'].append({'stage': stage, 'head': revision.head,
@@ -389,26 +452,37 @@ class Controller:
             return self.stable_current(committed)
         raise AssertionError('unreachable CAS loop')
 
-    def acquire(self, current, request):
+    def acquire(self, current, request, *, schedule=None):
+        self.schedule = schedule
+        self.trigger = 'scheduled' if schedule is not None else 'manual'
+        now = int(self.now())
+        if schedule is not None:
+            validate_schedule_day(schedule, now)
+        request_key = schedule['requestKey'] if schedule is not None else request['requestId']
+        budget = DEFAULT_RPC_CALLS if schedule is not None else request['rpcCallBudget']
         self.run_id = str(uuid.uuid4())
-        self.audit.update(runId=self.run_id, manualRequest=request)
+        self.audit.update(runId=self.run_id, trigger=self.trigger, manualRequest=request,
+                          scheduledRequest=schedule)
         self.observe('before_acquire', current)
-        proposed, reason = propose_lease(json.loads(current.files[SNAPSHOT_PATH]), int(self.now()),
-                                        self.run_id, trigger='manual', manual_request_id=request['requestId'],
-                                        rpc_call_budget=request['rpcCallBudget'])
+        proposed, reason = propose_lease(json.loads(current.files[SNAPSHOT_PATH]), now,
+                                        self.run_id, trigger=self.trigger,
+                                        manual_request_id=request_key if self.trigger == 'manual' else None,
+                                        rpc_call_budget=budget)
         if proposed is None:
             return reason
         files = {SNAPSHOT_PATH: canonical(proposed).encode()}
         def gate(base):
             # Original expected snapshot/checkpoint/code and request cannot move.
             require_price_only(current, base)
+            if schedule is not None:
+                validate_schedule_day(schedule, int(self.now()))
             validate_lease(proposed, int(self.now()), self.run_id)
-        self.leased = self.cas(current, files, 'Lido: acquire explicit manual lease', gate)
+        self.leased = self.cas(current, files, 'Lido: acquire ' + self.trigger + ' lease', gate)
         self.observe('lease_readback', self.leased)
         lease = json.loads(self.leased.files[SNAPSHOT_PATH])['refresh']['lease']
-        if (lease['runId'] != self.run_id or lease['requestKey'] != request['requestId']
-                or lease['trigger'] != 'manual' or lease['rpcCallBudget'] != request['rpcCallBudget']):
-            raise Stopped('durable lease readback does not match the manual request')
+        if (lease['runId'] != self.run_id or lease['requestKey'] != request_key
+                or lease['trigger'] != self.trigger or lease['rpcCallBudget'] != budget):
+            raise Stopped('durable lease readback does not match the daily/manual request')
         print(json.dumps({'step': 'lease_verified', 'head': self.leased.head,
                           'lease': lease, 'inputBlobs': {p: self.leased.tree[p][0] for p in DATA_PATHS},
                           'codeBlobs': {p: row[0] for p, row in self.leased.tree.items() if is_code(p)}}), flush=True)
@@ -421,7 +495,7 @@ class Controller:
             require_price_only(self.leased, base)
             validate_result(result, {p: base.files[p] for p in DATA_PATHS}, int(self.now()))
         files = {f['path']: f['content'].encode() for f in result['files']}
-        committed = self.cas(current, files, 'Lido: ' + result['stage'] + ' explicit manual refresh', gate)
+        committed = self.cas(current, files, 'Lido: ' + result['stage'] + ' ' + self.trigger + ' refresh', gate)
         self.published = True
         self.audit.update(repositoryPublished=True, collectorStage=result['stage'])
         self.observe('committed_readback', committed)
@@ -445,6 +519,8 @@ class Controller:
                    '--workdir', str(self.scratch / 'work'), '--output', str(output)]
         if stage == 'abort':
             command += ['--current-root', str(runtime), '--attest-current-main', '--abort-reason', reason]
+        if stage == 'run' and self.schedule is not None:
+            validate_schedule_day(self.schedule, int(self.now()))
         self.child_stopped = False
         try:
             self.child(command, timeout=1530 if stage == 'run' else 60, environment=self.environment)
@@ -475,17 +551,19 @@ class Controller:
         result['localVerificationOnly'] = False
         return result
 
-    def execute(self, request_raw):
-        request = read_request(request_raw)
-        if request is None:
+    def execute(self, request_raw=None):
+        schedule = (scheduled_request(self.api, self.environment, int(self.now()))
+                    if self.environment.get('GITHUB_EVENT_NAME') == 'schedule' else None)
+        request = None if schedule is not None else read_request(request_raw)
+        if schedule is None and request is None:
             return {'stage': 'skipped', 'reason': 'manual request is inert'}
         current = self.api.revision()
         verify_local_code(self.root, current)
-        if current.files[REQUEST_PATH] != request_raw:
+        if schedule is None and current.files[REQUEST_PATH] != request_raw:
             raise Stopped('manual request changed after this workflow was triggered')
         # Configuration failures should happen before consuming a request/lease.
         self.api.pages_config()
-        reason = self.acquire(current, request)
+        reason = self.acquire(current, request, schedule=schedule)
         if reason:
             return {'stage': 'skipped', 'reason': reason}
         try:
@@ -541,8 +619,9 @@ def main():
     args = parser.parse_args()
     validate_invocation(os.environ)
     root = args.root.resolve()
-    request_raw = (root / REQUEST_PATH).read_bytes()
-    if read_request(request_raw) is None:
+    scheduled = os.environ['GITHUB_EVENT_NAME'] == 'schedule'
+    request_raw = None if scheduled else (root / REQUEST_PATH).read_bytes()
+    if not scheduled and read_request(request_raw) is None:
         print(json.dumps({'stage': 'skipped', 'reason': 'manual request is inert'}))
         return 0
     if sys.version_info < (3, 12) or not shutil.which('g++'):
@@ -560,10 +639,10 @@ def main():
             raise Stopped('unexpected main push event')
         api.validate_push(event.get('before'), event['after'])
     def interrupted(signum, frame):
-        raise Stopped('Actions runner interrupted the original manual run')
+        raise Stopped('Actions runner interrupted the original daily/manual run')
     for signum in (signal.SIGINT, signal.SIGTERM):
         signal.signal(signum, interrupted)
-    directory = Path(tempfile.mkdtemp(prefix='lido-manual-'))
+    directory = Path(tempfile.mkdtemp(prefix='lido-actions-'))
     controller = Controller(api, root, directory)
     audit_ok = False
     try:

@@ -77,7 +77,7 @@ class FakeGitHub:
             raise self.pages_error
 
 
-class ControllerTests(unittest.TestCase):
+class ControllerFixture:
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
@@ -125,6 +125,8 @@ class ControllerTests(unittest.TestCase):
         self.write_result(command, self.result())
         return 1
 
+
+class ControllerTests(ControllerFixture, unittest.TestCase):
     def test_inert_request_has_no_api_source_or_publication(self):
         self.controller.api = Mock()
         answer = self.controller.execute(raw({'schema': 1, 'requestId': None, 'rpcCallBudget': 256}))
@@ -300,7 +302,215 @@ class ControllerTests(unittest.TestCase):
         self.assertFalse(self.controller.child_stopped)
 
 
+class ScheduledControllerTests(ControllerFixture, unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+        self.event = self.scratch / 'event.json'
+        self.event.write_bytes(raw({'schedule': ac.DAILY_CRON}))
+        self.environment = {'GITHUB_EVENT_NAME': 'schedule', 'GITHUB_RUN_ID': '123456',
+                            'GITHUB_RUN_ATTEMPT': '1', 'GITHUB_EVENT_PATH': str(self.event),
+                            'GITHUB_SHA': '1' * 40}
+        self.provenance = {'id': 123456, 'event': 'schedule', 'run_attempt': 1,
+                           'path': ac.WORKFLOW_PATH, 'head_branch': 'main', 'head_sha': '1' * 40,
+                           'created_at': utc(self.now - 60),
+                           'repository': {'full_name': ac.REPOSITORY}}
+        self.api.workflow_run = Mock(return_value=self.provenance)
+        self.controller = ac.Controller(self.api, ROOT, self.scratch, now=lambda: self.now,
+                                        child=self.child, environment=self.environment)
+
+    def test_schedule_consumes_utc_day_with_256_ignoring_manual_320(self):
+        request = raw({'schema': 1, 'requestId': 'prior-manual-320', 'rpcCallBudget': 320})
+        self.api.change({ac.REQUEST_PATH: request})
+        def inspect_lease(command, **kwargs):
+            lease = json.loads(self.api.current.files[ac.SNAPSHOT_PATH])['refresh']['lease']
+            self.assertEqual(lease['trigger'], 'scheduled')
+            self.assertEqual(lease['requestKey'], ac.day_key(self.now))
+            self.assertEqual(lease['rpcCallBudget'], 256)
+            self.assertEqual(lease['expiresAtEpoch'] - lease['acquiredAtEpoch'], 2100)
+            return self.collect_failed(command, **kwargs)
+        self.child.side_effect = inspect_lease
+        self.assertEqual(self.controller.execute()['stage'], 'failed')
+        refresh = json.loads(self.api.current.files[ac.SNAPSHOT_PATH])['refresh']
+        self.assertEqual(refresh['attemptDay'], ac.day_key(self.now))
+        self.assertNotIn('prior-manual-320', refresh.get('manualAttemptIds', []))
+        self.assertEqual(self.controller.execute()['stage'], 'skipped')
+        self.assertEqual(self.child.call_count, 1)
+        self.assertEqual(len(self.api.commits), 2)
+        self.assertEqual(self.controller.audit['scheduledRequest']['utcDayBasis'], 'github_run_created_at')
+        self.assertEqual(self.controller.audit['scheduledRequest']['githubRunId'], '123456')
+        self.assertIsNone(self.controller.audit['manualRequest'])
+
+    def test_schedule_ignores_inert_or_malformed_manual_payload(self):
+        for manual in (raw({'schema': 1, 'requestId': None, 'rpcCallBudget': 256}), b'not JSON'):
+            with self.subTest(manual=manual):
+                self.api.change({ac.SNAPSHOT_PATH: raw(self.old), ac.REQUEST_PATH: manual})
+                self.assertEqual(self.controller.execute()['stage'], 'failed')
+        self.assertEqual(self.child.call_count, 2)
+
+    def test_success_remains_atomic_and_provenance_survives_standard_audit(self):
+        from actions_audit import decode_bundle, emit_bundle
+        self.child.side_effect = lambda command, **kwargs: self.write_result(command, self.result(success=True))
+        answer = self.controller.execute()
+        self.assertEqual(answer['stage'], 'complete')
+        self.assertTrue(answer['pagesVerified'])
+        self.assertEqual(set(self.api.commits[-1][1]), set(ac.DATA_PATHS))
+        self.assertEqual(self.controller.audit['trigger'], 'scheduled')
+        # Audit its actual controller metadata without claiming mocked model
+        # outputs supply the full production evidence bundle.
+        with tempfile.TemporaryDirectory() as directory:
+            lines = []
+            emit_bundle(directory, self.controller.audit, emit=lines.append)
+            decoded, _ = decode_bundle(lines)
+        self.assertEqual(decoded['scheduledRequest'], self.controller.audit['scheduledRequest'])
+        self.assertEqual(decoded['githubEventName'], 'schedule')
+        self.assertEqual(decoded['githubRunId'], '123456')
+
+    def test_next_day_is_eligible_with_new_schedule_run(self):
+        self.controller.execute()
+        self.now += 86400
+        self.provenance.update(id=123457, created_at=utc(self.now - 60))
+        self.environment['GITHUB_RUN_ID'] = '123457'
+        self.assertEqual(self.controller.execute()['stage'], 'failed')
+        self.assertEqual(self.child.call_count, 2)
+        self.assertEqual(json.loads(self.api.current.files[ac.SNAPSHOT_PATH])['refresh']['attemptDay'], ac.day_key(self.now))
+
+    def test_shared_manual_lease_blocks_schedule_without_source_or_write(self):
+        owned, _ = ac.propose_lease(self.old, self.now, 'manual-owner', trigger='manual',
+                                     manual_request_id='manual-owner', rpc_call_budget=320)
+        self.api.change({ac.SNAPSHOT_PATH: raw(owned)})
+        self.assertEqual(self.controller.execute()['stage'], 'skipped')
+        self.child.assert_not_called()
+        self.assertEqual(self.api.commits, [])
+
+    def test_old_or_future_creation_time_rejected_without_source_or_write(self):
+        for created in (self.now - 86400, self.now + 1):
+            with self.subTest(created=created):
+                self.provenance['created_at'] = utc(created)
+                with self.assertRaises(ac.Stopped):
+                    self.controller.execute()
+        self.child.assert_not_called()
+        self.assertEqual(self.api.commits, [])
+
+    def test_delayed_within_same_utc_day_is_allowed(self):
+        self.provenance['created_at'] = ac.day_key(self.now) + 'T00:00:00Z'
+        self.assertEqual(self.controller.execute()['stage'], 'failed')
+        self.assertEqual(self.child.call_count, 1)
+
+    def test_midnight_during_preflight_or_cas_cannot_consume_another_day(self):
+        for phase in ('preflight', 'cas'):
+            with self.subTest(phase=phase):
+                old_now = self.now
+                self.provenance['created_at'] = utc(self.now - 60)
+                def cross_day(*args):
+                    self.now += 86400
+                if phase == 'preflight':
+                    self.api.pages_config = cross_day
+                else:
+                    self.api.pages_config = lambda: None
+                    self.api.race = lambda api: (cross_day(), api.change({'data/history.json': b'price only'}))
+                with self.assertRaisesRegex(ac.Stopped, 'crossed'):
+                    self.controller.execute()
+                self.now = old_now
+        self.child.assert_not_called()
+        self.assertEqual(self.api.commits, [])
+
+    def test_midnight_after_lease_releases_old_day_without_source(self):
+        original = self.api.verify_commit
+        def after_lease(head, base, files):
+            result = original(head, base, files)
+            if len(self.api.commits) == 1:
+                self.now = ((self.now // 86400) + 1) * 86400
+            return result
+        self.now = ((self.now // 86400) + 1) * 86400 - 1
+        self.provenance['created_at'] = utc(self.now)
+        self.api.verify_commit = after_lease
+        with self.assertRaisesRegex(ac.Stopped, 'crossed'):
+            self.controller.execute()
+        self.child.assert_not_called()
+        refresh = json.loads(self.api.current.files[ac.SNAPSHOT_PATH])['refresh']
+        self.assertEqual(refresh['attemptDay'], ac.day_key(self.now - 1))
+        self.assertEqual(refresh['state'], 'error')
+        self.assertIsNone(refresh['lease'])
+
+    def test_midnight_during_runtime_materialization_stops_before_child(self):
+        self.now = ((self.now // 86400) + 1) * 86400 - 1
+        self.provenance['created_at'] = utc(self.now)
+        original = ac.materialize
+        def cross_midnight(current, directory):
+            original(current, directory)
+            self.now += 1
+        with patch.object(ac, 'materialize', side_effect=cross_midnight):
+            with self.assertRaisesRegex(ac.Stopped, 'crossed'):
+                self.controller.execute()
+        self.child.assert_not_called()
+        refresh = json.loads(self.api.current.files[ac.SNAPSHOT_PATH])['refresh']
+        self.assertEqual(refresh['state'], 'error')
+        self.assertIsNone(refresh['lease'])
+
+    def test_schedule_rerun_wrong_cron_or_fake_manual_event_never_collects(self):
+        for changed in ({'GITHUB_RUN_ATTEMPT': '2'}, {'GITHUB_RUN_ID': '../evil'},
+                        {'GITHUB_EVENT_NAME': 'workflow_dispatch'}):
+            with self.subTest(changed=changed), self.assertRaises(ac.Stopped):
+                ac.scheduled_request(self.api, {**self.environment, **changed}, self.now)
+        for cron in ('0 12 * * *', '0 18 * * *', '0 0,12,18 * * *', None):
+            self.event.write_bytes(raw({'schedule': cron}))
+            with self.assertRaises(ac.Stopped):
+                self.controller.execute()
+        self.api.workflow_run.assert_not_called()
+        self.child.assert_not_called()
+        self.assertEqual(self.api.commits, [])
+
+    def test_schedule_mismatched_missing_or_denied_provenance_fails_closed(self):
+        changes = ({'event': 'workflow_dispatch'}, {'head_branch': 'other'}, {'head_sha': '2' * 40},
+                   {'path': '.github/workflows/other.yml'}, {'id': 234}, {'run_attempt': 2},
+                   {'run_attempt': True}, {'repository': {'full_name': 'other/repo'}},
+                   {'created_at': None}, {'created_at': '2026-99-99T00:00:00Z'},
+                   {'created_at': '2026-10-04T00:00:00+00:00'})
+        for change in changes:
+            with self.subTest(change=change):
+                self.api.workflow_run.return_value = {**self.provenance, **change}
+                with self.assertRaises(ac.Stopped):
+                    self.controller.execute()
+        self.api.workflow_run.side_effect = ac.ApiFailure('HTTP status 403', 403)
+        with self.assertRaises(ac.ApiFailure):
+            self.controller.execute()
+        self.child.assert_not_called()
+        self.assertEqual(self.api.commits, [])
+
+    def test_schedule_keeps_checkpoint_code_workflow_request_race_fences(self):
+        for path in (ac.SNAPSHOT_PATH, ac.STATE_PATH, 'scripts/lido/refresh.py', ac.WORKFLOW_PATH, ac.REQUEST_PATH):
+            with self.subTest(path=path):
+                api = FakeGitHub(self.api.current.files)
+                api.workflow_run = self.api.workflow_run
+                api.race = lambda target, p=path: target.change({p: b'changed competing bytes'})
+                controller = ac.Controller(api, ROOT, self.scratch, now=lambda: self.now,
+                                           child=self.child, environment=self.environment)
+                with self.assertRaises(ac.Stopped):
+                    controller.execute()
+                self.assertEqual(api.commits, [])
+        self.child.assert_not_called()
+
+
 class ApiTests(unittest.TestCase):
+    def test_public_schedule_provenance_has_no_token_and_is_exactly_scoped(self):
+        response = Mock(status=200)
+        response.read.return_value = b'{"id":123456}'
+        opener = MagicMock()
+        opener.open.return_value.__enter__.return_value = response
+        api = ac.GitHub('secret-token', opener)
+        self.assertEqual(api.workflow_run('123456'), {'id': 123456})
+        request = opener.open.call_args.args[0]
+        self.assertEqual(request.full_url, ac.API + '/repos/' + ac.REPOSITORY + '/actions/runs/123456')
+        self.assertFalse(request.has_header('Authorization'))
+        for path in ('/repos/' + ac.REPOSITORY + '/actions/runs/../secrets',
+                     '/repos/other/repo/actions/runs/123456',
+                     '/repos/' + ac.REPOSITORY + '/actions/runs/123456?anything=1'):
+            with self.assertRaises(ac.Stopped):
+                api.request('GET', path, public_run=True)
+        with self.assertRaises(ac.Stopped):
+            api.request('POST', '/repos/' + ac.REPOSITORY + '/actions/runs/123456', public_run=True)
+        self.assertEqual(opener.open.call_count, 1)
+
     def test_exact_head_mutation_two_files_without_ref_force_or_extra_scope(self):
         api = ac.GitHub('do-not-log')
         api.request = Mock(return_value={'data': {'createCommitOnBranch': {'commit': {'oid': '2' * 40}}}})
@@ -417,6 +627,22 @@ class ApiTests(unittest.TestCase):
 
 
 class BoundaryTests(unittest.TestCase):
+    def test_schedule_main_never_parses_or_selects_manual_request(self):
+        controller = Mock()
+        controller.execute.return_value = {'stage': 'skipped'}
+        api = Mock(_token='secret')
+        with (patch.object(sys, 'argv', ['controller', '--root', str(ROOT)]),
+              patch.object(ac, 'validate_invocation'),
+              patch.object(ac, 'read_request', side_effect=AssertionError('manual route selected')),
+              patch.object(ac.subprocess, 'run'), patch.object(ac, 'GitHub', return_value=api),
+              patch.object(ac, 'Controller', return_value=controller),
+              patch.object(ac.tempfile, 'mkdtemp', return_value='/tmp/unused-test-directory'),
+              patch.object(ac, 'finish_diagnostics', return_value=True),
+              patch.object(ac.signal, 'signal'), patch('builtins.print'),
+              patch.dict(ac.os.environ, {'GITHUB_EVENT_NAME': 'schedule'})):
+            self.assertEqual(ac.main(), 0)
+        controller.execute.assert_called_once_with(None)
+
     def test_child_env_has_no_repository_runtime_oidc_or_git_credentials(self):
         environment = {'PATH': '/bin', 'HOME': '/home/runner', 'GH_TOKEN': 'secret', 'GITHUB_TOKEN': 'secret',
                        'ACTIONS_RUNTIME_TOKEN': 'secret', 'ACTIONS_ID_TOKEN_REQUEST_URL': 'secret',
@@ -424,13 +650,14 @@ class BoundaryTests(unittest.TestCase):
                        'HTTPS_PROXY': 'secret', 'OTHER_CREDENTIAL': 'secret'}
         self.assertEqual(ac.child_environment(environment), {'PATH': '/bin', 'HOME': '/home/runner'})
 
-    def test_wrong_repo_ref_schedule_or_server_never_allowed(self):
+    def test_only_correct_repo_ref_supported_event_and_server_allowed(self):
         good = {'GITHUB_ACTIONS': 'true', 'GITHUB_REPOSITORY': ac.REPOSITORY, 'GITHUB_REF': 'refs/heads/main',
                 'GITHUB_EVENT_NAME': 'workflow_dispatch', 'GITHUB_SHA': '1' * 40,
                 'GITHUB_SERVER_URL': 'https://github.com', 'GITHUB_API_URL': ac.API}
         ac.validate_invocation(good)
+        ac.validate_invocation({**good, 'GITHUB_EVENT_NAME': 'schedule'})
         for key, value in [('GITHUB_REPOSITORY', 'other/repo'), ('GITHUB_REF', 'refs/heads/other'),
-                           ('GITHUB_EVENT_NAME', 'schedule'), ('GITHUB_EVENT_NAME', 'pull_request'),
+                           ('GITHUB_EVENT_NAME', 'repository_dispatch'), ('GITHUB_EVENT_NAME', 'pull_request'),
                            ('GITHUB_SERVER_URL', 'https://evil.invalid')]:
             with self.subTest(key=key, value=value), self.assertRaises(ac.Stopped):
                 ac.validate_invocation({**good, key: value})
