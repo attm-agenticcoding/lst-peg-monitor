@@ -153,15 +153,22 @@
   },
   "refresh": {
     "mode": "daily",
-    "state": "error",
+    "state": "running",
     "scheduleUtc": "00:00",
     "expectedIntervalSeconds": 86400,
     "maxSourceAgeSeconds": 5400,
     "maxOperationalAgeSeconds": 91800,
     "lastSuccessAt": null,
-    "lease": null,
-    "error": "eth_getBlockByNumber: source access failed",
-    "attemptAt": "2026-10-07T16:19:00Z",
+    "lease": {
+      "runId": "81f2f327-e86a-459c-a519-919c67abee34",
+      "acquiredAtEpoch": 1791394598,
+      "expiresAtEpoch": 1791396698,
+      "trigger": "manual",
+      "rpcCallBudget": 320,
+      "requestKey": "manual-20261007-actions-paced-catchup-02"
+    },
+    "error": null,
+    "attemptAt": "2026-10-07T17:36:38Z",
     "trigger": "manual",
     "attemptDay": "2026-10-07",
     "finishedAt": "2026-10-07T16:24:14Z",
@@ -173,8 +180,9 @@
       "manual-20261007-recovery-630ba06b",
       "manual-20261007-recovery-fix-5c1d1168",
       "manual-20261007-catchup-6614fbc0",
-      "manual-20261007-actions-catchup-01"
+      "manual-20261007-actions-catchup-01",
+      "manual-20261007-actions-paced-catchup-02"
     ],
-    "lastManualRequestId": "manual-20261007-actions-catchup-01"
+    "lastManualRequestId": "manual-20261007-actions-paced-catchup-02"
   }
 }
