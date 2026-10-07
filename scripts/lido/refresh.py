@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 import fcntl
 import hashlib
 import json
+import math
 import os
 import re
 from pathlib import Path
@@ -219,16 +220,22 @@ class Rpc:
             self._check()
             if self.calls >= self.max_calls:
                 raise RuntimeError('bounded RPC budget exhausted')
-            remaining = self.deadline - self._clock()
+            now = self._clock()
+            remaining = self.deadline - now
             if self._in_flight >= HEADER_WORKERS:
                 self._admission.wait(remaining)
                 continue
+            # Compare elapsed time directly: last + interval can round down
+            # when the monotonic float crosses a power-of-two boundary.
             delay = (0 if self._last_admission is None else
-                     self._last_admission + RPC_ADMISSION_SECONDS - self._clock())
+                     RPC_ADMISSION_SECONDS - (now - self._last_admission))
             if not_before is not None:
-                delay = max(delay, not_before - self._clock())
+                delay = max(delay, not_before - now)
             if delay <= 0:
                 return
+            # A sub-ULP remainder must still advance an injected float clock.
+            # This only rounds waits upward; it never relaxes the interval.
+            delay = max(delay, math.nextafter(now, math.inf) - now)
             self._admission_wait(self._admission, min(delay, remaining))
 
     def _release_admission(self):

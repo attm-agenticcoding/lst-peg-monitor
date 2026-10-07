@@ -5,6 +5,7 @@ All transports and clocks are injected; no source or remote operation is used.
 from copy import deepcopy
 import io
 import json
+import math
 import threading
 import unittest
 from unittest.mock import patch
@@ -15,7 +16,7 @@ import refresh
 from acquisition_errors import transport_read_timeout
 from recovery import Corrupt, Stopped, encoded, sha
 import test_lido_recovery_integration as integration
-from rpc_clock import advancing_wait
+from rpc_clock import RpcClock, advancing_wait
 from test_execution_hourly import FakeRpc, h
 from test_lido_rpc_concurrency import Transport
 
@@ -63,11 +64,97 @@ class TimeoutClassificationTests(unittest.TestCase):
         self.assertEqual(refresh.classify_acquisition_error(first, first, 'read')['category'], 'cancelled')
 
 
+class FloatBoundaryTests(unittest.TestCase):
+    def test_shared_admission_keeps_strict_elapsed_bound_and_tiny_wait_progress(self):
+        for base in (63.0, 127.0, 251.0, 511.0, 2 ** 20 - 1.0):
+            with self.subTest(base=base):
+                clock = RpcClock(math.nextafter(base, math.inf))
+                advance = advancing_wait(clock)
+                waits, starts = [], []
+                def waiting(condition, seconds):
+                    waits.append(seconds)
+                    self.assertLess(len(waits), 12, 'float clock stopped advancing')
+                    before = clock()
+                    advance(condition, seconds)
+                    self.assertGreater(clock(), before)
+                rpc = refresh.Rpc(clock() + 1500, clock=clock, admission_wait=waiting)
+                def respond(_request):
+                    starts.append(clock())
+                    return '0x1'
+                with patch('refresh.open_rpc', side_effect=Transport(respond)):
+                    for _ in range(4):
+                        rpc('eth_getBalance', [ex.ADDRESSES['core'], '0x69'])
+                for start, end in zip(starts, starts[1:]):
+                    self.assertGreaterEqual(end - start, 2,
+                                            {'start': start, 'end': end, 'gap': end - start})
+                self.assertTrue(any(0 < delay < 1 for delay in waits), waits)
+
+    def test_five_second_cooldown_rounds_up_and_remains_strict_on_ledger_replay(self):
+        for base in (63.0, 127.0, 251.0, 511.0):
+            with self.subTest(base=base):
+                fixture = integration.RecoveryIntegrationTests(
+                    'test_unapproved_method_never_reaches_transport_or_spends_budget')
+                fixture.setUp()
+                self.addCleanup(fixture.doCleanups)
+                failed_at = math.nextafter(base, math.inf)
+                fixture.clock.monotonic = failed_at - 8
+                journal = fixture.create()
+                def rpc_for(current):
+                    return refresh.DurableRpc(current, fixture.state, fixture.summary,
+                                              admission_wait=advancing_wait(fixture.clock))
+                def authenticate(rpc):
+                    with patch('refresh.open_rpc', side_effect=fixture.transport()):
+                        for number in ('0x64', '0x69', '0x6a', 'finalized'):
+                            rpc('eth_getBlockByNumber', [number, False])
+                authenticate(rpc_for(journal))
+                fixture.clock.advance(2)
+                self.assertEqual(fixture.clock.monotonic, failed_at)
+                ident, _ = journal.reserve('event_header', 'eth_getBlockByNumber', ['0x65', False])
+                journal.start_callback(ident)
+                self.assertTrue(journal.retry_timeout(ident, read_timeout(), 'open'))
+                journal.finish_callback(ident)
+                allowance = next(iter(journal.diagnostics()['timeoutRetries'].values()))
+                rounded = failed_at + 5
+                self.assertLess(rounded - failed_at, 5)
+                self.assertGreaterEqual(allowance['not_before'] - failed_at, 5)
+                fixture.clock.advance(rounded - fixture.clock.monotonic)
+                self.assertEqual(fixture.clock.monotonic, rounded)
+                with self.assertRaisesRegex(Stopped, 'cooldown'):
+                    journal.reserve('event_header', 'eth_getBlockByNumber', ['0x65', False])
+                request = {'jsonrpc': '2.0', 'id': 6, 'method': 'eth_getBlockByNumber',
+                           'params': ['0x65', False]}
+                early = {'kind': 'reserve', 'stamp': fixture.clock(),
+                         'data': {'role': 'event_header', 'request': request,
+                                  'requestSha256': sha(encoded(request)), 'epoch': journal.epoch,
+                                  'timeoutRetryOf': ident}}
+                with self.assertRaisesRegex(Corrupt, 'cooldown'):
+                    journal._apply(early)
+                journal.close()
+                journal = fixture.reopen()
+                self.assertEqual(next(iter(journal.diagnostics()['timeoutRetries'].values())), allowance)
+                early['data']['epoch'] = journal.epoch
+                with self.assertRaisesRegex(Corrupt, 'cooldown'):
+                    journal._apply(early)
+                rpc = rpc_for(journal)
+                authenticate(rpc)
+                with patch('refresh.open_rpc', side_effect=fixture.transport()):
+                    rpc.fetch_headers([101])
+                retry_id = next(iter(journal.diagnostics()['timeoutRetries'].values()))['retry_id']
+                retry_row = next(row for row in journal.records
+                                 if row['kind'] == 'reserve' and row['data']['request']['id'] == retry_id)
+                self.assertGreaterEqual(retry_row['stamp']['monotonic'] - failed_at, 5)
+
+
 class BoundedTimeoutRetryTests(unittest.TestCase):
+    clock_start = math.nextafter(63.0, math.inf)
+
     def setUp(self):
         self.fixture = integration.RecoveryIntegrationTests('test_unapproved_method_never_reaches_transport_or_spends_budget')
         self.fixture.setUp()
         self.addCleanup(self.fixture.doCleanups)
+        # Always exercise the CI-sensitive float boundary, independently of
+        # the host's uptime. The strict two-second assertions stay unchanged.
+        self.fixture.clock.monotonic = self.clock_start
         self.journal = self.fixture.create()
         self.rpc = self.new_rpc(self.journal)
         self.fake = FakeRpc(self.fixture.logs)
@@ -87,8 +174,11 @@ class BoundedTimeoutRetryTests(unittest.TestCase):
 
     def assert_pacing_and_seal(self):
         rows = [r for r in self.journal.records if r['kind'] == 'reserve']
-        self.assertTrue(all(b['stamp']['monotonic'] - a['stamp']['monotonic'] >= 2
-                            for a, b in zip(rows, rows[1:])))
+        for a, b in zip(rows, rows[1:]):
+            start, end = a['stamp']['monotonic'], b['stamp']['monotonic']
+            self.assertGreaterEqual(end - start, 2,
+                                    {'ids': [a['data']['request']['id'], b['data']['request']['id']],
+                                     'start': start, 'end': end, 'gap': end - start})
         failures = {r['data']['id']: r for r in self.journal.records
                     if r['kind'] == 'failure' and 'timeoutRetry' in r['data']}
         retries = [r for r in rows if 'timeoutRetryOf' in r['data']]

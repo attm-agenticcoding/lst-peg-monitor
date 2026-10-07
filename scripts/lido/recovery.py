@@ -575,7 +575,9 @@ class RunJournal:
                 raise Corrupt('identical header timeout retry was already admitted')
             if pending:
                 if (data.get('timeoutRetryOf') != retry['id']
-                        or row['stamp']['monotonic'] < retry['not_before']):
+                        or row['stamp']['monotonic'] < retry['not_before']
+                        or row['stamp']['monotonic'] - retry['failed_at']
+                           < TIMEOUT_RETRY_POLICY['cooldown_seconds']):
                     raise Corrupt('timeout retry is unlinked or precedes its fixed cooldown')
                 retry['retry_id'] = ident
             elif 'timeoutRetryOf' in data:
@@ -612,8 +614,12 @@ class RunJournal:
                         or len(self._timeout_retries) >= TIMEOUT_RETRY_POLICY['per_run']
                         or retry != {'key': key, 'cooldown_seconds': TIMEOUT_RETRY_POLICY['cooldown_seconds']}):
                     raise Corrupt('invalid bounded timeout retry allowance')
-                self._timeout_retries[key] = {'id': ident, 'not_before': row['stamp']['monotonic']
-                                              + retry['cooldown_seconds'],
+                start, cooldown = row['stamp']['monotonic'], retry['cooldown_seconds']
+                not_before = start + cooldown
+                # A rounded-down absolute timestamp must not shorten cooldown.
+                if not_before - start < cooldown:
+                    not_before = math.nextafter(not_before, math.inf)
+                self._timeout_retries[key] = {'id': ident, 'failed_at': start, 'not_before': not_before,
                                               'retry_id': None}
             elif category in ('limit_exceeded', 'rpc_limit'):
                 if self.requests[ident]['request']['method'] != 'eth_getLogs' or code != -32005:
@@ -750,7 +756,9 @@ class RunJournal:
             if role == 'event_header' and retry is not None:
                 if retry['retry_id'] is not None:
                     raise Stopped('identical header timeout retry was already admitted')
-                if self._stamp()['monotonic'] < retry['not_before']:
+                now = self._stamp()['monotonic']
+                if (now < retry['not_before']
+                        or now - retry['failed_at'] < TIMEOUT_RETRY_POLICY['cooldown_seconds']):
                     raise Stopped('fixed timeout retry cooldown has not elapsed')
                 metadata['timeoutRetryOf'] = retry['id']
             self._append('reserve', role=role, request=request, requestSha256=sha(raw),
