@@ -26,6 +26,7 @@ import uuid
 
 from scenarios import build_scenarios, report_references, utc, eth
 from acquisition_errors import MAX_EXCEPTION_NODES, exception_nodes, safe_exception, sanitized_text
+from rpc_budget import DEFAULT_RPC_CALLS, lease_rpc_budget, validate_budget
 
 ROOT = Path(__file__).resolve().parents[2]
 SNAPSHOT_PATH = 'data/lido-cutoff-snapshot.json'
@@ -38,7 +39,7 @@ MAX_OPERATIONAL_AGE = EXPECTED_INTERVAL_SECONDS + MAX_SOURCE_AGE
 MAX_MANUAL_ATTEMPTS = 128
 RPC_URL = 'https://rpc.mevblocker.io'
 ALLOWED_RPC = {'eth_getLogs', 'eth_getBlockByNumber', 'eth_getBalance'}
-MAX_RPC_CALLS = 256
+MAX_RPC_CALLS = DEFAULT_RPC_CALLS
 HEADER_WORKERS = 4
 
 
@@ -72,7 +73,8 @@ def day_key(now):
     return utc(now - now % EXPECTED_INTERVAL_SECONDS)[:10]
 
 
-def propose_lease(snapshot, now, run_id, *, trigger='scheduled', manual_request_id=None):
+def propose_lease(snapshot, now, run_id, *, trigger='scheduled', manual_request_id=None,
+                  rpc_call_budget=DEFAULT_RPC_CALLS):
     if trigger not in ('scheduled', 'manual'):
         raise ValueError('invalid refresh trigger')
     if trigger == 'manual':
@@ -80,6 +82,7 @@ def propose_lease(snapshot, now, run_id, *, trigger='scheduled', manual_request_
             raise ValueError('manual refresh requires a stable explicit manual request ID')
     elif manual_request_id is not None:
         raise ValueError('manual request ID is only valid for an explicit manual trigger')
+    validate_budget(rpc_call_budget, trigger)
     refresh = snapshot.get('refresh', {})
     if refresh.get('accessBlocked') is True:
         return None, 'source access was denied; resolve authorization before another attempt'
@@ -99,6 +102,7 @@ def propose_lease(snapshot, now, run_id, *, trigger='scheduled', manual_request_
         'attemptAt': utc(now), 'trigger': trigger, 'error': None,
         'lease': {'runId': run_id, 'acquiredAtEpoch': now,
                   'expiresAtEpoch': now + LEASE_SECONDS, 'trigger': trigger,
+                  'rpcCallBudget': rpc_call_budget,
                   'requestKey': day_key(now) if trigger == 'scheduled' else manual_request_id},
     }
     if trigger == 'scheduled':
@@ -113,6 +117,7 @@ def validate_lease(snapshot, now, run_id):
     lease = snapshot.get('refresh', {}).get('lease', {})
     if lease.get('runId') != run_id or int(lease.get('expiresAtEpoch', 0)) <= now:
         raise RuntimeError('missing, expired, or foreign durable refresh lease')
+    lease_rpc_budget(snapshot)
 
 
 def failure_snapshot(snapshot, now, error):
@@ -162,6 +167,10 @@ class Rpc:
         self._lock = threading.Lock()
         self._error = None
 
+    @property
+    def max_calls(self):
+        return MAX_RPC_CALLS
+
     def cancel(self, error=None):
         with self._lock:
             if self._error is None:
@@ -207,7 +216,7 @@ class Rpc:
         with self._lock:
             self._check()
             # Three pinned balances and three final seed/target/child rechecks.
-            if self.calls + len(numbers) + 6 > MAX_RPC_CALLS:
+            if self.calls + len(numbers) + 6 > self.max_calls:
                 raise RuntimeError('bounded RPC budget cannot cover event headers and final checks')
         if not numbers:
             return {}
@@ -254,7 +263,7 @@ class Rpc:
             raise RuntimeError('RPC method outside approved collector scope: ' + method)
         with self._lock:
             self._check()
-            if self.calls >= MAX_RPC_CALLS:
+            if self.calls >= self.max_calls:
                 raise RuntimeError('bounded RPC budget exhausted')
             self.calls += 1
             ident = self.calls
@@ -397,6 +406,10 @@ class DurableRpc(Rpc):
     @property
     def calls(self):
         return self.journal.calls
+
+    @property
+    def max_calls(self):
+        return self.journal.max_calls
 
     @calls.setter
     def calls(self, _value):
@@ -751,11 +764,17 @@ def main():
                         help='prepare-lease only: manual requires a current explicit user request')
     parser.add_argument('--manual-request-id', default=None,
                         help='prepare-lease only: stable idempotency key for the authorized manual request')
+    parser.add_argument('--rpc-call-budget', type=int, choices=[256, 320], default=None,
+                        help='prepare-lease only: 320 requires an explicitly approved manual catch-up run')
     parser.add_argument('--keep-source', action='store_true',
                         help='retain large raw SSZ for an explicitly requested local audit')
     args = parser.parse_args()
     if args.stage != 'prepare-lease' and (args.trigger != 'scheduled' or args.manual_request_id is not None):
         parser.error('trigger and manual request ID belong to prepare-lease; run uses its durable lease')
+    if args.stage != 'prepare-lease' and args.rpc_call_budget is not None:
+        parser.error('RPC budget belongs to prepare-lease; run/resume inherit the immutable original lease')
+    if args.rpc_call_budget == 320 and args.trigger != 'manual':
+        parser.error('320 calls require an explicitly approved manual catch-up lease')
     if args.stage in ('resume', 'abort'):
         if not (args.run_id and args.workdir and args.current_root and args.head and args.attest_current_main):
             parser.error('resume/abort require --run-id, --workdir, --current-root, --head and --attest-current-main')
@@ -774,7 +793,8 @@ def main():
     args.output.parent.mkdir(parents=True, exist_ok=True)
     if args.stage == 'prepare-lease':
         proposed, skipped = propose_lease(old, now, run_id, trigger=args.trigger,
-                                         manual_request_id=args.manual_request_id)
+                                         manual_request_id=args.manual_request_id,
+                                         rpc_call_budget=args.rpc_call_budget or DEFAULT_RPC_CALLS)
         result = manifest('skipped' if skipped else 'acquire', run_id, base,
                           {} if skipped else {SNAPSHOT_PATH: proposed}, result=skipped)
         args.output.write_text(canonical(result))
@@ -858,6 +878,7 @@ def main():
                 # This has no publishable files and does not release the durable lease.
                 result = manifest('paused', run_id, base, {}, error=(safe_exception(error)['message'])[:500])
                 result['recovery'] = {'calls': journal.calls, 'seal': journal.seal,
+                                      'rpcCallBudget': journal.max_calls,
                                       'sameRouteReviewRequired': True,
                                       'originalDeadlineMonotonic': journal.deadline}
                 code = 2

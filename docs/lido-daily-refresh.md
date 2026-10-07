@@ -88,6 +88,17 @@ python scripts/lido/refresh.py prepare-lease --trigger manual \
   --manual-request-id manual-20261005-request1 --output /tmp/lido-lease.json
 ```
 
+Ordinary scheduled and manual leases use 256 logical RPC attempts. Only for an
+explicitly approved one-off catch-up, add `--rpc-call-budget 320` to the manual
+`prepare-lease` command. Read back `trigger=manual`, the exact `requestKey` and
+`runId`, and `rpcCallBudget=320` in the published lease before starting. Scheduled
+leases cannot select 320. `run`, `resume`, `abort` and `once` cannot override the
+budget; the journal fixes it to the original lease and counts failed and unknown
+attempts too. Completion releases that lease, and the next ordinary lease again
+defaults to 256. A larger budget is not authorization for a new request or retry.
+The 25-minute calculation, 35-minute lease, source freshness and all validation
+requirements remain unchanged.
+
 The manual ID identifies the user's specific requested run. Choose a stable,
 non-sensitive ID and reuse it on delivery/retry of that same request; a random
 new ID on every retry defeats deduplication. The last 128 manual IDs are
@@ -194,7 +205,8 @@ the old identity object alone is not a fresh lease or code verification.
 
 The original 25-minute computation deadline keeps running during interruptions,
 review waits and process restarts. Recovery never extends the 35-minute lease
-or resets the shared 256-attempt count. Failed and unknown in-flight attempts
+or resets the original lease's shared attempt count (normally 256; 320 only for
+an explicitly approved manual catch-up). Failed and unknown in-flight attempts
 remain charged. The original monotonic clock identity and wall-clock deadline
 must still match; a different host/clock or regressed clock is rejected.
 
@@ -229,7 +241,7 @@ or failed run cannot be reopened or relabeled as a new run.
 ## Backlog and bounded work
 
 The collector can replay across missed runs; seed age alone is not an error.
-Log ranges use 1000-block chunks with bounded splitting. The existing global
+Log ranges use 1000-block chunks with bounded splitting. The ordinary
 256-RPC-call budget includes timestamp-authenticating event headers and finality
 polls, not just log requests. A busy day or a long outage can exhaust it, in which
 case the prior checkpoint is retained and a bounded backfill/review is needed.
@@ -238,7 +250,7 @@ access to make a daily run appear successful.
 
 Only the unique event headers whose timestamps affect the model are fetched
 concurrently, with at most four requests in flight. IDs, admission, evidence and
-the 256-call budget are shared and synchronized. The header batch first reserves
+the original lease's call budget are shared and synchronized. The header batch first reserves
 six calls for the three same-block balances and final seed/target/child rereads;
 those final rereads are always new requests. An error stops new admission and
 discards the batch. A read returning after the deadline is rejected, and the
