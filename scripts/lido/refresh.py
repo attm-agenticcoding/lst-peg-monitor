@@ -25,6 +25,7 @@ import urllib.error
 import uuid
 
 from scenarios import build_scenarios, report_references, utc, eth
+from acquisition_errors import MAX_EXCEPTION_NODES, exception_nodes, safe_exception, sanitized_text
 
 ROOT = Path(__file__).resolve().parents[2]
 SNAPSHOT_PATH = 'data/lido-cutoff-snapshot.json'
@@ -119,7 +120,8 @@ def failure_snapshot(snapshot, now, error):
     result = deepcopy(snapshot)
     refresh = result.setdefault('refresh', {})
     refresh.update(state='error', finishedAt=utc(now), lease=None,
-                   error=str(error).replace('\n', ' ')[:500],
+                   error=(safe_exception(error)['message'] if isinstance(error, BaseException)
+                          else sanitized_text(str(error)))[:500],
                    accessBlocked=(getattr(error, 'denied', False)
                                   or getattr(error, 'code', None) in (401, 403)))
     return result
@@ -302,6 +304,75 @@ class Rpc:
 
 class RecoveryPaused(RuntimeError):
     """Collection stopped and requires an explicit reviewed same-route resume."""
+
+
+def classify_acquisition_error(error, first_error, phase):
+    """Classify only evidenced transport wrappers, never timing or similar text.
+
+    urllib can wrap a locally raised exception more than once. Only an exact
+    stored cancellation object beneath otherwise pure URLError wrappers proves
+    peer cancellation. New socket errors, statuses, validation errors and
+    incidental Python exception contexts remain independent source failures.
+    """
+    from execution import RpcError
+    nodes = list(exception_nodes(error, include_context=False))
+    original = list(exception_nodes(first_error, include_context=False)) if first_error is not None else []
+    original_ids = {id(node) for node in original}
+    fresh = [node for node in nodes if id(node) not in original_ids]
+    identity = first_error is not None and any(node is first_error for node in nodes)
+    pure_wrappers = all(isinstance(node, urllib.error.URLError)
+                        and not isinstance(node, urllib.error.HTTPError)
+                        and isinstance(node.reason, BaseException) for node in fresh)
+    cancelled = bool(identity and (error is first_error or
+                                   (len(nodes) < MAX_EXCEPTION_NODES
+                                    and phase in ('open', 'read') and pure_wrappers)))
+    # A fresh actual status always wins over a cancellation object elsewhere in
+    # the explicit wrapper graph. Never reinterpret origin 403 as proxy denial.
+    for node in fresh:
+        if isinstance(node, urllib.error.HTTPError):
+            redirected = isinstance(node, RpcRedirectError) or 300 <= node.code < 400
+            if node.code in (401, 403) or redirected:
+                return {'category': 'redirect' if redirected else 'http_error',
+                        'code': node.code, 'denied': True, 'knownCancellation': False}
+        if isinstance(node, RpcError) and node.denied:
+            return {'category': 'source_error', 'code': node.code,
+                    'denied': True, 'knownCancellation': False}
+    if cancelled:
+        return {'category': 'cancelled', 'code': None, 'denied': False,
+                'knownCancellation': True}
+    # Guard/controller exceptions are generated locally, not inferred from a
+    # generic source error merely because another request already paused.
+    if isinstance(error, RecoveryPaused) or getattr(error, 'pausable', False):
+        return {'category': 'controller_interruption', 'code': None,
+                'denied': False, 'knownCancellation': False}
+    for node in fresh:
+        if isinstance(node, urllib.error.HTTPError):
+            return {'category': 'http_error', 'code': node.code,
+                    'denied': False, 'knownCancellation': False}
+    def tunnel_leaf(node):
+        plain_tunnel_error = type(node) is OSError and node.errno is None
+        string_url_reason = isinstance(node, urllib.error.URLError) and isinstance(node.reason, str)
+        return ((plain_tunnel_error or string_url_reason)
+                and 'tunnel connection failed' in safe_exception(node)['message'].lower())
+
+    def transparent_url_wrapper(node):
+        return (isinstance(node, urllib.error.URLError)
+                and not isinstance(node, urllib.error.HTTPError)
+                and isinstance(node.reason, BaseException))
+
+    # Only this attempt's new transport graph can identify a tunnel failure.
+    # The stored first error may itself have an old tunnel cause; borrowing that
+    # cause would incorrectly turn a new timeout/reset into another pause.
+    tunnel = (len(nodes) < MAX_EXCEPTION_NODES and phase == 'open'
+              and isinstance(error, urllib.error.URLError)
+              and any(tunnel_leaf(node) for node in fresh)
+              and all(transparent_url_wrapper(node) or tunnel_leaf(node) for node in fresh))
+    if tunnel:
+        return {'category': 'unknown_tunnel_rejection', 'code': None,
+                'denied': False, 'knownCancellation': False}
+    code = getattr(error, 'code', None)
+    return {'category': 'source_error', 'code': code if type(code) is int else None,
+            'denied': bool(getattr(error, 'denied', False)), 'knownCancellation': False}
 
 
 class DurableRpc(Rpc):
@@ -499,46 +570,50 @@ class DurableRpc(Rpc):
         request = urllib.request.Request(RPC_URL, data=raw_request,
                                          headers={'Content-Type': 'application/json',
                                                   'User-Agent': 'lst-peg-monitor/1.0'})
+        phase = 'open'
         try:
             with open_rpc(request, timeout=min(40, self.journal.remaining_seconds)) as response:
+                phase = 'read'
                 raw = self._read_response(response)
+            phase = 'response'
             value = self.journal.finish(ident, raw, validator)
+            phase = 'anchor'
             if method == 'eth_getBlockByNumber' and role != 'event_header':
                 self._observe_anchor(params, value)
             self._sync_evidence()
             return value
-        except urllib.error.HTTPError as error:
-            redirected = isinstance(error, RpcRedirectError) or 300 <= error.code < 400
-            denied = error.code in (401, 403) or redirected
-            failed = RpcError(f'{method}: HTTP {error.code}; source access failed',
-                              code=error.code, denied=denied)
-            try:
-                self.journal.fail(ident, category='redirect' if redirected else 'http_error',
-                                  code=error.code, denied=denied)
-            except Exception as journal_error:
-                # A durability error cannot relabel an actual access denial as
-                # an unknown, reviewable tunnel interruption.
-                print(json.dumps({'step': 'rpc_failure_journal_failed',
-                                  'error': str(journal_error)[:300]}), flush=True)
-            raise self.cancel(failed) from error
         except BaseException as error:
-            # A proxy CONNECT rejection is not a verified source HTTP status.
-            # It still stops all admission; only an explicitly reviewed command
-            # may reopen the same source/route under the original limits.
-            tunnel = (isinstance(error, urllib.error.URLError)
-                      and 'tunnel connection failed' in str(error.reason).lower())
-            if tunnel or isinstance(error, RecoveryPaused) or getattr(error, 'pausable', False):
-                category = ('unknown_tunnel_rejection' if tunnel else
-                            'cancelled' if self.journal.status == 'paused' else 'controller_interruption')
-                self.journal.fail(ident, category=category)
+            if isinstance(error, RpcError) and method == 'eth_getLogs' and error.code == -32005 and not error.denied:
+                raise  # The journal charged the valid error; the engine splits.
+            # Read the immutable first-error reference without waiting for the
+            # admission lock: a peer may hold it while observing journal pause.
+            # cancel() remains the synchronized sole writer of this reference.
+            first_error = self._error
+            classification = classify_acquisition_error(error, first_error, phase)
+            category = classification['category']
+            if category == 'controller_interruption' and self.journal.status == 'paused':
+                category = 'cancelled'  # A local guard observed a peer's pause.
+            try:
+                self.journal.fail(ident, category=category, code=classification['code'],
+                                  denied=classification['denied'], error=error,
+                                  phase=phase, known_cancel=classification['knownCancellation'])
+            except Exception as journal_error:
+                if not classification['denied']:
+                    raise
+                # Persistence failure cannot conceal an actual access denial.
+                print(json.dumps({'step': 'rpc_failure_journal_failed',
+                                  'error': safe_exception(journal_error)['message']}), flush=True)
+            if classification['denied'] or category == 'http_error':
+                failed = RpcError(f'{method}: source access failed', code=classification['code'],
+                                  denied=classification['denied'])
+                raise self.cancel(failed) from error
+            if category in ('unknown_tunnel_rejection', 'controller_interruption'):
                 paused = RecoveryPaused('same-route acquisition interrupted; explicit review required before resume')
                 raise self.cancel(paused) from error
-            if isinstance(error, RpcError) and method == 'eth_getLogs' and error.code == -32005 and not error.denied:
-                raise  # The journal charged the error; the unchanged engine splits.
-            with self._lock:
-                cancelled = error is self._error
-            self.journal.fail(ident, category='cancelled' if cancelled else 'source_error',
-                              code=None if cancelled else getattr(error, 'code', None))
+            if category == 'cancelled':
+                # Preserve the exact first error once established. A wrapper is
+                # evidence of cancellation, not a second source failure.
+                raise self.cancel(first_error if first_error is not None else error)
             raise self.cancel(error)
         finally:
             self.journal.finish_callback(ident)
@@ -781,7 +856,7 @@ def main():
                         and args.stage != 'abort')
             if pausable:
                 # This has no publishable files and does not release the durable lease.
-                result = manifest('paused', run_id, base, {}, error=str(error)[:500])
+                result = manifest('paused', run_id, base, {}, error=(safe_exception(error)['message'])[:500])
                 result['recovery'] = {'calls': journal.calls, 'seal': journal.seal,
                                       'sameRouteReviewRequired': True,
                                       'originalDeadlineMonotonic': journal.deadline}
@@ -799,7 +874,7 @@ def main():
                         from execution import RpcError
                         error = RpcError(str(error), denied=True)
                 snapshot = failure_snapshot(old, int(time.time()), error)
-                result = manifest('failed', run_id, base, {SNAPSHOT_PATH: snapshot}, error=str(error)[:500])
+                result = manifest('failed', run_id, base, {SNAPSHOT_PATH: snapshot}, error=(safe_exception(error)['message'])[:500])
                 code = 1
         finally:
             signal.alarm(0)
