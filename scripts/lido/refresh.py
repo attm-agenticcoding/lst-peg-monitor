@@ -188,6 +188,10 @@ class Rpc:
         if time.monotonic() >= self.deadline:
             raise TimeoutError('bounded RPC deadline exhausted')
 
+    def _event_header(self, number):
+        from execution import _header
+        return _header(self, number)
+
     def fetch_headers(self, numbers):
         """Fetch only the model's timestamp headers, never its final rechecks.
 
@@ -211,7 +215,7 @@ class Rpc:
         try:
             for number in list(numbers)[:HEADER_WORKERS]:
                 next(remaining)
-                pending[pool.submit(_header, self, number)] = number
+                pending[pool.submit(self._event_header, number)] = number
             while pending:
                 with self._lock:
                     self._check()
@@ -228,7 +232,7 @@ class Rpc:
                     number = next(remaining, None)
                     if number is None:
                         break
-                    pending[pool.submit(_header, self, number)] = number
+                    pending[pool.submit(self._event_header, number)] = number
             with self._lock:
                 self._check()
             return answer
@@ -296,6 +300,253 @@ class Rpc:
             raise
 
 
+class RecoveryPaused(RuntimeError):
+    """Collection stopped and requires an explicit reviewed same-route resume."""
+
+
+class DurableRpc(Rpc):
+    """Run-scoped raw evidence, with fresh authentication on every execution.
+
+    The execution engine still performs its full replay and final sandwich.
+    Only its explicit event-header batch and bounded historical log ranges can
+    read sealed raw bytes. Initial/final headers and balances always go online.
+    """
+
+    def __init__(self, journal, state, summary):
+        self.journal = journal
+        super().__init__(journal.deadline)
+        self.state, self.summary = deepcopy(state), deepcopy(summary)
+        self._role = threading.local()
+        self._anchors = {}
+        self._authenticated = False
+        self._callbacks = set()
+        self._quiescent = threading.Condition()
+        self._sync_evidence()
+
+    @property
+    def calls(self):
+        return self.journal.calls
+
+    @calls.setter
+    def calls(self, _value):
+        pass
+
+    def _sync_evidence(self):
+        diagnostic = self.journal.diagnostics()
+        self.evidence = diagnostic['responses']
+        self.failures = diagnostic['failures']
+
+    def diagnostics(self):
+        return self.journal.diagnostics()
+
+    def cancel(self, error=None):
+        # Admission itself can race a peer's durable pause, before transport's
+        # try/except begins. Normalize at the shared first-error boundary too.
+        if getattr(error, 'pausable', False) or (error is None and self.journal.status == 'paused'):
+            error = RecoveryPaused('same-route acquisition interrupted; explicit review required before resume')
+        return super().cancel(error)
+
+    def _check(self):
+        super()._check()
+        try:
+            self.journal.check()
+        except Exception as error:
+            if getattr(error, 'pausable', False):
+                raise RecoveryPaused('same-route acquisition interrupted; explicit review required before resume') from error
+            raise
+
+    def _event_header(self, number):
+        self._role.value = 'event_header'
+        try:
+            return super()._event_header(number)
+        finally:
+            self._role.value = None
+
+    def fetch_headers(self, numbers):
+        # Cached bytes are revalidated before sizing the outstanding source work.
+        # The six finishing reads retain their original shared-budget reserve.
+        answer, missing = {}, []
+        for number in sorted(set(numbers)):
+            if type(number) is not int or number < 0:
+                raise ValueError('invalid event header number')
+            params = [hex(number), False]
+            hit, value = self.journal.cached('event_header', 'eth_getBlockByNumber', params,
+                                             self._validator('event_header', params))
+            if hit:
+                answer[number] = value
+            else:
+                missing.append(number)
+        answer.update(super().fetch_headers(missing))
+        self._sync_evidence()
+        return answer
+
+    def drain(self):
+        """Retain both local locks until dispatched network callbacks exit."""
+        while True:
+            try:
+                with self._quiescent:
+                    if not self._callbacks:
+                        return
+                    self._quiescent.wait(timeout=1)
+                if time.monotonic() >= self.deadline:
+                    self.journal.stop('original deadline expired during network teardown')
+            except (TimeoutError, RecoveryPaused) as error:
+                # A signal during teardown must not drop ownership. The reads
+                # have bounded socket timeouts and recheck cancellation between
+                # chunks; only their teardown may finish after the deadline.
+                self.cancel(error)
+                if isinstance(error, TimeoutError):
+                    self.journal.stop(str(error))
+                else:
+                    self.journal.pause(str(error))
+
+    def _read_response(self, response):
+        cap, chunks, size = 20 * 1024 * 1024, [], 0
+        reader = getattr(response, 'read1', response.read)
+        while True:
+            with self._lock:
+                self._check()
+            chunk = reader(min(64 * 1024, cap + 1 - size))
+            with self._lock:
+                self._check()
+            if not chunk:
+                return b''.join(chunks)
+            chunks.append(chunk)
+            size += len(chunk)
+            if size > cap:
+                raise RuntimeError('RPC result exceeds bounded response size')
+
+    def _validator(self, role, params):
+        from execution import ADDRESSES, MONITORED, _hash, integer, key
+
+        def validate(value):
+            if role == 'historical_logs':
+                if not isinstance(value, list):
+                    raise RuntimeError('eth_getLogs did not return a list')
+                query = params[0]
+                lo, hi = int(query['fromBlock'], 16), int(query['toBlock'], 16)
+                allowed = {ADDRESSES[k] for k in MONITORED}
+                for log in value:
+                    if (not isinstance(log, dict) or not lo <= key(log)[0] <= hi
+                            or log.get('address', '').lower() not in allowed
+                            or log.get('removed', False)):
+                        raise RuntimeError('invalid historical log scope or removed log')
+                    _hash(log.get('blockHash'))
+                    _hash(log.get('transactionHash'))
+                return True
+            if role == 'balance':
+                integer(value)
+                return True
+            if not isinstance(value, dict):
+                raise RuntimeError('missing execution header')
+            height = integer(value.get('number'))
+            _hash(value.get('hash'))
+            integer(value.get('timestamp'))
+            if params[0] != 'finalized' and height != int(params[0], 16):
+                raise RuntimeError('mismatched execution header number')
+            return True
+        return validate
+
+    def _observe_anchor(self, params, value):
+        from execution import integer
+        seed, target = int(self.state['block']), int(self.summary['block_number'])
+        number = params[0] if params[0] == 'finalized' else int(params[0], 16)
+        if number == seed:
+            if (value['hash'].lower() != self.state['hash'].lower()
+                    or integer(value['timestamp']) != int(self.state['timestamp'])):
+                raise RuntimeError('durable seed header identity changed')
+        if number == target:
+            if (value['hash'].lower() != self.summary['block_hash'].lower()
+                    or integer(value['timestamp']) != int(self.summary['timestamp'])):
+                raise RuntimeError('SSZ execution target identity changed')
+        if number == target + 1:
+            if (value.get('parentHash', '').lower() != self.summary['block_hash'].lower()
+                    or integer(value['timestamp']) <= int(self.summary['timestamp'])
+                    or value.get('parentBeaconBlockRoot', '').lower()
+                    != self.summary['derived_beacon_block_header_root'].lower()):
+                raise RuntimeError('SSZ execution child authentication changed')
+        self._anchors[number] = deepcopy(value)
+        if not self._authenticated and all(n in self._anchors for n in (seed, target, target + 1, 'finalized')):
+            finalized = self._anchors['finalized']
+            height = integer(finalized['number'])
+            if height < target + 1:
+                return  # Preserve the engine's bounded successful finality polls.
+            if height == target + 1 and finalized['hash'].lower() != self._anchors[target + 1]['hash'].lower():
+                raise RuntimeError('finalized child hash changed')
+            self.journal.mark_authenticated()
+            self._authenticated = True
+
+    def __call__(self, method, params):
+        from execution import RpcError
+        if method not in ALLOWED_RPC:
+            raise RuntimeError('RPC method outside approved collector scope: ' + method)
+        role = getattr(self._role, 'value', None)
+        if role is None:
+            role = ('historical_logs' if method == 'eth_getLogs' else
+                    'balance' if method == 'eth_getBalance' else
+                    'terminal' if self._authenticated else 'anchor')
+        validator = self._validator(role, params)
+        with self._lock:
+            self._check()
+            hit, value = self.journal.cached(role, method, params, validator)
+            if hit:
+                return value
+            ident, raw_request = self.journal.reserve(role, method, params,
+                                                       remaining_required=6 if role in ('historical_logs', 'event_header') else 0)
+            self.journal.start_callback(ident)
+            with self._quiescent:
+                self._callbacks.add(ident)
+        request = urllib.request.Request(RPC_URL, data=raw_request,
+                                         headers={'Content-Type': 'application/json',
+                                                  'User-Agent': 'lst-peg-monitor/1.0'})
+        try:
+            with open_rpc(request, timeout=min(40, self.journal.remaining_seconds)) as response:
+                raw = self._read_response(response)
+            value = self.journal.finish(ident, raw, validator)
+            if method == 'eth_getBlockByNumber' and role != 'event_header':
+                self._observe_anchor(params, value)
+            self._sync_evidence()
+            return value
+        except urllib.error.HTTPError as error:
+            redirected = isinstance(error, RpcRedirectError) or 300 <= error.code < 400
+            denied = error.code in (401, 403) or redirected
+            failed = RpcError(f'{method}: HTTP {error.code}; source access failed',
+                              code=error.code, denied=denied)
+            try:
+                self.journal.fail(ident, category='redirect' if redirected else 'http_error',
+                                  code=error.code, denied=denied)
+            except Exception as journal_error:
+                # A durability error cannot relabel an actual access denial as
+                # an unknown, reviewable tunnel interruption.
+                print(json.dumps({'step': 'rpc_failure_journal_failed',
+                                  'error': str(journal_error)[:300]}), flush=True)
+            raise self.cancel(failed) from error
+        except BaseException as error:
+            # A proxy CONNECT rejection is not a verified source HTTP status.
+            # It still stops all admission; only an explicitly reviewed command
+            # may reopen the same source/route under the original limits.
+            tunnel = (isinstance(error, urllib.error.URLError)
+                      and 'tunnel connection failed' in str(error.reason).lower())
+            if tunnel or isinstance(error, RecoveryPaused) or getattr(error, 'pausable', False):
+                category = ('unknown_tunnel_rejection' if tunnel else
+                            'cancelled' if self.journal.status == 'paused' else 'controller_interruption')
+                self.journal.fail(ident, category=category)
+                paused = RecoveryPaused('same-route acquisition interrupted; explicit review required before resume')
+                raise self.cancel(paused) from error
+            if isinstance(error, RpcError) and method == 'eth_getLogs' and error.code == -32005 and not error.denied:
+                raise  # The journal charged the error; the unchanged engine splits.
+            with self._lock:
+                cancelled = error is self._error
+            self.journal.fail(ident, category='cancelled' if cancelled else 'source_error',
+                              code=None if cancelled else getattr(error, 'code', None))
+            raise self.cancel(error)
+        finally:
+            self.journal.finish_callback(ident)
+            with self._quiescent:
+                self._callbacks.discard(ident)
+                self._quiescent.notify_all()
+
+
 def public_snapshot(old, state, execution, beacon, scenarios, now, run_id, provenance):
     summary = beacon['summary']
     snapshot = execution['snapshot']
@@ -336,16 +587,24 @@ def public_snapshot(old, state, execution, beacon, scenarios, now, run_id, prove
     return result
 
 
-def collect(root, old, run_id, workdir, now=None):
+def collect(root, old, run_id, workdir, now=None, *, journal=None):
     from beacon_hourly import download_state, inspect_state, simulate_reports
     from execution import collect_at
     state = load_json(root / STATE_PATH)
-    deadline = time.monotonic() + MAX_RUN_SECONDS - 30
-    rpc = Rpc(deadline)
     state_file = workdir / 'state.ssz'
-    acquisition = download_state(state_file)
-    print(json.dumps({'step': 'state_downloaded', 'bytes': acquisition['bytes']}), flush=True)
-    summary = inspect_state(state_file)
+    if journal is not None and journal.source is not None:
+        if state_file.resolve() != Path(journal.source['path']).resolve():
+            raise RuntimeError('original SSZ path does not belong to this run work directory')
+        acquisition = deepcopy(journal.source['acquisition'])
+        summary = deepcopy(journal.source['inspection'])
+    else:
+        acquisition = download_state(state_file)
+        print(json.dumps({'step': 'state_downloaded', 'bytes': acquisition['bytes']}), flush=True)
+        summary = inspect_state(state_file)
+        if journal is not None:
+            journal.pin_source(state_file, acquisition, summary)
+    deadline = journal.deadline if journal is not None else time.monotonic() + MAX_RUN_SECONDS - 30
+    rpc = DurableRpc(journal, state, summary) if journal is not None else Rpc(deadline)
     print(json.dumps({'step': 'state_authenticated', 'blockNumber': summary['block_number'],
                       'asOf': utc(int(summary['timestamp']))}), flush=True)
     current = int(time.time()) if now is None else now
@@ -357,6 +616,9 @@ def collect(root, old, run_id, workdir, now=None):
     try:
         execution = collect_at(state, summary['block_number'], summary['block_hash'], rpc)
     except BaseException:
+        if journal is not None:
+            rpc.cancel()
+            rpc.drain()
         # Also preserve failed attempts; in-flight teardown is labelled explicitly.
         # A diagnostic disk error must not conceal a source-access denial.
         try:
@@ -365,6 +627,8 @@ def collect(root, old, run_id, workdir, now=None):
             print(json.dumps({'step': 'rpc_audit_write_failed', 'error': str(audit_error)[:300]}), flush=True)
         raise
     else:
+        if journal is not None:
+            rpc.drain()
         (workdir / 'rpc-audit.json').write_text(canonical(rpc.diagnostics()))
     print(json.dumps({'step': 'execution_replayed', 'rpcCalls': rpc.calls}), flush=True)
     if not execution['validation'].get('complete', False):
@@ -382,6 +646,9 @@ def collect(root, old, run_id, workdir, now=None):
     finished = int(time.time()) if now is None else now
     if finished - timestamp > MAX_SOURCE_AGE:
         raise RuntimeError('snapshot exceeded 90-minute age before calculation finished')
+    if journal is not None:
+        journal.check()
+        rpc._sync_evidence()
     output = public_snapshot(old, state, execution, beacon, scenarios, finished, run_id, provenance)
     (workdir / 'audit.json').write_text(canonical({'execution': execution, 'beacon': beacon,
                                                 'scenarios': scenarios, 'provenance': provenance}))
@@ -390,11 +657,21 @@ def collect(root, old, run_id, workdir, now=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('stage', choices=['prepare-lease', 'run', 'once'])
+    parser.add_argument('stage', choices=['prepare-lease', 'run', 'resume', 'abort', 'once'])
     parser.add_argument('--root', type=Path, default=ROOT)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--workdir', type=Path)
     parser.add_argument('--run-id', default=None)
+    parser.add_argument('--head', help='fresh main commit SHA supplied by the external controller')
+    parser.add_argument('--current-root', type=Path,
+                        help='freshly materialized current-main data and collector code; required for resume/abort')
+    parser.add_argument('--attest-current-main', action='store_true',
+                        help='controller attests current-root/head were freshly fetched for this invocation')
+    parser.add_argument('--reviewed-same-route',
+                        help='resume only: caller attestation identifying the explicit same-route command review')
+    parser.add_argument('--seal-path', type=Path,
+                        help='independent controller seal, outside the recovery journal directory')
+    parser.add_argument('--abort-reason', default='controller deliberately aborted the original run')
     parser.add_argument('--trigger', choices=['scheduled', 'manual'], default='scheduled',
                         help='prepare-lease only: manual requires a current explicit user request')
     parser.add_argument('--manual-request-id', default=None,
@@ -404,6 +681,16 @@ def main():
     args = parser.parse_args()
     if args.stage != 'prepare-lease' and (args.trigger != 'scheduled' or args.manual_request_id is not None):
         parser.error('trigger and manual request ID belong to prepare-lease; run uses its durable lease')
+    if args.stage in ('resume', 'abort'):
+        if not (args.run_id and args.workdir and args.current_root and args.head and args.attest_current_main):
+            parser.error('resume/abort require --run-id, --workdir, --current-root, --head and --attest-current-main')
+        if args.stage == 'resume' and not args.reviewed_same_route:
+            parser.error('resume requires --reviewed-same-route with the actual caller review reference')
+        args.root = args.current_root
+    elif args.reviewed_same_route or args.current_root or args.attest_current_main:
+        parser.error('fresh-current and reviewed-resume arguments belong to resume/abort')
+    if args.head is not None and not re.fullmatch(r'[0-9a-f]{40}', args.head):
+        parser.error('--head must be an exact 40-character main commit SHA')
     run_id = args.run_id or str(uuid.uuid4())
     now = int(time.time())
     base = {name: (args.root / name).read_bytes() for name in (SNAPSHOT_PATH, STATE_PATH)
@@ -418,44 +705,117 @@ def main():
         args.output.write_text(canonical(result))
         print(canonical({k: result[k] for k in ('stage', 'runId', 'result')}))
         return 0
-    if args.stage == 'run':
-        validate_lease(old, now, run_id)
-    else:
-        # A local verification run does not acquire or authorize a remote lease.
+    if args.stage == 'once':
         old = deepcopy(old)
         old['refresh'] = {**old.get('refresh', {}), 'attemptAt': utc(now), 'trigger': 'verification'}
     workdir = args.workdir or Path(tempfile.mkdtemp(prefix='lido-refresh-'))
     workdir.mkdir(parents=True, exist_ok=True)
     with open(workdir / 'collector.lock', 'a') as lock:
+        # A competing live process must never emit a lease-release manifest.
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        def expired(_signum, _frame):
-            raise TimeoutError('collector exceeded the 25-minute deadline')
-        signal.signal(signal.SIGALRM, expired)
+        journal = None
         hard_deadline = time.monotonic() + MAX_RUN_SECONDS
-        signal.alarm(MAX_RUN_SECONDS)
+        interrupted = False
+
+        def expired(_signum, _frame):
+            raise TimeoutError('collector exceeded the original 25-minute deadline')
+
+        def controller_interrupted(_signum, _frame):
+            nonlocal interrupted
+            if not interrupted:
+                interrupted = True
+                raise RecoveryPaused('controller interrupted collection; explicit same-route review required')
+
+        previous_signals = {}
+        for signum, handler in ((signal.SIGALRM, expired), (signal.SIGINT, controller_interrupted),
+                                (signal.SIGTERM, controller_interrupted)):
+            previous_signals[signum] = signal.signal(signum, handler)
         try:
-            snapshot, state = collect(args.root, old, run_id, workdir)
-            if time.monotonic() >= hard_deadline:
-                raise TimeoutError('collector exceeded the 25-minute deadline')
-            if args.stage == 'run':
+            if args.stage != 'once':
+                from recovery import RunJournal
                 validate_lease(old, int(time.time()), run_id)
+                common = dict(root=args.root, head=args.head, run_id=run_id, base_blobs=base,
+                              endpoint=RPC_URL, route_id='urllib-mevblocker-v1', seal_path=args.seal_path)
+                if args.stage == 'run':
+                    journal = RunJournal.create(workdir / 'recovery', code_root=Path(__file__).parent, **common)
+                else:
+                    from beacon_hourly import inspect_state
+                    journal = RunJournal.open(workdir / 'recovery', fresh_main=args.attest_current_main,
+                                              reviewed_same_route=args.reviewed_same_route,
+                                              inspect_ssz=inspect_state, abort_only=args.stage == 'abort', **common)
+                hard_deadline = journal.deadline
+                if args.stage == 'abort':
+                    raise RuntimeError(args.abort_reason[:500])
+            remaining = hard_deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError('collector exceeded the original 25-minute deadline')
+            signal.alarm(max(1, int(remaining)))
+            snapshot, state = collect(args.root, old, run_id, workdir, journal=journal)
+            if time.monotonic() >= hard_deadline:
+                raise TimeoutError('collector exceeded the original 25-minute deadline')
+            if args.stage != 'once':
+                validate_lease(old, int(time.time()), run_id)
+                journal.check()
             result = manifest('complete', run_id, base, {SNAPSHOT_PATH: snapshot, STATE_PATH: state},
                               result={'asOf': snapshot['asOf'], 'blockNumber': snapshot['blockNumber']})
             if time.monotonic() >= hard_deadline:
-                raise TimeoutError('collector exceeded the 25-minute deadline')
+                raise TimeoutError('collector exceeded the original 25-minute deadline')
+            if journal is not None:
+                journal.complete()
+            if time.monotonic() >= hard_deadline:
+                raise TimeoutError('collector exceeded the original 25-minute deadline while sealing completion')
             code = 0
-        except Exception as error:
-            snapshot = failure_snapshot(old, int(time.time()), error)
-            result = manifest('failed', run_id, base, {SNAPSHOT_PATH: snapshot}, error=str(error)[:500])
-            code = 1
+        except BaseException as error:
+            if getattr(error, 'busy', False):
+                raise  # Ownership cannot move while any old callback is active.
+            if getattr(error, 'pausable', False):
+                error = RecoveryPaused(str(error))
+            if journal is not None and isinstance(error, RecoveryPaused) and journal.source is not None:
+                try:
+                    journal.check(allow_paused=True)
+                    journal.pause(str(error))
+                except Exception as guard_error:
+                    error = guard_error
+            pausable = (journal is not None and journal.source is not None
+                        and journal.status == 'paused' and isinstance(error, RecoveryPaused)
+                        and args.stage != 'abort')
+            if pausable:
+                # This has no publishable files and does not release the durable lease.
+                result = manifest('paused', run_id, base, {}, error=str(error)[:500])
+                result['recovery'] = {'calls': journal.calls, 'seal': journal.seal,
+                                      'sameRouteReviewRequired': True,
+                                      'originalDeadlineMonotonic': journal.deadline}
+                code = 2
+            else:
+                if journal is not None:
+                    try:
+                        journal.stop(str(error)[:500])
+                    except Exception as stop_error:
+                        # A corrupt/expired journal still needs an actual failure
+                        # manifest; it can never be used as partial source state.
+                        print(json.dumps({'step': 'journal_stop_failed',
+                                          'error': str(stop_error)[:300]}), flush=True)
+                    if getattr(journal, 'denied', False):
+                        from execution import RpcError
+                        error = RpcError(str(error), denied=True)
+                snapshot = failure_snapshot(old, int(time.time()), error)
+                result = manifest('failed', run_id, base, {SNAPSHOT_PATH: snapshot}, error=str(error)[:500])
+                code = 1
         finally:
             signal.alarm(0)
+            for signum, handler in previous_signals.items():
+                signal.signal(signum, handler)
         result['localVerificationOnly'] = args.stage == 'once'
-        args.output.write_text(canonical(result))
-        # Source bytes are reproducible acquisition scratch, not a durable input.
-        # The output manifest and small audit remain available for a blocked publish.
-        # Do not let recurring or manual runs accumulate large raw SSZ files.
-        if not args.keep_source:
+        # Retain source bytes only for a pending same-run recovery or explicit audit.
+        # Any output-write failure retains scratch, so it cannot erase the only
+        # reviewable evidence before a failure manifest has been durably saved.
+        from recovery import atomic_write
+        if journal is not None:
+            # Refusal here must precede even exposing a lease-release manifest.
+            # collector.lock remains held through manifest write and cleanup.
+            journal.close()
+        atomic_write(args.output, canonical(result).encode())
+        if result['stage'] != 'paused' and not args.keep_source and (journal is not None or args.stage == 'once'):
             (workdir / 'state.ssz').unlink(missing_ok=True)
         print(canonical({k: result[k] for k in ('stage', 'runId', 'result', 'error')}))
         return code
