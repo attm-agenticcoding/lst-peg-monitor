@@ -153,15 +153,22 @@
   },
   "refresh": {
     "mode": "daily",
-    "state": "error",
+    "state": "running",
     "scheduleUtc": "00:00",
     "expectedIntervalSeconds": 86400,
     "maxSourceAgeSeconds": 5400,
     "maxOperationalAgeSeconds": 91800,
     "lastSuccessAt": null,
-    "lease": null,
-    "error": "The read operation timed out",
-    "attemptAt": "2026-10-07T17:36:38Z",
+    "lease": {
+      "runId": "a0474822-3d33-41bc-ad45-f502b3e5491e",
+      "acquiredAtEpoch": 1791399941,
+      "expiresAtEpoch": 1791402041,
+      "trigger": "manual",
+      "rpcCallBudget": 320,
+      "requestKey": "manual-20261007-actions-timeout-catchup-03"
+    },
+    "error": null,
+    "attemptAt": "2026-10-07T19:05:41Z",
     "trigger": "manual",
     "attemptDay": "2026-10-07",
     "finishedAt": "2026-10-07T17:48:59Z",
@@ -174,8 +181,9 @@
       "manual-20261007-recovery-fix-5c1d1168",
       "manual-20261007-catchup-6614fbc0",
       "manual-20261007-actions-catchup-01",
-      "manual-20261007-actions-paced-catchup-02"
+      "manual-20261007-actions-paced-catchup-02",
+      "manual-20261007-actions-timeout-catchup-03"
     ],
-    "lastManualRequestId": "manual-20261007-actions-paced-catchup-02"
+    "lastManualRequestId": "manual-20261007-actions-timeout-catchup-03"
   }
 }
