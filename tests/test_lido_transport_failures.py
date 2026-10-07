@@ -9,6 +9,7 @@ import urllib.request
 import refresh
 from recovery import Corrupt
 import test_lido_recovery_integration as integration
+from rpc_clock import advancing_wait
 
 
 def urllib_wrapped(error, request):
@@ -36,7 +37,8 @@ class TransportFailureTests(unittest.TestCase):
         self.fixture.setUp()
         self.addCleanup(self.fixture.doCleanups)
         self.journal = self.fixture.create()
-        self.rpc = refresh.DurableRpc(self.journal, self.fixture.state, self.fixture.summary)
+        self.rpc = refresh.DurableRpc(self.journal, self.fixture.state, self.fixture.summary,
+                                      admission_wait=advancing_wait(self.fixture.clock))
         with patch('refresh.open_rpc', side_effect=self.fixture.transport()):
             for number in ('0x64', '0x69', '0x6a', 'finalized'):
                 self.rpc('eth_getBlockByNumber', [number, False])

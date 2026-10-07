@@ -27,6 +27,7 @@ from recovery import RunJournal
 from publication import validate_result
 from test_execution_hourly import FakeRpc, event, h, seed
 from test_lido_rpc_concurrency import Envelope, Transport
+from rpc_clock import advancing_wait
 
 
 class FixtureClock:
@@ -109,7 +110,10 @@ class RecoveryIntegrationTests(unittest.TestCase):
     def create(self):
         journal = RunJournal.create(self.directory, **self.options())
         self.addCleanup(journal.close)
-        journal.pin_source(self.source_file, self.acquisition, self.summary)
+        acquisition = {**self.acquisition,
+                       "retrieval_started_timestamp": self.clock.wall,
+                       "retrieved_timestamp": self.clock.wall}
+        journal.pin_source(self.source_file, acquisition, self.summary)
         return journal
 
     def reopen(self, **overrides):
@@ -142,7 +146,8 @@ class RecoveryIntegrationTests(unittest.TestCase):
         return Transport(respond)
 
     def collect(self, journal, transport, **kwargs):
-        rpc = refresh.DurableRpc(journal, self.state, self.summary)
+        rpc = refresh.DurableRpc(journal, self.state, self.summary,
+                                 admission_wait=advancing_wait(self.clock))
         with patch("refresh.open_rpc", side_effect=transport):
             result = ex.collect_at(self.state, 105, h(105), rpc, **kwargs)
         return result, rpc
@@ -286,7 +291,8 @@ class RecoveryIntegrationTests(unittest.TestCase):
 
     def test_unapproved_method_never_reaches_transport_or_spends_budget(self):
         journal = self.create()
-        rpc = refresh.DurableRpc(journal, self.state, self.summary)
+        rpc = refresh.DurableRpc(journal, self.state, self.summary,
+                                 admission_wait=advancing_wait(self.clock))
         with patch("refresh.open_rpc") as wire, self.assertRaises(RuntimeError):
             rpc("eth_call", [{"to": ex.ADDRESSES["core"], "data": "0x"}, "0x69"])
         wire.assert_not_called()
@@ -463,7 +469,8 @@ class RecoveryIntegrationTests(unittest.TestCase):
 
     def test_trickling_body_rechecks_original_deadline_between_bounded_chunks(self):
         journal = self.create()
-        rpc = refresh.DurableRpc(journal, self.state, self.summary)
+        rpc = refresh.DurableRpc(journal, self.state, self.summary,
+                                 admission_wait=advancing_wait(self.clock))
         sizes = []
 
         class Response:
@@ -484,12 +491,22 @@ class RecoveryIntegrationTests(unittest.TestCase):
     def test_pause_between_header_check_and_cache_admission_stays_reviewable(self):
         from recovery import Busy
         journal = self.create()
-        rpc = refresh.DurableRpc(journal, self.state, self.summary)
+        rpc = refresh.DurableRpc(journal, self.state, self.summary,
+                                 admission_wait=advancing_wait(self.clock))
         with patch('refresh.open_rpc', side_effect=self.transport()):
             for block in ('0x64', '0x69', '0x6a', 'finalized'):
                 rpc('eth_getBlockByNumber', [block, False])
         cached_window, paused, release_tunnel = threading.Event(), threading.Event(), threading.Event()
+        transport_entered = threading.Event()
         original_cached, original_fail = journal.cached, journal.fail
+        original_header = rpc._event_header
+
+        def event_header(number):
+            # Let the first worker pass its final pre-transport lock check
+            # before the second deliberately holds that lock in cached().
+            if number == 102:
+                self.assertTrue(transport_entered.wait(5))
+            return original_header(number)
 
         def cached(role, method, params, validator):
             # Only the actual worker, after its _check; not the cache pre-scan.
@@ -506,12 +523,14 @@ class RecoveryIntegrationTests(unittest.TestCase):
 
         def respond(request):
             self.assertEqual(request['params'][0], '0x65')
+            transport_entered.set()
             self.assertTrue(cached_window.wait(5))
             raise urllib.error.URLError(OSError('Tunnel connection failed: fixture interruption'))
 
         transport = Transport(respond)
         with patch.object(journal, 'cached', side_effect=cached), \
                 patch.object(journal, 'fail', side_effect=fail), \
+                patch.object(rpc, '_event_header', side_effect=event_header), \
                 patch('refresh.open_rpc', side_effect=transport):
             try:
                 with self.assertRaises(refresh.RecoveryPaused):
@@ -547,7 +566,8 @@ class RecoveryIntegrationTests(unittest.TestCase):
     def test_deadline_signal_during_drain_keeps_ownership_until_callback_exits(self):
         from recovery import Busy
         journal = self.create()
-        rpc = refresh.DurableRpc(journal, self.state, self.summary)
+        rpc = refresh.DurableRpc(journal, self.state, self.summary,
+                                 admission_wait=advancing_wait(self.clock))
         ident, _ = journal.reserve('anchor', 'eth_getBlockByNumber', ['0x64', False])
         journal.start_callback(ident)
         rpc._callbacks.add(ident)

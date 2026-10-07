@@ -428,6 +428,12 @@ class RunJournal:
         return self._context['deadline_monotonic']
 
     @property
+    def last_admission_monotonic(self):
+        with self._mutex:
+            return next((row['stamp']['monotonic'] for row in reversed(self.records)
+                         if row['kind'] == 'reserve'), None)
+
+    @property
     def remaining_seconds(self):
         with self._mutex:
             now = self.check()

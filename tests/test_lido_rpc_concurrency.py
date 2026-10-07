@@ -25,6 +25,7 @@ import execution as ex
 import refresh
 from publication import validate_result
 from test_execution_hourly import FakeRpc, event, h, seed
+from rpc_clock import RpcClock, advancing_wait
 
 
 def header(number):
@@ -81,7 +82,8 @@ class Envelope(dict):
 
 class RpcConcurrencyTests(unittest.TestCase):
     def rpc(self):
-        return refresh.Rpc(time.monotonic() + 60)
+        clock = RpcClock()
+        return refresh.Rpc(clock() + 1500, clock=clock, admission_wait=advancing_wait(clock))
 
     def assert_evidence(self, rpc, transport):
         evidence = rpc.evidence
@@ -269,6 +271,7 @@ class RpcConcurrencyTests(unittest.TestCase):
     def test_first_denial_survives_later_server_error_consumed_first(self):
         rpc = self.rpc()
         wait_entered, first_denial = threading.Event(), threading.Event()
+        peers = threading.Barrier(4)
         real_cancel = rpc.cancel
         consumed = []
 
@@ -280,6 +283,7 @@ class RpcConcurrencyTests(unittest.TestCase):
 
         def respond(req):
             number = int(req["params"][0], 16)
+            peers.wait(timeout=5)
             if number == 101:
                 if not wait_entered.wait(5):
                     raise AssertionError("Batch never entered its completion wait")
@@ -323,23 +327,24 @@ class RpcConcurrencyTests(unittest.TestCase):
         self.assertFalse(failures_by_height[102]["denied"])
 
     def test_expired_deadline_never_opens_the_transport(self):
-        rpc = refresh.Rpc(99)
-        with patch("refresh.time.monotonic", return_value=100), patch("refresh.open_rpc") as open_rpc:
+        clock = RpcClock(100)
+        rpc = refresh.Rpc(99, clock=clock, admission_wait=advancing_wait(clock))
+        with patch("refresh.open_rpc") as open_rpc:
             with self.assertRaises(TimeoutError):
                 rpc.fetch_headers([101])
             open_rpc.assert_not_called()
         self.assertEqual(rpc.calls, 0)
 
     def test_response_arriving_after_deadline_is_rejected(self):
-        clock = [100]
-        rpc = refresh.Rpc(110)
+        clock = RpcClock(100)
+        rpc = refresh.Rpc(110, clock=clock, admission_wait=advancing_wait(clock))
 
         def respond(req):
-            clock[0] = 111
+            clock.advance(11)
             return header(101)
 
         transport = Transport(respond)
-        with patch("refresh.time.monotonic", side_effect=lambda: clock[0]), patch("refresh.open_rpc", side_effect=transport):
+        with patch("refresh.open_rpc", side_effect=transport):
             with self.assertRaises(TimeoutError):
                 rpc("eth_getBlockByNumber", ["0x65", False])
             with self.assertRaises(TimeoutError):
@@ -553,7 +558,8 @@ class HeaderBatchIntegrationTests(unittest.TestCase):
             output, workdir = root / "result.json", root / "work"
 
             def collect(*args, **kwargs):
-                rpc = refresh.Rpc(time.monotonic() + 60)
+                clock = RpcClock()
+                rpc = refresh.Rpc(clock() + 1500, clock=clock, admission_wait=advancing_wait(clock))
                 return ex.collect_at(original, 105, h(105), rpc)
 
             args = ["refresh.py", "run", "--root", str(root), "--output", str(output),

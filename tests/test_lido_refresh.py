@@ -13,6 +13,7 @@ from refresh import (propose_lease, validate_lease, failure_snapshot, blob_sha,
                      MAX_SOURCE_AGE, MAX_OPERATIONAL_AGE)
 from scenarios import report_references, build_scenarios
 from publication import validate_result
+from rpc_clock import RpcClock, advancing_wait
 
 
 class RefreshTests(unittest.TestCase):
@@ -164,31 +165,31 @@ class RefreshTests(unittest.TestCase):
         self.assertEqual(blob_sha('test\n'), '9daeafb9864cf43055ae93beb0afd6c7d144bfa4')
 
     def test_rpc_cannot_expand_to_denied_call_method(self):
-        import time
-        rpc = Rpc(time.monotonic() + 20)
+        clock = RpcClock()
+        rpc = Rpc(clock() + 20, clock=clock, admission_wait=advancing_wait(clock))
         with self.assertRaisesRegex(RuntimeError, 'outside approved'):
             rpc('eth_call', [])
         self.assertEqual(rpc.calls, 0)
 
     def test_rpc_limit_error_preserves_bounded_split_semantics(self):
         import io
-        import time
         from execution import RpcError
         raw = json.dumps({'jsonrpc': '2.0', 'id': 1, 'error': {'code': -32005, 'message': 'limit'}}).encode()
+        clock = RpcClock()
         with patch('refresh.open_rpc', return_value=io.BytesIO(raw)):
             with self.assertRaises(RpcError) as captured:
-                Rpc(time.monotonic() + 30)('eth_getLogs', [])
+                Rpc(clock() + 30, clock=clock, admission_wait=advancing_wait(clock))('eth_getLogs', [])
         self.assertEqual(captured.exception.code, -32005)
         self.assertFalse(captured.exception.denied)
 
     def test_rpc_mismatched_envelope_rejected(self):
         import io
-        import time
         from execution import RpcError
         raw = json.dumps({'jsonrpc': '2.0', 'id': 99, 'result': []}).encode()
+        clock = RpcClock()
         with patch('refresh.open_rpc', return_value=io.BytesIO(raw)):
             with self.assertRaisesRegex(RpcError, 'envelope'):
-                Rpc(time.monotonic() + 30)('eth_getLogs', [])
+                Rpc(clock() + 30, clock=clock, admission_wait=advancing_wait(clock))('eth_getLogs', [])
 
     def publication_fixture(self):
         leased, _ = propose_lease(self.old, self.now, 'A')

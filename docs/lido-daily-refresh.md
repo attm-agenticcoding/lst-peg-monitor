@@ -261,6 +261,19 @@ The work directory retains a bounded `rpc-audit.json` even on acquisition
 failure, including the actual request parameters and any still-in-flight IDs.
 Cancellation by another request is distinguished from a source's own error.
 
+Every real RPC admission, across all methods and workers, is spaced at least
+2.0 seconds after the preceding admission. This fixed 0.5 requests/second pace
+is a conservative engineering choice, not a provider quota or an availability
+guarantee. Idle time does not accumulate burst credit. Waits release the shared
+admission lock and are interrupted by cancellation or source failure; deadline
+checks run again before charging and dispatching a request. HTTP 429 remains
+terminal, with no retry or backoff loop. The original 25-minute compute budget
+includes pacing time, while the 35-minute lease and 90-minute source-age limit
+remain unchanged. Same-run resume restores the last admission from the sealed
+journal's original monotonic clock, including failed or unknown attempts;
+neither the clock, call budget nor pacing history resets on resume. There is no
+CLI or environment override for the production pace.
+
 Log acquisition, queue replay and the consensus/FIFO models retain their previous
 semantics. Logs and canonical/finalized execution headers are provider-attested,
 not proofs of every historical receipt or independently verified BLS finality.
