@@ -23,15 +23,17 @@ import threading
 import time
 from urllib.parse import urlsplit
 from acquisition_errors import safe_exception, sanitized_text
+from rpc_budget import DEFAULT_RPC_CALLS, MANUAL_CATCHUP_RPC_CALLS, lease_rpc_budget
 
-MAX_CALLS = 256
+MAX_CALLS = DEFAULT_RPC_CALLS
+MAX_STORED_CALLS = MANUAL_CATCHUP_RPC_CALLS
 MAX_SECONDS = 1500
 LEASE_SECONDS = 2100
 MAX_SOURCE_AGE = 5400
 MAX_IN_FLIGHT = 4
 MAX_RAW = 20 * 1024 * 1024
 MAX_RECORD = 64 * 1024 * 1024
-MAX_RECORDS = MAX_CALLS * 5 + 64
+MAX_RECORDS = MAX_STORED_CALLS * 5 + 64
 SNAPSHOT_PATH = 'data/lido-cutoff-snapshot.json'
 STATE_PATH = 'data/lido-collector-state.json'
 CACHE_ROLES = frozenset(('historical_logs', 'event_header'))
@@ -206,7 +208,7 @@ class LocalSealStore:
         if (not isinstance(value, dict) or set(value) != {'run_id', 'records', 'head', 'attempts'}
                 or not isinstance(value['run_id'], str)
                 or type(value['records']) is not int or not 0 < value['records'] <= MAX_RECORDS
-                or type(value['attempts']) is not int or not 0 <= value['attempts'] <= MAX_CALLS
+                or type(value['attempts']) is not int or not 0 <= value['attempts'] <= MAX_STORED_CALLS
                 or not isinstance(value['head'], str)
                 or not re.fullmatch('[0-9a-f]{64}', value['head'])):
             raise Corrupt('invalid independent controller seal')
@@ -299,6 +301,7 @@ class RunJournal:
                        'endpoint': endpoint, 'route_id': route_id,
                        'base_blobs': {name: _blob(raw) for name, raw in base_blobs.items()},
                        'code_digests': code_digests(code_root), 'lease': deepcopy(lease),
+                       'rpc_call_budget': lease_rpc_budget(json_value(base_blobs[SNAPSHOT_PATH])),
                        'start_wall': now['wall'], 'start_monotonic': now['monotonic'],
                        'deadline_wall': now['wall'] + MAX_SECONDS,
                        'deadline_monotonic': now['monotonic'] + MAX_SECONDS,
@@ -371,7 +374,7 @@ class RunJournal:
             if not callable(inspect_ssz):
                 raise Stopped('complete SSZ reinspection is required on resume')
             self._check_source(inspect_ssz)
-            if self.calls + 4 + 6 > MAX_CALLS:
+            if self.calls + 4 + 6 > self.max_calls:
                 raise Stopped('remaining shared budget cannot cover fresh anchors and completion')
             self._append('resume', head=head, fresh_main=True,
                          reviewed_same_route=reviewed_same_route.strip(),
@@ -415,6 +418,10 @@ class RunJournal:
     @property
     def calls(self):
         return len(self.requests)
+
+    @property
+    def max_calls(self):
+        return self._context.get('rpc_call_budget', DEFAULT_RPC_CALLS)
 
     @property
     def deadline(self):
@@ -466,6 +473,9 @@ class RunJournal:
                     or lease['acquiredAtEpoch'] > c['start_wall']
                     or lease != json_value(_unblob(c['base_blobs'][SNAPSHOT_PATH])).get('refresh', {}).get('lease')):
                 raise Corrupt('original durable 35-minute lease is missing or changed')
+            if (type(self.max_calls) is not int
+                    or self.max_calls != lease_rpc_budget(json_value(_unblob(c['base_blobs'][SNAPSHOT_PATH])))):
+                raise Corrupt('original durable RPC call budget is missing or changed')
             seed = json_value(_unblob(c['base_blobs'][STATE_PATH]))
             if (c['seed'] != {'number': seed['block'], 'hash': seed['hash'], 'timestamp': seed['timestamp']}
                     or type(seed['block']) is not int or seed['block'] < 0
@@ -540,7 +550,7 @@ class RunJournal:
         elif kind == 'reserve':
             req = data['request']
             ident = req['id']
-            if (type(ident) is not int or ident != self.calls + 1 or ident > MAX_CALLS
+            if (type(ident) is not int or ident != self.calls + 1 or ident > self.max_calls
                     or req.get('jsonrpc') != '2.0' or data['epoch'] != self.epoch
                     or sha(encoded(req)) != data['requestSha256']):
                 raise Corrupt('invalid durable attempt reservation')
@@ -688,7 +698,7 @@ class RunJournal:
             if type(remaining_required) is not int or remaining_required < 0:
                 raise Stopped('invalid remaining completion budget')
             reserve_after = max(remaining_required, 3 if role in CACHE_ROLES | {'balance'} else 0)
-            if self.calls + 1 + reserve_after > MAX_CALLS:
+            if self.calls + 1 + reserve_after > self.max_calls:
                 raise Stopped('shared attempt budget cannot cover request and completion')
             if len(self._local_live) >= MAX_IN_FLIGHT:
                 raise Stopped('four current-process RPC reservations already live')
@@ -935,7 +945,7 @@ class RunJournal:
             completed = set(self.responses) | set(self.failures)
             return {'source': self._context['endpoint'],
                     'capturedAt': datetime.fromtimestamp(self._stamp()['wall'], timezone.utc).isoformat().replace('+00:00', 'Z'),
-                    'calls': self.calls,
+                    'calls': self.calls, 'rpcCallBudget': self.max_calls,
                     'requests': [deepcopy(data['request']) for _, data in sorted(self.requests.items())],
                     'responses': responses, 'failures': failures,
                     'inFlightIds': sorted(set(self.requests) - completed),
