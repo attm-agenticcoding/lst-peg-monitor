@@ -22,6 +22,7 @@ import tempfile
 import threading
 import time
 from urllib.parse import urlsplit
+from acquisition_errors import safe_exception, sanitized_text
 
 MAX_CALLS = 256
 MAX_SECONDS = 1500
@@ -756,10 +757,12 @@ class RunJournal:
         with self._mutex:
             if ident not in self.requests or ident in self.responses or ident in self.failures:
                 raise Stopped('request has no unfinished charged attempt')
+            phase = 'envelope'
             try:
                 if not isinstance(raw, bytes) or not 0 < len(raw) <= MAX_RAW:
                     raise Corrupt('response exceeds bounded complete-byte size')
                 result = self._result(ident, raw)
+                phase = 'validation'
                 if validator(deepcopy(result)) is not True:
                     raise Corrupt('response semantic validation failed')
             except Exception as error:
@@ -772,7 +775,7 @@ class RunJournal:
                 category = ('limit_exceeded' if self.requests[ident]['request']['method'] == 'eth_getLogs'
                             and code == -32005 and not getattr(error, 'denied', False) else 'invalid_response')
                 try:
-                    self.fail(ident, category=category, code=code, error=str(error), denied=denial)
+                    self.fail(ident, category=category, code=code, error=error, denied=denial, phase=phase)
                 except Exception as persistence_error:
                     if not denial:
                         raise
@@ -793,25 +796,35 @@ class RunJournal:
             self._accepted.add(ident)
             return deepcopy(result)
 
-    def fail(self, ident, category, code=None, *, error=None, denied=False):
+    def fail(self, ident, category, code=None, *, error=None, denied=False,
+             phase=None, known_cancel=False):
         with self._mutex:
             if not isinstance(category, str) or not category:
                 raise Stopped('failure category required')
+            detail = safe_exception(error) if isinstance(error, BaseException) else None
+            message = detail['message'] if detail is not None else sanitized_text(error or category)
+            metadata = ({'exception': detail} if detail is not None else {})
+            if phase is not None:
+                if phase not in ('open', 'read', 'response', 'envelope', 'validation', 'anchor', 'cache'):
+                    raise Stopped('unsupported acquisition failure phase')
+                metadata['phase'] = phase
+            if detail is not None or phase is not None:
+                metadata['knownCancellation'] = known_cancel is True
             actual_denial = bool(denied or code in (401, 403) or 'redirect' in category)
             if actual_denial:
                 self.denied, self.status = True, 'terminal'
                 self._accepted.clear()
             if ident in self.failures:
                 if actual_denial and not self.failures[ident].get('denied'):
-                    self._append('stop', reason=str(error or category)[:500], denied=True)
+                    self._append('stop', reason=message, denied=True, **metadata)
                 return
             if ident in self.responses:
                 # The response may have been sealed before a peer's stop check.
                 # It remains a response; cancellation cannot rewrite history.
                 if actual_denial:
-                    self._append('stop', reason=str(error or category)[:500], denied=True)
+                    self._append('stop', reason=message, denied=True, **metadata)
                 elif category != 'cancelled' and self.status not in ('paused', 'terminal'):
-                    self.stop(error or category, denied=actual_denial)
+                    self._append('stop', reason=message, denied=actual_denial, **metadata)
                 return
             if ident not in self.requests:
                 raise Stopped('failed attempt was not durably reserved')
@@ -819,7 +832,7 @@ class RunJournal:
                     self.requests[ident]['request']['method'] != 'eth_getLogs' or code != -32005):
                 raise Stopped('only log -32005 permits same-source bounded splitting')
             self._append('failure', id=ident, category=category, code=code,
-                         error=str(error or category)[:500], denied=actual_denial)
+                         error=message, denied=actual_denial, **metadata)
 
     def cached(self, role, method, params, validator):
         with self._mutex:
@@ -838,8 +851,9 @@ class RunJournal:
                     result = self._result(ident, self._read_raw(response))
                     if validator(deepcopy(result)) is not True:
                         raise Corrupt('cached result failed fresh semantic validation')
-                except Exception:
-                    self.stop('cached_response_validation_failed')
+                except Exception as error:
+                    self._append('stop', reason='cached_response_validation_failed', denied=False,
+                                 phase='cache', exception=safe_exception(error))
                     raise
                 self.check()
                 self._accepted.add(ident)
@@ -867,13 +881,13 @@ class RunJournal:
         with self._mutex:
             if self.status in ('paused', 'terminal'):
                 return
-            self._append('pause', reason=str(reason)[:500])
+            self._append('pause', reason=sanitized_text(reason))
 
     def stop(self, reason, *, denied=False):
         with self._mutex:
             if self.status == 'terminal' and (self.denied or not denied):
                 return
-            self._append('stop', reason=str(reason)[:500], denied=bool(denied))
+            self._append('stop', reason=sanitized_text(reason), denied=bool(denied))
 
     def complete(self):
         """Caller has replayed/validated the full model; no checkpoint is stored."""
@@ -915,7 +929,8 @@ class RunJournal:
                          for ident, data in sorted(self.responses.items())]
             failures = [{'request': deepcopy(self.requests[ident]['request']),
                          'error': data['error'], 'kind': data['category'],
-                         'code': data['code'], 'denied': data['denied']}
+                         'code': data['code'], 'denied': data['denied'],
+                         **{k: deepcopy(data[k]) for k in ('exception', 'phase', 'knownCancellation') if k in data}}
                         for ident, data in sorted(self.failures.items())]
             completed = set(self.responses) | set(self.failures)
             return {'source': self._context['endpoint'],
