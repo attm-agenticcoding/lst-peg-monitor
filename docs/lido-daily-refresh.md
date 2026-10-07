@@ -2,9 +2,13 @@
 
 The authorized schedule is one attempt each day at **00:00 UTC**. An explicitly
 requested one-off run uses the same collector and publication safeguards, with
-its own idempotency key. The schedule is managed outside this repository. This
-change creates no cron, workflow, relay, account, credentials or paid service;
-the existing spot-price sampler remains independent.
+its own idempotency key. The schedule uses the proven GitHub Actions runtime in
+`.github/workflows/lido-manual.yml`, sharing its durable lease and publication
+guards with manual attempts. The prior external daily task must be paused through
+supported owner controls before activation. No relay, new account, credentials
+or paid service is created; the existing spot-price sampler remains independent.
+See [runtime and scheduled-event acceptance](lido-actions-manual.md) for the
+genuine schedule provenance, UTC-day handling and first automatic-run checks.
 
 ## What is recomputed
 
@@ -109,10 +113,16 @@ retry. Manual runs never clear or change the scheduled `attemptDay` key.
 Scheduled attempts deduplicate on UTC `attemptDay`. Legacy `attemptHour` may
 remain as historical metadata, but is ignored by daily scheduling. A failed
 scheduled attempt consumes that day's attempt key. A new day is eligible.
+In Actions the original GitHub run creation day must match the current UTC day
+before lease acquisition and collector process launch; cross-day queued events and reruns
+stop. GitHub can delay or drop schedules and supplies no documented nominal
+occurrence timestamp. The audit explicitly records its creation-day basis;
+there is no missed-day backfill or replacement dispatch.
 Manual attempts are independent of that key, but every trigger shares the
 same active lease, so overlapping scheduled/manual runs cannot both acquire
 ownership. If a scheduled wake encounters an active lease, it may retry lease
-acquisition once that lease is released, subject to the same daily key.
+acquisition only within its original authorized invocation and UTC day. The
+Actions controller skips a conflicting lease without a source retry or dispatch.
 
 `stage=skipped` means no new run may begin. Otherwise, publish only the proposed
 snapshot lease using a content-SHA compare-and-swap, read it back, verify its

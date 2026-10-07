@@ -1,7 +1,9 @@
 /* Dependency-free UI-controller smoke test. Not a substitute for visual browser QA. */
 "use strict";
 const assert = require("node:assert/strict"), vm = require("node:vm"), fs = require("node:fs");
-const Core = require("../core.js"), config = require("../config.json"), LidoCutoff = require("../lido-cutoff.js"), cutoff = require("../data/lido-cutoff-snapshot.json");
+// Fixed-date/staleness regression uses immutable input; lido-cutoff.test.js
+// independently validates the current production snapshot.
+const Core = require("../core.js"), config = require("../config.json"), LidoCutoff = require("../lido-cutoff.js"), cutoff = require("./fixtures/lido-cutoff-20261004.json");
 // Pure display arithmetic, independent of net-cost economics and data collection.
 const appSource = fs.readFileSync(require.resolve("../app.js"), "utf8");
 const gross = vm.runInNewContext(appSource.slice(appSource.indexOf("  function stGrossComparison"), appSource.indexOf("  function stSection")) + "; stGrossComparison;");
@@ -26,7 +28,7 @@ const html = fs.readFileSync(require.resolve("../index.html"), "utf8");
 form.elements = [...html.matchAll(/<input name="([^"]+)"/g)].map((m) => ({ name: m[1], value: "" }));
 for (const el of form.elements) form.elements[el.name] = el;
 form.reportValidity = () => true;
-let unavailable = false, fail = false, paused = false, bunker = false, grossQuoteReturn = 0.001, quotes = 0, currentTime = Date.now();
+let unavailable = false, fail = false, paused = false, bunker = false, grossQuoteReturn = 0.001, quotes = 0, currentTime = Date.parse(cutoff.asOf) + 7200000;
 class TestDate extends Date { static now() { return currentTime; } }
 const intervals = [];
 let cutoffPending = false;

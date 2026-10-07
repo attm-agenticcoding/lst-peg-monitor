@@ -1,10 +1,65 @@
-# Independent manual Lido runtime
+# Daily and explicit manual Lido runtime
 
-This controller is a prepared, manual-only GitHub Actions route for the existing
-Lido collector. It does not replace or change the external daily task or the
-independent price workflow. Deploying the prepared files and requesting a real
-run require the user's approval. No GitHub-runner source connectivity or Pages
-build has been tested during local preparation.
+The existing GitHub Actions controller runs the Lido collector once each day at
+**00:00 UTC**, or for one explicitly requested manual attempt. Both routes use
+the same workflow, concurrency group, durable lease, model and exact-head
+publication gate. The independent price workflow is unchanged.
+
+Before activating the repository schedule, the old external daily task must be
+paused through its supported owner controls. A denied task-control request must
+not be worked around through another route or a repository gate. Local code and
+offline tests do not themselves activate a schedule or establish automatic-run
+acceptance. The user confirmed the old task was paused on 2026-10-07; that is an
+owner confirmation, not an API-verified task state.
+
+## Daily event, UTC-day identity and acceptance
+
+`.github/workflows/lido-manual.yml` has exactly one scheduled expression:
+`0 0 * * *`, using GitHub's default UTC timezone. It does not add a noon/evening
+cadence, dispatch itself, or create an automatic manual request. Its existing
+`lido-explicit-manual` concurrency group now serializes both trigger types with
+`cancel-in-progress: false`; the shared durable lease remains authoritative.
+
+Only a genuine `GITHUB_EVENT_NAME=schedule` with the exact cron and original
+`GITHUB_RUN_ATTEMPT=1` can acquire a scheduled lease. The controller reads this
+public repository's original workflow-run metadata without authentication and
+checks the run ID, event, attempt, workflow path, main branch, repository and
+event head SHA. It adds no token permission. A missing, denied, mismatched or
+unavailable provenance read stops before any lease write or source collection.
+
+The attempt key is the UTC date of that original run's `created_at`, explicitly
+recorded as `utcDayBasis=github_run_created_at`. It must still be the current UTC
+day at lease acquisition, every acquisition CAS attempt, and immediately before
+launching the collector process. A run queued across midnight cannot consume the new day's
+key; a rerun cannot become a new daily attempt. A lease acquired just before
+midnight whose collector has not yet launched is released as a failed old-day
+attempt without source collection. Once the collector has launched, its original unexpired lease
+and source-freshness requirements still govern completion/publication.
+This boundary does not claim the child process's first download byte arrives
+before midnight; the collector and its acquisition rules are unchanged.
+
+GitHub documents that scheduled events can be delayed or dropped, especially at
+the start of an hour. It exposes the cron expression but no documented nominal
+occurrence timestamp. Therefore creation-day evidence does not establish the
+intended nominal cron date after an extreme delay before run creation. The
+controller never guesses a missed day or backfills it. Same-day delays can run
+once; missing days stay missing. Midnight remains the configured cadence.
+
+The collector's existing `attemptDay` prevents a second scheduled collection on
+the same UTC day, including after failure. Scheduled leases always select the
+ordinary 256 RPC attempts, even if the manual request file is inert, malformed,
+or still records an earlier approved 320 catch-up. The manual file remains in
+the unchanged-file fence but is not scheduled intent or scheduled configuration.
+An active manual or scheduled lease blocks the other trigger without source
+reads or replacement dispatch.
+
+First automatic acceptance requires an actual GitHub run with `event=schedule`
+after activation, not a manual dispatch or synthetic fixture. Decode its complete
+standard audit and verify `githubEventName`, `githubRunId`, `githubRunAttempt`,
+`trigger=scheduled`, `scheduledRequest` (cron, creation time/day, head, 256 budget),
+and the read-back lease. Then verify the model/RPC evidence, exact two-file
+publication and separate public Pages byte equality as usual. A skipped/failed
+event does not prove a successful automatic refresh.
 
 ## Explicit request and deduplication
 
@@ -20,12 +75,13 @@ approved one-off catch-up. Commit that file to `main`. The workflow's only push
 path is this request file. A normal price/data/code push cannot start collection.
 The controller independently compares the before/after event trees and rejects
 a push that did not change the request file. It rejects forks, other refs, force
-pushes, schedules, pull requests, and other servers.
+pushes, pull requests, and other servers. The separate daily route is described
+above; a manual dispatch always remains manual.
 
 The optional manual **Run workflow** button reads the same committed request. It
 does not generate a new ID, change a budget, or override deduplication. Re-running
 an already consumed ID, including a failed ID, skips without source reads. Shared
-durable leases block overlap with the existing external scheduled collector. A
+durable leases block overlap between scheduled and manual collection. A
 blocked or failed run never requests its own replacement. The existing 128-ID
 history is bounded; the operator must never replay older consumed IDs.
 
@@ -47,8 +103,11 @@ The original collector retains its 25-minute computation limit, 35-minute lease,
 90-minute source freshness, five-minute economic compatibility limit, four-header
 worker bound and fixed public sources. A 40-minute job timeout permits cleanup
 and bounded Pages verification; it does not extend the collector or lease.
-The production run inherits its budget from the read-back durable manual lease.
-The next ordinary lease defaults to 256 again.
+The production run inherits its budget from the read-back durable lease.
+Scheduled leases always use 256; a manual 320 request remains specific to that
+explicit request. The next ordinary lease defaults to 256 again. Both routes
+retain shared two-second RPC admission and the existing event-header-only
+bounded read-timeout retries, with failed retries charged to the same budget.
 
 The controller never calls `resume`. An eligible `paused` result is deliberately
 aborted in the same job under the original journal/lease guards because this
@@ -61,7 +120,7 @@ under the collector's existing classification; there is no source fallback.
 
 The controller verifies its actual local collector/model/controller bytes and
 workflow against current `main`, reads both input files at that exact commit,
-and acquires one manual lease. Every repository mutation uses the GraphQL
+and acquires one scheduled or manual lease. Every repository mutation uses the GraphQL
 `createCommitOnBranch` mutation with `expectedHeadOid`. Each accepted commit's
 single parent, entire tree and exact file bytes are read back and verified.
 
@@ -108,7 +167,8 @@ group is confirmed stopped, `actions_audit.py` emits a gzip/base64 diagnostic
 bundle into ordinary Actions logs. The exact whitelist contains the original
 result manifests, complete model audit, RPC audit, sealed journal and independent
 seal, plus only the raw RPC response files referenced by that verified journal.
-It also records fresh-main/data/code identities, exact-head CAS and commit
+It also records GitHub event/run provenance, scheduled creation-day identity or
+manual request, fresh-main/data/code identities, exact-head CAS and commit
 readbacks, six-tier/cutoff results, and separate Pages verification status.
 
 Raw SSZ, environment variables, HTTP authentication headers, credential fields,
@@ -145,8 +205,10 @@ node tests/app-redemption.test.js
 node tests/lido-cutoff.test.js
 ```
 
-Controller tests cover explicit-request gating, duplicate/failed-ID consumption,
-shared leases, manual 320/default 256, strict head CAS, blob/code/request races,
+Controller tests cover genuine schedule provenance, rerun/wrong-cron rejection,
+midnight boundaries, daily failure consumption and next-day eligibility,
+scheduled 256 despite manual 320, explicit-request gating, duplicate/failed-ID
+consumption, shared leases, manual 320/default 256, strict head CAS, blob/code/request races,
 uncertain-write reconciliation, expired lease refusal, failure retention,
 same-job pause/abort, token isolation, process stopping and Pages mismatch. They
 mock every network call and do not prove GitHub-runner source connectivity.
@@ -156,3 +218,5 @@ Official API and behavior references:
 - [GitHub GraphQL commit inputs](https://docs.github.com/en/graphql/reference/commits)
 - [Request a GitHub Pages build](https://docs.github.com/en/rest/pages/pages#request-a-github-pages-build)
 - [Workflow triggering and GitHub-token events](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow)
+- [GitHub schedule semantics](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)
+- [Read public workflow-run provenance](https://docs.github.com/en/rest/actions/workflow-runs#get-a-workflow-run)
