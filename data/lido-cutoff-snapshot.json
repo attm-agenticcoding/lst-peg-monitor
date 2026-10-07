@@ -153,15 +153,21 @@
   },
   "refresh": {
     "mode": "daily",
-    "state": "error",
+    "state": "running",
     "scheduleUtc": "00:00",
     "expectedIntervalSeconds": 86400,
     "maxSourceAgeSeconds": 5400,
     "maxOperationalAgeSeconds": 91800,
     "lastSuccessAt": null,
-    "lease": null,
-    "error": "Execution permission review interrupted the approved Lido acquisition. The process ended; subsequent generic transport errors were sealed as terminal with insufficient detail for safe recovery. Previous successful data retained.",
-    "attemptAt": "2026-10-07T13:15:10Z",
+    "lease": {
+      "runId": "123ef03d-e31e-4bd2-80ea-a7cb4e188fd3",
+      "acquiredAtEpoch": 1791381704,
+      "expiresAtEpoch": 1791383804,
+      "trigger": "manual",
+      "requestKey": "manual-20261007-recovery-fix-5c1d1168"
+    },
+    "error": null,
+    "attemptAt": "2026-10-07T14:01:44Z",
     "trigger": "manual",
     "attemptDay": "2026-10-07",
     "finishedAt": "2026-10-07T13:30:56Z",
@@ -170,8 +176,9 @@
       "manual-20261007-diagnostic-fb355c4d",
       "manual-20261007-production-a2b93891365c",
       "manual-20261007-production-retry-dbe4e9a1",
-      "manual-20261007-recovery-630ba06b"
+      "manual-20261007-recovery-630ba06b",
+      "manual-20261007-recovery-fix-5c1d1168"
     ],
-    "lastManualRequestId": "manual-20261007-recovery-630ba06b"
+    "lastManualRequestId": "manual-20261007-recovery-fix-5c1d1168"
   }
 }
