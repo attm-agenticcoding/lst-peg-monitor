@@ -252,8 +252,10 @@ Only the unique event headers whose timestamps affect the model are fetched
 concurrently, with at most four requests in flight. IDs, admission, evidence and
 the original lease's call budget are shared and synchronized. The header batch first reserves
 six calls for the three same-block balances and final seed/target/child rereads;
-those final rereads are always new requests. An error stops new admission and
-discards the batch. A read returning after the deadline is rejected, and the
+those final rereads are always new requests. A fatal error stops new admission and
+discards the batch. The narrowly bounded historical-header timeout exception
+below can recover its own request without cancelling valid peer reads.
+A read returning after the deadline is rejected, and the
 final result has an independent deadline check. Already admitted reads may finish
 network teardown after cancellation; their late responses cannot produce a
 successful result or trigger more reads.
@@ -273,6 +275,49 @@ remain unchanged. Same-run resume restores the last admission from the sealed
 journal's original monotonic clock, including failed or unknown attempts;
 neither the clock, call budget nor pacing history resets on resume. There is no
 CLI or environment override for the production pace.
+
+### Bounded historical-header read timeout
+
+The durable collector permits one narrowly classified timeout retry for each
+identical method-and-parameters key, with at most three retry allowances in the
+original run. Only the `event_header` role is eligible: a fixed, canonical
+`eth_getBlockByNumber [hex_block_number, false]` strictly inside the authenticated
+seed-to-target interval. Anchors, finalized polling, balances, historical logs,
+terminal rereads, SSZ acquisition and the non-durable local collector retain
+their previous behavior.
+
+Eligibility requires a direct built-in `TimeoutError` whose exact message is
+`The read operation timed out`, raised during transport open/read, with no
+cause, context, status or denial. Wrappers, connection timeouts, other messages,
+deadline guards, HTTP 429/401/403 or redirects, malformed responses, mismatched
+identities and all other errors cannot enter this retry path. This deliberately
+narrow classification matches the observed read timeout; it is not a general
+network-retry facility or an availability guarantee.
+
+The failed attempt and its one-use allowance are fsynced and independently
+sealed together. The callback and in-flight slot are released before retry
+waiting. The retry may be admitted only after both five seconds since the sealed
+failure and two seconds since the last shared admission. Every actual attempt
+uses a new charged JSON-RPC ID at the original endpoint. The default 256/manual
+320 call limits, four in-flight cap, six finishing-call reserve, original
+25-minute compute window, 35-minute lease and 90-minute SSZ freshness limits
+are unchanged. Waiting never renews those limits. A fatal peer prevents retry
+admission, and a late timeout after denial cannot obtain an allowance.
+
+Allowances and their admitted retry IDs are restored from the original sealed
+journal on an otherwise authorized same-run resume. An allowance still waiting
+for admission keeps its original cooldown; its limit is already spent. A retry
+already admitted cannot be sent again if its outcome is unknown, cancelled or
+paused. A sealed successful response may only use the existing revalidated
+historical cache. No allowance or budget resets. An exhausted retry becomes a
+terminal failure; this does not restart a whole run or revive a failed run.
+
+Full model replay, fresh authentication, the exact final three successful
+seed/target/child rereads, two-file atomic publication and public readback keep
+their original checks. The timeout policy is recorded in the immutable run
+context and covered by the collector code digests. Adopting it requires an
+explicitly approved code change and a new authorized run; an old terminal run
+cannot acquire the new policy retroactively.
 
 Log acquisition, queue replay and the consensus/FIFO models retain their previous
 semantics. Logs and canonical/finalized execution headers are provider-attested,

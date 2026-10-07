@@ -25,7 +25,8 @@ import urllib.error
 import uuid
 
 from scenarios import build_scenarios, report_references, utc, eth
-from acquisition_errors import MAX_EXCEPTION_NODES, exception_nodes, safe_exception, sanitized_text
+from acquisition_errors import (MAX_EXCEPTION_NODES, exception_nodes, safe_exception,
+                                sanitized_text, transport_read_timeout)
 from rpc_budget import DEFAULT_RPC_CALLS, lease_rpc_budget, validate_budget
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -208,7 +209,7 @@ class Rpc:
         if self._clock() >= self.deadline:
             raise TimeoutError('bounded RPC deadline exhausted')
 
-    def _wait_admission(self):
+    def _wait_admission(self, *, not_before=None):
         """Called under _lock; every wait releases it so a peer can stop us.
 
         A single next-admission time serves every method and worker. Idle time
@@ -224,6 +225,8 @@ class Rpc:
                 continue
             delay = (0 if self._last_admission is None else
                      self._last_admission + RPC_ADMISSION_SECONDS - self._clock())
+            if not_before is not None:
+                delay = max(delay, not_before - self._clock())
             if delay <= 0:
                 return
             self._admission_wait(self._admission, min(delay, remaining))
@@ -356,6 +359,10 @@ class RecoveryPaused(RuntimeError):
     """Collection stopped and requires an explicit reviewed same-route resume."""
 
 
+class _RetryReadTimeout(Exception):
+    """Unwind the finished callback before using its sealed retry allowance."""
+
+
 def classify_acquisition_error(error, first_error, phase):
     """Classify only evidenced transport wrappers, never timing or similar text.
 
@@ -419,6 +426,9 @@ def classify_acquisition_error(error, first_error, phase):
               and all(transparent_url_wrapper(node) or tunnel_leaf(node) for node in fresh))
     if tunnel:
         return {'category': 'unknown_tunnel_rejection', 'code': None,
+                'denied': False, 'knownCancellation': False}
+    if transport_read_timeout(error, phase):
+        return {'category': 'transport_read_timeout', 'code': None,
                 'denied': False, 'knownCancellation': False}
     code = getattr(error, 'code', None)
     return {'category': 'source_error', 'code': code if type(code) is int else None,
@@ -606,7 +616,6 @@ class DurableRpc(Rpc):
             self._authenticated = True
 
     def __call__(self, method, params):
-        from execution import RpcError
         if method not in ALLOWED_RPC:
             raise RuntimeError('RPC method outside approved collector scope: ' + method)
         role = getattr(self._role, 'value', None)
@@ -615,12 +624,22 @@ class DurableRpc(Rpc):
                     'balance' if method == 'eth_getBalance' else
                     'terminal' if self._authenticated else 'anchor')
         validator = self._validator(role, params)
+        # Each attempt exits its callback and releases its in-flight slot before
+        # cooldown/admission. No recursive transport or whole-run restart.
+        while True:
+            try:
+                return self._call_once(role, method, params, validator)
+            except _RetryReadTimeout:
+                continue
+
+    def _call_once(self, role, method, params, validator):
+        from execution import RpcError
         with self._lock:
             self._check()
             hit, value = self.journal.cached(role, method, params, validator)
             if hit:
                 return value
-            self._wait_admission()
+            self._wait_admission(not_before=self.journal.timeout_retry_not_before(role, method, params))
             ident, raw_request = self.journal.reserve(role, method, params,
                                                        remaining_required=6 if role in ('historical_logs', 'event_header') else 0)
             self._last_admission = self.journal.last_admission_monotonic
@@ -654,6 +673,13 @@ class DurableRpc(Rpc):
             first_error = self._error
             classification = classify_acquisition_error(error, first_error, phase)
             category = classification['category']
+            if category == 'transport_read_timeout':
+                with self._lock:
+                    if self._error is None and self.journal.retry_timeout(ident, error, phase):
+                        raise _RetryReadTimeout() from error
+                # Exhausted/ineligible timeouts are fatal. Publish the original
+                # error before a peer can observe the terminal journal guard.
+                self.cancel(error)
             if category == 'controller_interruption' and self.journal.status == 'paused':
                 category = 'cancelled'  # A local guard observed a peer's pause.
             access_error = None

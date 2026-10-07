@@ -20,6 +20,23 @@ MAX_MESSAGE_BYTES = 256
 MAX_MESSAGE_CHARS = MAX_MESSAGE_BYTES
 MAX_TYPE_BYTES = 96
 MAX_SOURCE_CHARS = 8192
+TIMEOUT_RETRY_POLICY = {'per_request': 1, 'per_run': 3, 'cooldown_seconds': 5,
+                        'roles': ['event_header']}
+
+
+def transport_read_timeout(error, phase):
+    """Only the observed direct CPython transport read timeout is eligible.
+
+    Never search cause/context/reason chains for an old timeout. A connection
+    timeout, wrapper, subclass, deadline guard or merely similar text fails
+    closed. The phase must be set by the caller around actual network I/O.
+    """
+    return (phase in ('open', 'read') and type(error) is TimeoutError
+            and error.args == ('The read operation timed out',)
+            and error.__cause__ is None
+            and error.__context__ is None
+            and not getattr(error, 'denied', False)
+            and getattr(error, 'code', None) is None)
 
 _REDACTED = '[redacted sensitive exception text]'
 _URL = re.compile(r'(?i)\b[a-z][a-z0-9+.-]*://[^\s]+|(?<!:)//[^\s]+')
