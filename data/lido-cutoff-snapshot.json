@@ -153,24 +153,18 @@
   },
   "refresh": {
     "mode": "daily",
-    "state": "running",
+    "state": "error",
     "scheduleUtc": "00:00",
     "expectedIntervalSeconds": 86400,
     "maxSourceAgeSeconds": 5400,
     "maxOperationalAgeSeconds": 91800,
     "lastSuccessAt": null,
-    "lease": {
-      "runId": "1f154d61-14d1-486d-b01c-0de4f3200627",
-      "acquiredAtEpoch": 1791331872,
-      "expiresAtEpoch": 1791333972,
-      "trigger": "manual",
-      "requestKey": "manual-20261007-diagnostic-fb355c4d"
-    },
-    "error": null,
+    "lease": null,
+    "error": "RPC source failed: {'code': -32602, 'message': 'block range extends beyond current head block'}",
     "attemptAt": "2026-10-07T00:11:12Z",
     "trigger": "manual",
     "attemptDay": "2026-10-07",
-    "finishedAt": "2026-10-07T00:04:24Z",
+    "finishedAt": "2026-10-07T00:17:09Z",
     "accessBlocked": false,
     "manualAttemptIds": [
       "manual-20261007-diagnostic-fb355c4d"
