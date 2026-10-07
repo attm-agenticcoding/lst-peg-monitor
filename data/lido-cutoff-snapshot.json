@@ -153,24 +153,18 @@
   },
   "refresh": {
     "mode": "daily",
-    "state": "running",
+    "state": "error",
     "scheduleUtc": "00:00",
     "expectedIntervalSeconds": 86400,
     "maxSourceAgeSeconds": 5400,
     "maxOperationalAgeSeconds": 91800,
     "lastSuccessAt": null,
-    "lease": {
-      "runId": "6d910c14-f101-4bd3-9e93-e1fc4219ecca",
-      "acquiredAtEpoch": 1791372015,
-      "expiresAtEpoch": 1791374115,
-      "trigger": "manual",
-      "requestKey": "manual-20261007-production-retry-dbe4e9a1"
-    },
-    "error": null,
+    "lease": null,
+    "error": "<urlopen error Tunnel connection failed: 403 Forbidden>",
     "attemptAt": "2026-10-07T11:20:15Z",
     "trigger": "manual",
     "attemptDay": "2026-10-07",
-    "finishedAt": "2026-10-07T11:14:30Z",
+    "finishedAt": "2026-10-07T11:37:42Z",
     "accessBlocked": false,
     "manualAttemptIds": [
       "manual-20261007-diagnostic-fb355c4d",
