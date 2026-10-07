@@ -41,6 +41,7 @@ RPC_URL = 'https://rpc.mevblocker.io'
 ALLOWED_RPC = {'eth_getLogs', 'eth_getBlockByNumber', 'eth_getBalance'}
 MAX_RPC_CALLS = DEFAULT_RPC_CALLS
 HEADER_WORKERS = 4
+RPC_ADMISSION_SECONDS = 2.0
 
 
 def canonical(value):
@@ -160,11 +161,18 @@ def open_rpc(request, *, timeout):
 
 
 class Rpc:
-    def __init__(self, deadline):
+    def __init__(self, deadline, *, clock=None, admission_wait=None):
         self.deadline, self.calls, self.evidence = deadline, 0, []
         self.failures = []
         self._requests = []
         self._lock = threading.Lock()
+        self._admission = threading.Condition(self._lock)
+        self._clock = clock if clock is not None else lambda: time.monotonic()
+        # Dependency injection is only for offline clocks. Production has no
+        # CLI/environment option to change or disable the shared fixed pace.
+        self._admission_wait = admission_wait or (lambda condition, seconds: condition.wait(seconds))
+        self._last_admission = None
+        self._in_flight = 0
         self._error = None
 
     @property
@@ -175,6 +183,7 @@ class Rpc:
         with self._lock:
             if self._error is None:
                 self._error = error if error is not None else RuntimeError('RPC collection cancelled')
+            self._admission.notify_all()
             return self._error
 
     def _record_failure(self, request, error, kind='source'):
@@ -196,8 +205,33 @@ class Rpc:
     def _check(self):
         if self._error is not None:
             raise self._error
-        if time.monotonic() >= self.deadline:
+        if self._clock() >= self.deadline:
             raise TimeoutError('bounded RPC deadline exhausted')
+
+    def _wait_admission(self):
+        """Called under _lock; every wait releases it so a peer can stop us.
+
+        A single next-admission time serves every method and worker. Idle time
+        earns no burst credit, and waiting spends the original compute budget.
+        """
+        while True:
+            self._check()
+            if self.calls >= self.max_calls:
+                raise RuntimeError('bounded RPC budget exhausted')
+            remaining = self.deadline - self._clock()
+            if self._in_flight >= HEADER_WORKERS:
+                self._admission.wait(remaining)
+                continue
+            delay = (0 if self._last_admission is None else
+                     self._last_admission + RPC_ADMISSION_SECONDS - self._clock())
+            if delay <= 0:
+                return
+            self._admission_wait(self._admission, min(delay, remaining))
+
+    def _release_admission(self):
+        with self._admission:
+            self._in_flight -= 1
+            self._admission.notify_all()
 
     def _event_header(self, number):
         from execution import _header
@@ -230,7 +264,7 @@ class Rpc:
             while pending:
                 with self._lock:
                     self._check()
-                done, _ = wait(pending, timeout=max(0, self.deadline - time.monotonic()),
+                done, _ = wait(pending, timeout=max(0, self.deadline - self._clock()),
                                return_when=FIRST_COMPLETED)
                 if not done:
                     raise TimeoutError('bounded RPC deadline exhausted')
@@ -262,19 +296,21 @@ class Rpc:
         if method not in ALLOWED_RPC:
             raise RuntimeError('RPC method outside approved collector scope: ' + method)
         with self._lock:
-            self._check()
-            if self.calls >= self.max_calls:
-                raise RuntimeError('bounded RPC budget exhausted')
+            self._wait_admission()
             self.calls += 1
             ident = self.calls
-            remaining = self.deadline - time.monotonic()
+            self._last_admission = self._clock()
+            self._in_flight += 1
             request = {'jsonrpc': '2.0', 'id': ident, 'method': method, 'params': params}
             self._requests.append(deepcopy(request))
-        req = urllib.request.Request(RPC_URL, data=json.dumps(request).encode(),
-                                     headers={'Content-Type': 'application/json',
-                                              'User-Agent': 'lst-peg-monitor/1.0'})
         # HTTP 401/403 and JSON-RPC errors stop the run. No provider/method bypass.
         try:
+            req = urllib.request.Request(RPC_URL, data=json.dumps(request).encode(),
+                                         headers={'Content-Type': 'application/json',
+                                                  'User-Agent': 'lst-peg-monitor/1.0'})
+            with self._lock:
+                self._check()
+                remaining = self.deadline - self._clock()
             with open_rpc(req, timeout=min(40, remaining)) as response:
                 raw = response.read(20 * 1024 * 1024 + 1)
             with self._lock:
@@ -298,17 +334,22 @@ class Rpc:
             failed = RpcError(f'{method}: HTTP {error.code}; source access failed',
                               code=error.code, denied=(error.code in (401, 403)
                                                        or isinstance(error, RpcRedirectError)))
+            first_error = self.cancel(failed)
             self._record_failure(request, failed)
-            raise self.cancel(failed) from error
+            raise first_error from error
         except Exception as error:
             with self._lock:
                 cancelled = error is self._error
-            self._record_failure(request, error, kind='cancelled' if cancelled else 'source')
             # Only the documented log-result size limit permits bounded splitting.
-            if not (method == 'eth_getLogs' and isinstance(error, RpcError)
-                    and error.code == -32005 and not error.denied):
-                raise self.cancel(error)
+            splittable = (method == 'eth_getLogs' and isinstance(error, RpcError)
+                          and error.code == -32005 and not error.denied)
+            first_error = None if splittable else self.cancel(error)
+            self._record_failure(request, error, kind='cancelled' if cancelled else 'source')
+            if first_error is not None:
+                raise first_error
             raise
+        finally:
+            self._release_admission()
 
 
 class RecoveryPaused(RuntimeError):
@@ -392,9 +433,13 @@ class DurableRpc(Rpc):
     read sealed raw bytes. Initial/final headers and balances always go online.
     """
 
-    def __init__(self, journal, state, summary):
+    def __init__(self, journal, state, summary, *, admission_wait=None):
         self.journal = journal
-        super().__init__(journal.deadline)
+        super().__init__(journal.deadline, clock=lambda: journal.clock()['monotonic'],
+                         admission_wait=admission_wait)
+        # Includes failed and unknown attempts, in all prior same-run epochs.
+        # The journal verifies boot identity, monotonic continuity and seal.
+        self._last_admission = journal.last_admission_monotonic
         self.state, self.summary = deepcopy(state), deepcopy(summary)
         self._role = threading.local()
         self._anchors = {}
@@ -472,7 +517,7 @@ class DurableRpc(Rpc):
                     if not self._callbacks:
                         return
                     self._quiescent.wait(timeout=1)
-                if time.monotonic() >= self.deadline:
+                if self._clock() >= self.deadline:
                     self.journal.stop('original deadline expired during network teardown')
             except (TimeoutError, RecoveryPaused) as error:
                 # A signal during teardown must not drop ownership. The reads
@@ -575,16 +620,21 @@ class DurableRpc(Rpc):
             hit, value = self.journal.cached(role, method, params, validator)
             if hit:
                 return value
+            self._wait_admission()
             ident, raw_request = self.journal.reserve(role, method, params,
                                                        remaining_required=6 if role in ('historical_logs', 'event_header') else 0)
+            self._last_admission = self.journal.last_admission_monotonic
             self.journal.start_callback(ident)
+            self._in_flight += 1
             with self._quiescent:
                 self._callbacks.add(ident)
-        request = urllib.request.Request(RPC_URL, data=raw_request,
-                                         headers={'Content-Type': 'application/json',
-                                                  'User-Agent': 'lst-peg-monitor/1.0'})
         phase = 'open'
         try:
+            request = urllib.request.Request(RPC_URL, data=raw_request,
+                                             headers={'Content-Type': 'application/json',
+                                                      'User-Agent': 'lst-peg-monitor/1.0'})
+            with self._lock:
+                self._check()
             with open_rpc(request, timeout=min(40, self.journal.remaining_seconds)) as response:
                 phase = 'read'
                 raw = self._read_response(response)
@@ -606,6 +656,13 @@ class DurableRpc(Rpc):
             category = classification['category']
             if category == 'controller_interruption' and self.journal.status == 'paused':
                 category = 'cancelled'  # A local guard observed a peer's pause.
+            access_error = None
+            if classification['denied'] or category == 'http_error':
+                # Publish the source error before the journal becomes terminal:
+                # a pacing waiter must not replace it with a generic Stopped.
+                access_error = self.cancel(RpcError(f'{method}: source access failed',
+                                                   code=classification['code'],
+                                                   denied=classification['denied']))
             try:
                 self.journal.fail(ident, category=category, code=classification['code'],
                                   denied=classification['denied'], error=error,
@@ -616,10 +673,8 @@ class DurableRpc(Rpc):
                 # Persistence failure cannot conceal an actual access denial.
                 print(json.dumps({'step': 'rpc_failure_journal_failed',
                                   'error': safe_exception(journal_error)['message']}), flush=True)
-            if classification['denied'] or category == 'http_error':
-                failed = RpcError(f'{method}: source access failed', code=classification['code'],
-                                  denied=classification['denied'])
-                raise self.cancel(failed) from error
+            if access_error is not None:
+                raise access_error from error
             if category in ('unknown_tunnel_rejection', 'controller_interruption'):
                 paused = RecoveryPaused('same-route acquisition interrupted; explicit review required before resume')
                 raise self.cancel(paused) from error
@@ -633,6 +688,7 @@ class DurableRpc(Rpc):
             with self._quiescent:
                 self._callbacks.discard(ident)
                 self._quiescent.notify_all()
+            self._release_admission()
 
 
 def public_snapshot(old, state, execution, beacon, scenarios, now, run_id, provenance):

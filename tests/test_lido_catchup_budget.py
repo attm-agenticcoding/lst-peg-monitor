@@ -10,7 +10,6 @@ import json
 from pathlib import Path
 import sys
 import tempfile
-import time
 import unittest
 from unittest.mock import patch
 
@@ -23,6 +22,7 @@ from publication import validate_result
 import test_lido_refresh as refresh_fixtures
 import test_lido_recovery_journal as journal_fixtures
 import test_lido_rpc_concurrency as rpc_fixtures
+from rpc_clock import RpcClock, advancing_wait
 
 
 class LeaseBudgetTests(unittest.TestCase):
@@ -42,7 +42,9 @@ class LeaseBudgetTests(unittest.TestCase):
                 self.assertIsNone(reason)
                 self.assertEqual(value['refresh']['lease']['rpcCallBudget'], 256)
                 self.assertEqual(lease_rpc_budget(value), 256)
-        self.assertEqual(refresh.Rpc(time.monotonic() + 10).max_calls, 256)
+        clock = RpcClock()
+        rpc = refresh.Rpc(clock() + 1500, clock=clock, admission_wait=advancing_wait(clock))
+        self.assertEqual(rpc.max_calls, 256)
         self.assertEqual(refresh.MAX_RPC_CALLS, 256)
         self.assertEqual(recovery.MAX_CALLS, 256)
 
@@ -260,7 +262,8 @@ class JournalBudgetTests(unittest.TestCase):
                 journal = self.create()
                 self.assertEqual(journal.context['rpc_call_budget'], budget)
                 self.assertEqual(journal.max_calls, budget)
-                rpc = refresh.DurableRpc(journal, json.loads(self.base[recovery.STATE_PATH]), self.summary)
+                rpc = refresh.DurableRpc(journal, json.loads(self.base[recovery.STATE_PATH]), self.summary,
+                                         admission_wait=advancing_wait(self.clock))
                 self.assertEqual(rpc.max_calls, budget)
                 context = journal.context
                 context['rpc_call_budget'] = 999
@@ -404,7 +407,8 @@ class JournalBudgetTests(unittest.TestCase):
                 self.authenticate(journal)
                 while journal.calls < 32:
                     self.consume_anchor(journal)
-                rpc = refresh.DurableRpc(journal, json.loads(self.base[recovery.STATE_PATH]), self.summary)
+                rpc = refresh.DurableRpc(journal, json.loads(self.base[recovery.STATE_PATH]), self.summary,
+                                         admission_wait=advancing_wait(self.clock))
                 transport = rpc_fixtures.Transport()
                 numbers = list(range(101, 328))
                 self.assertEqual(len(numbers), 227)
