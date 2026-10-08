@@ -12,7 +12,7 @@ from pathlib import Path
 import time
 import re
 from refresh import (SNAPSHOT_PATH, STATE_PATH, blob_sha, validate_lease, second,
-                     EXPECTED_INTERVAL_SECONDS, MAX_SOURCE_AGE, MAX_OPERATIONAL_AGE)
+                     EXPECTED_INTERVAL_SECONDS, SCHEDULE_UTC, MAX_SOURCE_AGE, MAX_OPERATIONAL_AGE)
 
 
 def validate_scenario(output):
@@ -71,14 +71,14 @@ def validate_result(result, current, now):
     output = parsed[SNAPSHOT_PATH]
     refresh = output.get('refresh', {})
     existing_refresh = existing.get('refresh', {})
-    if (refresh.get('mode') != 'daily' or refresh.get('expectedIntervalSeconds') != EXPECTED_INTERVAL_SECONDS
-            or refresh.get('scheduleUtc') != '00:00'
+    if (refresh.get('mode') != 'twice-daily' or refresh.get('expectedIntervalSeconds') != EXPECTED_INTERVAL_SECONDS
+            or refresh.get('scheduleUtc') != SCHEDULE_UTC
             or refresh.get('maxSourceAgeSeconds') != MAX_SOURCE_AGE
             or refresh.get('maxOperationalAgeSeconds') != MAX_OPERATIONAL_AGE):
         raise ValueError('refresh cadence or freshness policy changed')
     # A manual result must not consume a scheduled day or discard another manual
     # idempotency key. Acquisition determines the trigger; publication preserves it.
-    for key in ('trigger', 'attemptAt', 'attemptDay', 'manualAttemptIds', 'lastManualRequestId'):
+    for key in ('trigger', 'attemptAt', 'attemptDay', 'attemptSlot', 'manualAttemptIds', 'lastManualRequestId'):
         if refresh.get(key) != existing_refresh.get(key):
             raise ValueError('refresh attempt identity changed: ' + key)
     if output.get('refresh', {}).get('lease') is not None:

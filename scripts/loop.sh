@@ -23,17 +23,17 @@ commit_push() {
 }
 
 i=0
-lido_done_day=''
+lido_done_slot=''
 while :; do
   t0=$(date +%s); i=$((i + 1))
   node scripts/snapshot.js || echo "::warning::本轮采样失败（exit $?）"
-  lido_day=$(date -u +%Y-%m-%d)
-  if [ "$lido_done_day" != "$lido_day" ]; then
+  lido_slot=$(( $(date +%s) / 43200 ))
+  if [ "$lido_done_slot" != "$lido_slot" ]; then
     node scripts/lido-daily-dispatch.js
     lido_status=$?
-    # Dispatch/consumed day (10), or an API failure (1): do not repeat today
+    # Dispatch/consumed slot (10), or an API failure (1): do not repeat this slot
     # in this process. Active leases/runs remain eligible for a later check.
-    [ "$lido_status" -ne 0 ] && lido_done_day=$lido_day
+    [ "$lido_status" -ne 0 ] && lido_done_slot=$lido_slot
   fi
   if [ -f "$URGENT_FLAG" ] || [ $((i % COMMIT_EVERY)) -eq 0 ]; then
     rm -f "$URGENT_FLAG"

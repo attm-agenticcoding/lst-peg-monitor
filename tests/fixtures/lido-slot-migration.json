@@ -1,0 +1,21 @@
+[
+  {"name":"empty morning", "now":"2026-10-08T11:59:59Z", "refresh":{}, "blocked":false},
+  {"name":"morning consumed", "now":"2026-10-08T11:59:59Z", "refresh":{"attemptSlot":"2026-10-08T00:00:00Z"}, "blocked":true},
+  {"name":"noon eligible", "now":"2026-10-08T12:00:00Z", "refresh":{"attemptSlot":"2026-10-08T00:00:00Z"}, "blocked":false},
+  {"name":"noon consumed", "now":"2026-10-08T23:59:59Z", "refresh":{"attemptSlot":"2026-10-08T12:00:00Z"}, "blocked":true},
+  {"name":"new day", "now":"2026-10-09T00:00:00Z", "refresh":{"attemptSlot":"2026-10-08T12:00:00Z"}, "blocked":false},
+  {"name":"future slot fails closed", "now":"2026-10-08T00:00:00Z", "refresh":{"attemptSlot":"2026-10-08T12:00:00Z"}, "blocked":true},
+  {"name":"legacy midnight consumed", "now":"2026-10-08T11:59:59Z", "refresh":{"attemptDay":"2026-10-08","trigger":"relay-dispatch","attemptAt":"2026-10-08T01:11:26Z"}, "blocked":true},
+  {"name":"actual legacy morning permits noon", "now":"2026-10-08T12:00:00Z", "refresh":{"attemptDay":"2026-10-08","trigger":"relay-dispatch","attemptAt":"2026-10-08T01:11:26Z"}, "blocked":false},
+  {"name":"late legacy schedule consumes noon", "now":"2026-10-08T13:00:00Z", "refresh":{"attemptDay":"2026-10-08","trigger":"scheduled","attemptAt":"2026-10-08T12:10:00Z"}, "blocked":true},
+  {"name":"unknown legacy time consumes day", "now":"2026-10-08T12:00:00Z", "refresh":{"attemptDay":"2026-10-08"}, "blocked":true},
+  {"name":"manual overwritten time consumes day", "now":"2026-10-08T12:00:00Z", "refresh":{"attemptDay":"2026-10-08","trigger":"manual","attemptAt":"2026-10-08T01:11:26Z"}, "blocked":true},
+  {"name":"mismatched legacy date consumes day", "now":"2026-10-08T12:00:00Z", "refresh":{"attemptDay":"2026-10-08","trigger":"scheduled","attemptAt":"2026-10-07T01:11:26Z"}, "blocked":true},
+  {"name":"invalid legacy time consumes day", "now":"2026-10-08T12:00:00Z", "refresh":{"attemptDay":"2026-10-08","trigger":"scheduled","attemptAt":"2026-10-08T24:11:26Z"}, "blocked":true},
+  {"name":"older legacy does not backfill", "now":"2026-10-08T13:00:00Z", "refresh":{"attemptDay":"2026-10-06"}, "blocked":false},
+  {"name":"new slot supersedes retained history", "now":"2026-10-09T00:00:00Z", "refresh":{"attemptSlot":"2026-10-08T12:00:00Z","attemptDay":"2026-10-08"}, "blocked":false},
+  {"name":"future legacy fails closed", "now":"2026-10-08T13:00:00Z", "refresh":{"attemptDay":"2026-10-09"}, "blocked":true},
+  {"name":"invalid slot hour", "now":"2026-10-08T13:00:00Z", "refresh":{"attemptSlot":"2026-10-08T06:00:00Z"}, "error":true},
+  {"name":"invalid slot date", "now":"2026-10-08T13:00:00Z", "refresh":{"attemptSlot":"2026-02-30T12:00:00Z"}, "error":true},
+  {"name":"invalid legacy date", "now":"2026-10-08T13:00:00Z", "refresh":{"attemptDay":"2026-02-30"}, "error":true}
+]

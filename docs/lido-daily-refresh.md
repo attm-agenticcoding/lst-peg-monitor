@@ -1,17 +1,17 @@
-# Daily Lido mechanism refresh
+# Twice-daily Lido mechanism refresh
 
-The authorized schedule is one attempt each day at **00:00 UTC**. An explicitly
+The authorized schedule is one attempt per 12-hour slot at **00:00 and 12:00 UTC**. An explicitly
 requested one-off run uses the same collector and publication safeguards, with
 its own idempotency key. The schedule uses the proven GitHub Actions runtime in
 `.github/workflows/lido-manual.yml`, sharing its durable lease and publication
 guards with manual attempts. The prior external daily task must be paused through
 supported owner controls before activation. The existing spot-price relay also
-checks for an unattempted UTC day and dispatches the daily mode as a fallback.
+checks for an unattempted UTC slot and dispatches the scheduled mode as a fallback.
 No new relay, account, credentials or paid service is created. Its existing
 ephemeral GitHub token handles the dispatch; source collection stays in the
 Lido workflow.
 See [runtime and scheduled-event acceptance](lido-actions-manual.md) for the
-genuine schedule provenance, UTC-day handling and first automatic-run checks.
+genuine schedule provenance, UTC-slot handling and first automatic-run checks.
 
 ## What is recomputed
 
@@ -50,12 +50,12 @@ state, unsupported consensus state or incomplete inputs stop new publication.
 
 - `asOf`: authenticated chain state time, never replaced with a run timestamp
 - `attemptAt`, `finishedAt`, `lastSuccessAt`: operational run timestamps
-- Daily schedule: `mode=daily`, `expectedIntervalSeconds=86400`,
-  `scheduleUtc=00:00`
+- Twice-daily schedule: `mode=twice-daily`, `expectedIntervalSeconds=43200`,
+  `scheduleUtc=["00:00","12:00"]`
 
 Every newly acquired result must be at most **5400 seconds (90 minutes)** old
-at acquisition, completion and publication. The daily display's operational
-age allowance is separately `maxOperationalAgeSeconds=91800`, one scheduled
+at acquisition, completion and publication. The twice-daily display's operational
+age allowance is separately `maxOperationalAgeSeconds=48600`, one scheduled
 interval plus that source allowance. It does not permit publishing a day-old
 source. Economic quote compatibility is still only 300 seconds, with the exact
 queue block/time and actual purchased stETH amount required. A daily model is
@@ -111,25 +111,22 @@ non-sensitive ID and reuse it on delivery/retry of that same request; a random
 new ID on every retry defeats deduplication. The last 128 manual IDs are
 retained. An old ID outside that bounded history must not be replayed by the
 caller. A new manual ID requires a new explicit user request, not an automatic
-retry. Manual runs never clear or change the scheduled `attemptDay` key.
+retry. Manual runs never clear or change scheduled `attemptSlot` or historical `attemptDay` keys.
 
-Cron and `relay-dispatch` attempts deduplicate on the same UTC `attemptDay`. Legacy `attemptHour` may
-remain as historical metadata, but is ignored by daily scheduling. A failed
-scheduled attempt consumes that day's attempt key. A new day is eligible.
-In Actions the original GitHub run creation day must match the current UTC day
-before lease acquisition and collector process launch; cross-day queued events and reruns
-stop. GitHub can delay or drop schedules and supplies no documented nominal
-occurrence timestamp. The audit explicitly records its creation-day basis;
-there is no missed-day backfill or replacement dispatch by the receiver. The
-existing price relay may wake the daily mode while today's key is unconsumed,
-after checking active Lido runs and the current lease. Its dispatch day and the
-receiver creation day must both match today's UTC date. See the
-[relay fallback and acceptance](lido-actions-manual.md#existing-relay-fallback).
-Manual attempts are independent of that key, but every trigger shares the
-same active lease, so overlapping scheduled/manual runs cannot both acquire
-ownership. If a scheduled wake encounters an active lease, it may retry lease
-acquisition only within its original authorized invocation and UTC day. The
-Actions controller skips a conflicting lease without a source retry or dispatch.
+Cron and `relay-dispatch` attempts deduplicate on the same UTC `attemptSlot`,
+using the current slot start (`00:00:00Z` or `12:00:00Z`). Success and failure both
+consume that slot. Queued/rerun events cannot consume another slot; a native cron
+must also match its nominal hour. There is no missed-slot backfill. Same-slot
+late collection is allowed under the unchanged source freshness and lease gates.
+
+Legacy `attemptDay` is preserved as history. Its midnight slot is consumed; noon
+is eligible only if the last automatic attempt's exact same-day timestamp proves
+it ran before noon. Ambiguous or manual-overwritten legacy timestamps consume the
+whole day. New `attemptSlot` state becomes authoritative. See the
+[slot migration and acceptance policy](lido-actions-manual.md#utc-slot-identity-migration-and-acceptance).
+Manual attempts have independent IDs but share the active lease. A lease from the
+previous slot still blocks overlap. The receiver skips conflicts without source
+queries or self-dispatch; the price relay may check eligibility again later.
 
 `stage=skipped` means no new run may begin. Otherwise, publish only the proposed
 snapshot lease using a content-SHA compare-and-swap, read it back, verify its

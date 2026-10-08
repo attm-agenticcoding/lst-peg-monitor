@@ -306,7 +306,7 @@ class ScheduledControllerTests(ControllerFixture, unittest.TestCase):
     def setUp(self):
         super().setUp()
         self.event = self.scratch / 'event.json'
-        self.event.write_bytes(raw({'schedule': ac.DAILY_CRON}))
+        self.event.write_bytes(raw({'schedule': '0 12 * * *'}))
         self.environment = {'GITHUB_EVENT_NAME': 'schedule', 'GITHUB_RUN_ID': '123456',
                             'GITHUB_RUN_ATTEMPT': '1', 'GITHUB_EVENT_PATH': str(self.event),
                             'GITHUB_SHA': '1' * 40}
@@ -324,19 +324,19 @@ class ScheduledControllerTests(ControllerFixture, unittest.TestCase):
         def inspect_lease(command, **kwargs):
             lease = json.loads(self.api.current.files[ac.SNAPSHOT_PATH])['refresh']['lease']
             self.assertEqual(lease['trigger'], 'scheduled')
-            self.assertEqual(lease['requestKey'], ac.day_key(self.now))
+            self.assertEqual(lease['requestKey'], ac.slot_key(self.now))
             self.assertEqual(lease['rpcCallBudget'], 256)
             self.assertEqual(lease['expiresAtEpoch'] - lease['acquiredAtEpoch'], 2100)
             return self.collect_failed(command, **kwargs)
         self.child.side_effect = inspect_lease
         self.assertEqual(self.controller.execute()['stage'], 'failed')
         refresh = json.loads(self.api.current.files[ac.SNAPSHOT_PATH])['refresh']
-        self.assertEqual(refresh['attemptDay'], ac.day_key(self.now))
+        self.assertEqual(refresh['attemptSlot'], ac.slot_key(self.now))
         self.assertNotIn('prior-manual-320', refresh.get('manualAttemptIds', []))
         self.assertEqual(self.controller.execute()['stage'], 'skipped')
         self.assertEqual(self.child.call_count, 1)
         self.assertEqual(len(self.api.commits), 2)
-        self.assertEqual(self.controller.audit['scheduledRequest']['utcDayBasis'], 'github_run_created_at')
+        self.assertEqual(self.controller.audit['scheduledRequest']['utcSlotBasis'], 'github_run_created_at')
         self.assertEqual(self.controller.audit['scheduledRequest']['githubRunId'], '123456')
         self.assertIsNone(self.controller.audit['manualRequest'])
 
@@ -372,7 +372,7 @@ class ScheduledControllerTests(ControllerFixture, unittest.TestCase):
         self.environment['GITHUB_RUN_ID'] = '123457'
         self.assertEqual(self.controller.execute()['stage'], 'failed')
         self.assertEqual(self.child.call_count, 2)
-        self.assertEqual(json.loads(self.api.current.files[ac.SNAPSHOT_PATH])['refresh']['attemptDay'], ac.day_key(self.now))
+        self.assertEqual(json.loads(self.api.current.files[ac.SNAPSHOT_PATH])['refresh']['attemptSlot'], ac.slot_key(self.now))
 
     def test_shared_manual_lease_blocks_schedule_without_source_or_write(self):
         owned, _ = ac.propose_lease(self.old, self.now, 'manual-owner', trigger='manual',
@@ -392,7 +392,7 @@ class ScheduledControllerTests(ControllerFixture, unittest.TestCase):
         self.assertEqual(self.api.commits, [])
 
     def test_delayed_within_same_utc_day_is_allowed(self):
-        self.provenance['created_at'] = ac.day_key(self.now) + 'T00:00:00Z'
+        self.provenance['created_at'] = ac.slot_key(self.now)
         self.assertEqual(self.controller.execute()['stage'], 'failed')
         self.assertEqual(self.child.call_count, 1)
 
@@ -428,7 +428,7 @@ class ScheduledControllerTests(ControllerFixture, unittest.TestCase):
             self.controller.execute()
         self.child.assert_not_called()
         refresh = json.loads(self.api.current.files[ac.SNAPSHOT_PATH])['refresh']
-        self.assertEqual(refresh['attemptDay'], ac.day_key(self.now - 1))
+        self.assertEqual(refresh['attemptSlot'], ac.slot_key(self.now - 1))
         self.assertEqual(refresh['state'], 'error')
         self.assertIsNone(refresh['lease'])
 
@@ -452,7 +452,7 @@ class ScheduledControllerTests(ControllerFixture, unittest.TestCase):
                         {'GITHUB_EVENT_NAME': 'workflow_dispatch'}):
             with self.subTest(changed=changed), self.assertRaises(ac.Stopped):
                 ac.scheduled_request(self.api, {**self.environment, **changed}, self.now)
-        for cron in ('0 12 * * *', '0 18 * * *', '0 0,12,18 * * *', None):
+        for cron in ('0 6 * * *', '0 18 * * *', '0 0,12,18 * * *', None):
             self.event.write_bytes(raw({'schedule': cron}))
             with self.assertRaises(ac.Stopped):
                 self.controller.execute()

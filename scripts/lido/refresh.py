@@ -36,7 +36,8 @@ STATE_PATH = 'data/lido-collector-state.json'
 MAX_RUN_SECONDS = 1500
 LEASE_SECONDS = 2100
 MAX_SOURCE_AGE = 5400
-EXPECTED_INTERVAL_SECONDS = 86400
+EXPECTED_INTERVAL_SECONDS = 43200
+SCHEDULE_UTC = ['00:00', '12:00']
 MAX_OPERATIONAL_AGE = EXPECTED_INTERVAL_SECONDS + MAX_SOURCE_AGE
 MAX_MANUAL_ATTEMPTS = 128
 RPC_URL = 'https://rpc.mevblocker.io'
@@ -73,7 +74,42 @@ def hour_key(now):
 
 
 def day_key(now):
-    return utc(now - now % EXPECTED_INTERVAL_SECONDS)[:10]
+    return utc(now)[:10]
+
+
+def slot_key(now):
+    return utc(now - now % EXPECTED_INTERVAL_SECONDS)
+
+
+def slot_attempted(refresh, now):
+    """Migrate once-daily intent conservatively without rewriting history.
+
+    A legacy day consumes midnight. Noon is eligible only if the last automatic
+    attempt is demonstrably in that day's morning slot. Ambiguous/manual-overwritten
+    legacy timestamps consume the whole day. New slot records are authoritative.
+    """
+    slot = refresh.get('attemptSlot')
+    if slot is not None:
+        if (not isinstance(slot, str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}T(?:00|12):00:00Z', slot)
+                or slot_key(second(slot)) != slot):
+            raise ValueError('invalid durable attempt slot')
+        return slot >= slot_key(now)
+    legacy = refresh.get('attemptDay')
+    if legacy is None:
+        return False
+    if (not isinstance(legacy, str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}', legacy)
+            or day_key(second(legacy + 'T00:00:00Z')) != legacy):
+        raise ValueError('invalid legacy attempt day')
+    if legacy != day_key(now):
+        return legacy > day_key(now)
+    at = refresh.get('attemptAt')
+    if (slot_key(now)[11:13] == '12' and refresh.get('trigger') in ('scheduled', 'relay-dispatch')
+            and isinstance(at, str) and re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z', at)):
+        try:
+            return day_key(second(at)) != legacy or slot_key(second(at)) >= slot_key(now)
+        except ValueError:
+            pass
+    return True
 
 
 def propose_lease(snapshot, now, run_id, *, trigger='scheduled', manual_request_id=None,
@@ -92,24 +128,24 @@ def propose_lease(snapshot, now, run_id, *, trigger='scheduled', manual_request_
     lease = refresh.get('lease', {})
     if lease and int(lease.get('expiresAtEpoch', 0)) > now:
         return None, 'another refresh owns an unexpired lease'
-    if trigger != 'manual' and refresh.get('attemptDay') == day_key(now):
-        return None, 'this UTC day has already been attempted'
+    if trigger != 'manual' and slot_attempted(refresh, now):
+        return None, 'this UTC slot has already been attempted or is covered by legacy daily state'
     manual_attempts = list(refresh.get('manualAttemptIds', []))
     if trigger == 'manual' and manual_request_id in manual_attempts:
         return None, 'this explicit manual request has already been attempted'
     result = deepcopy(snapshot)
     result['refresh'] = {
-        **refresh, 'mode': 'daily', 'state': 'running',
-        'expectedIntervalSeconds': EXPECTED_INTERVAL_SECONDS, 'scheduleUtc': '00:00',
+        **refresh, 'mode': 'twice-daily', 'state': 'running',
+        'expectedIntervalSeconds': EXPECTED_INTERVAL_SECONDS, 'scheduleUtc': SCHEDULE_UTC,
         'maxSourceAgeSeconds': MAX_SOURCE_AGE, 'maxOperationalAgeSeconds': MAX_OPERATIONAL_AGE,
         'attemptAt': utc(now), 'trigger': trigger, 'error': None,
         'lease': {'runId': run_id, 'acquiredAtEpoch': now,
                   'expiresAtEpoch': now + LEASE_SECONDS, 'trigger': trigger,
                   'rpcCallBudget': rpc_call_budget,
-                  'requestKey': day_key(now) if trigger != 'manual' else manual_request_id},
+                  'requestKey': slot_key(now) if trigger != 'manual' else manual_request_id},
     }
     if trigger != 'manual':
-        result['refresh']['attemptDay'] = day_key(now)
+        result['refresh']['attemptSlot'] = slot_key(now)
     else:
         result['refresh']['manualAttemptIds'] = (manual_attempts + [manual_request_id])[-MAX_MANUAL_ATTEMPTS:]
         result['refresh']['lastManualRequestId'] = manual_request_id
@@ -754,8 +790,8 @@ def public_snapshot(old, state, execution, beacon, scenarios, now, run_id, prove
                           'beaconStateSsz': summary['state_sha256'],
                           'scenarioAudit': digest(scenarios['scenarioAudit']),
                           'acquisition': digest(provenance)},
-        'refresh': {**old.get('refresh', {}), 'mode': 'daily', 'state': 'ok',
-                    'expectedIntervalSeconds': EXPECTED_INTERVAL_SECONDS, 'scheduleUtc': '00:00',
+        'refresh': {**old.get('refresh', {}), 'mode': 'twice-daily', 'state': 'ok',
+                    'expectedIntervalSeconds': EXPECTED_INTERVAL_SECONDS, 'scheduleUtc': SCHEDULE_UTC,
                     'maxSourceAgeSeconds': MAX_SOURCE_AGE, 'maxOperationalAgeSeconds': MAX_OPERATIONAL_AGE,
                     'finishedAt': utc(now), 'lastSuccessAt': utc(now),
                     'lastSuccessSnapshotAsOf': utc(int(state['timestamp'])),

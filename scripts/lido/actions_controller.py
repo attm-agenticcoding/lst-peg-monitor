@@ -23,7 +23,7 @@ import urllib.request
 import uuid
 
 from publication import validate_result
-from refresh import (SNAPSHOT_PATH, STATE_PATH, blob_sha, canonical, day_key, second,
+from refresh import (SNAPSHOT_PATH, STATE_PATH, blob_sha, canonical, slot_key, second,
                      failure_snapshot, manifest, propose_lease, validate_lease)
 from rpc_budget import DEFAULT_RPC_CALLS
 
@@ -36,7 +36,7 @@ PAGES = 'https://attm-agenticcoding.github.io/lst-peg-monitor/'
 SHA = re.compile(r'[0-9a-f]{40}')
 MAX_BYTES = 8 * 1024 * 1024
 CAS_ATTEMPTS = 3
-DAILY_CRON = '0 0 * * *'
+SCHEDULE_CRONS = {'0 0 * * *': '00', '0 12 * * *': '12'}
 RELAY_WORKFLOW_PATH = '.github/workflows/snapshot.yml'
 
 
@@ -105,16 +105,16 @@ def validate_invocation(env):
     if (env.get('GITHUB_ACTIONS') != 'true' or env.get('GITHUB_REPOSITORY') != REPOSITORY
             or env.get('GITHUB_REF') != 'refs/heads/main'
             or env.get('GITHUB_EVENT_NAME') not in ('push', 'workflow_dispatch', 'schedule')):
-        raise Stopped('only this repository main daily/manual workflow is allowed')
+        raise Stopped('only this repository main scheduled/manual workflow is allowed')
     checked_sha(env.get('GITHUB_SHA'))
     if env.get('GITHUB_SERVER_URL') != 'https://github.com' or env.get('GITHUB_API_URL') != API:
         raise Stopped('unexpected GitHub server')
 
 
-def validate_schedule_day(schedule, now):
-    # Never turn an old queued run into today's attempt or backdate a lease.
-    if schedule['requestKey'] != day_key(now):
-        raise Stopped('scheduled run crossed its original UTC creation day; no catch-up allowed')
+def validate_schedule_slot(schedule, now):
+    # Never turn an old queued run into the current slot attempt or backdate a lease.
+    if schedule['requestKey'] != slot_key(now):
+        raise Stopped('scheduled run crossed its original UTC creation slot; no catch-up allowed')
 
 
 def invocation_mode(environment):
@@ -124,36 +124,36 @@ def invocation_mode(environment):
         return 'manual'
     event = json.loads(Path(environment['GITHUB_EVENT_PATH']).read_bytes())
     inputs = event.get('inputs') or {}
-    if not isinstance(inputs, dict) or set(inputs) - {'mode', 'attempt_day', 'relay_run_id'}:
+    if not isinstance(inputs, dict) or set(inputs) - {'mode', 'attempt_slot', 'relay_run_id'}:
         raise Stopped('unexpected dispatch inputs')
     mode = inputs.get('mode', 'manual')
-    if mode == 'daily':
+    if mode == 'scheduled':
         return 'relay-dispatch'
-    if mode != 'manual' or inputs.get('attempt_day') or inputs.get('relay_run_id'):
+    if mode != 'manual' or inputs.get('attempt_slot') or inputs.get('relay_run_id'):
         raise Stopped('invalid manual dispatch inputs')
     return 'manual'
 
 
 def scheduled_request(api, environment, now, *, relay=False):
-    """Bind a first cron or relay daily attempt to GitHub's creation day.
+    """Bind a first cron or relay slot attempt to GitHub's creation slot.
 
     GitHub does not expose a documented nominal occurrence timestamp. The
-    original run's UTC creation day is explicit audit evidence, not an inferred
-    on-time cron occurrence. Queueing across midnight and reruns fail closed.
+    original run's UTC creation slot is explicit audit evidence, not an inferred
+    on-time cron occurrence. Queueing across a slot boundary and reruns fail closed.
     """
     event = json.loads(Path(environment['GITHUB_EVENT_PATH']).read_bytes())
     run_id = environment.get('GITHUB_RUN_ID', '')
     expected_event = 'workflow_dispatch' if relay else 'schedule'
     inputs = event.get('inputs') or {}
     if (environment.get('GITHUB_EVENT_NAME') != expected_event
-            or (not relay and event.get('schedule') != DAILY_CRON)
+            or (not relay and event.get('schedule') not in SCHEDULE_CRONS)
             or (relay and (invocation_mode(environment) != 'relay-dispatch'
-                          or inputs.get('attempt_day') != day_key(now)
+                          or inputs.get('attempt_slot') != slot_key(now)
                           or not isinstance(inputs.get('relay_run_id'), str)
                           or not re.fullmatch(r'[1-9][0-9]*', inputs.get('relay_run_id', ''))))
             or not re.fullmatch(r'[1-9][0-9]*', run_id)
             or environment.get('GITHUB_RUN_ATTEMPT') != '1'):
-        raise Stopped('only an original current-day daily event is allowed')
+        raise Stopped('only an original current-slot scheduled event is allowed')
     run = api.workflow_run(run_id)
     if (type(run.get('id')) is not int or str(run['id']) != run_id
             or run.get('event') != expected_event or run.get('run_attempt') != 1
@@ -171,11 +171,13 @@ def scheduled_request(api, environment, now, *, relay=False):
         raise Stopped('scheduled run has an invalid UTC creation timestamp') from None
     if created > now:
         raise Stopped('scheduled run creation timestamp is in the future')
-    request = {'trigger': 'relay-dispatch' if relay else 'scheduled', 'requestKey': day_key(created),
+    request = {'trigger': 'relay-dispatch' if relay else 'scheduled', 'requestKey': slot_key(created),
                'rpcCallBudget': DEFAULT_RPC_CALLS,
                'githubRunId': run_id, 'githubRunAttempt': 1, 'createdAt': created_at,
-               'githubHeadSha': run['head_sha'], 'utcDayBasis': 'github_run_created_at'}
-    validate_schedule_day(request, now)
+               'githubHeadSha': run['head_sha'], 'utcSlotBasis': 'github_run_created_at'}
+    validate_schedule_slot(request, now)
+    if not relay and SCHEDULE_CRONS[event['schedule']] != request['requestKey'][11:13]:
+        raise Stopped('cron hour does not match its creation slot; no backfill allowed')
     if relay:
         if (run.get('actor', {}).get('login') != 'github-actions[bot]'
                 or run.get('actor', {}).get('type') != 'Bot'):
@@ -197,10 +199,10 @@ def scheduled_request(api, environment, now, *, relay=False):
                     or not re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z', updated)
                     or second(updated) < created):
                 raise Stopped('referenced relay was not active for this daily dispatch')
-        request.update(relayRunId=inputs['relay_run_id'], dispatchAttemptDay=inputs['attempt_day'],
+        request.update(relayRunId=inputs['relay_run_id'], dispatchAttemptSlot=inputs['attempt_slot'],
                        relayHeadSha=checked_sha(parent.get('head_sha')))
     else:
-        request['schedule'] = DAILY_CRON
+        request['schedule'] = event['schedule']
     return request
 
 
@@ -506,7 +508,7 @@ class Controller:
         self.trigger = schedule['trigger'] if schedule is not None else 'manual'
         now = int(self.now())
         if schedule is not None:
-            validate_schedule_day(schedule, now)
+            validate_schedule_slot(schedule, now)
         request_key = schedule['requestKey'] if schedule is not None else request['requestId']
         budget = DEFAULT_RPC_CALLS if schedule is not None else request['rpcCallBudget']
         self.run_id = str(uuid.uuid4())
@@ -524,14 +526,14 @@ class Controller:
             # Original expected snapshot/checkpoint/code and request cannot move.
             require_price_only(current, base)
             if schedule is not None:
-                validate_schedule_day(schedule, int(self.now()))
+                validate_schedule_slot(schedule, int(self.now()))
             validate_lease(proposed, int(self.now()), self.run_id)
         self.leased = self.cas(current, files, 'Lido: acquire ' + self.trigger + ' lease', gate)
         self.observe('lease_readback', self.leased)
         lease = json.loads(self.leased.files[SNAPSHOT_PATH])['refresh']['lease']
         if (lease['runId'] != self.run_id or lease['requestKey'] != request_key
                 or lease['trigger'] != self.trigger or lease['rpcCallBudget'] != budget):
-            raise Stopped('durable lease readback does not match the daily/manual request')
+            raise Stopped('durable lease readback does not match the scheduled/manual request')
         print(json.dumps({'step': 'lease_verified', 'head': self.leased.head,
                           'lease': lease, 'inputBlobs': {p: self.leased.tree[p][0] for p in DATA_PATHS},
                           'codeBlobs': {p: row[0] for p, row in self.leased.tree.items() if is_code(p)}}), flush=True)
@@ -569,7 +571,7 @@ class Controller:
         if stage == 'abort':
             command += ['--current-root', str(runtime), '--attest-current-main', '--abort-reason', reason]
         if stage == 'run' and self.schedule is not None:
-            validate_schedule_day(self.schedule, int(self.now()))
+            validate_schedule_slot(self.schedule, int(self.now()))
         self.child_stopped = False
         try:
             self.child(command, timeout=1530 if stage == 'run' else 60, environment=self.environment)
@@ -691,7 +693,7 @@ def main():
             raise Stopped('unexpected main push event')
         api.validate_push(event.get('before'), event['after'])
     def interrupted(signum, frame):
-        raise Stopped('Actions runner interrupted the original daily/manual run')
+        raise Stopped('Actions runner interrupted the original scheduled/manual run')
     for signum in (signal.SIGINT, signal.SIGTERM):
         signal.signal(signum, interrupted)
     directory = Path(tempfile.mkdtemp(prefix='lido-actions-'))
