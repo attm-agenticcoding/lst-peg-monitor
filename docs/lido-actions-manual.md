@@ -3,7 +3,8 @@
 The existing GitHub Actions controller runs the Lido collector once each day at
 **00:00 UTC**, or for one explicitly requested manual attempt. Both routes use
 the same workflow, concurrency group, durable lease, model and exact-head
-publication gate. The independent price workflow is unchanged.
+publication gate. The existing two-minute price relay also checks whether the
+current UTC day needs a daily fallback dispatch; it does not collect Lido data.
 
 Before activating the repository schedule, the old external daily task must be
 paused through its supported owner controls. A denied task-control request must
@@ -51,7 +52,36 @@ ordinary 256 RPC attempts, even if the manual request file is inert, malformed,
 or still records an earlier approved 320 catch-up. The manual file remains in
 the unchanged-file fence but is not scheduled intent or scheduled configuration.
 An active manual or scheduled lease blocks the other trigger without source
-reads or replacement dispatch.
+reads or replacement dispatch by the receiver.
+
+### Existing relay fallback
+
+The relay's `scripts/lido-daily-dispatch.js` reads current `main` snapshot state,
+checks all noncompleted Lido workflow statuses, and re-reads the snapshot before
+sending. A consumed UTC `attemptDay`, source-access block, or active lease prevents
+dispatch. It submits `mode=daily`, the UTC `attempt_day`, and its `relay_run_id`
+using its existing ephemeral `GITHUB_TOKEN` with `actions:write`. No new token,
+permission or manual request is created. Each API request has a ten-second limit.
+An API/input failure or uncertain dispatch stops further checks for that UTC day
+in the current relay process; a later process checks durable state again.
+
+The receiver validates the original dispatch run and referenced snapshot relay
+metadata and GitHub Actions bot actor, rejects historical completed relay IDs,
+reruns and cross-day delivery, and records `relay-dispatch`
+as the trigger in the durable lease, refresh metadata and diagnostic audit. The
+audit's `scheduledRequest` field carries this daily identity, including the relay
+run ID and dispatched day; it does not claim a native cron event occurred.
+Cron and relay consume the same `attemptDay` by the same exact-head atomic lease
+acquisition before any source work. A race between send/preflight and cron can
+enqueue a redundant workflow but cannot start duplicate collection. Success or
+failure consumes the day; the relay cannot turn it into a manual retry or 320
+budget. Both daily routes retain 256 calls, 1,500 compute seconds and a 2,100-second
+lease, with the existing model, pacing and finite source timeout retries.
+
+Updating `loop.sh` does not update a running shell. The next relay process must
+start from the new main revision before acceptance; a normal relay handoff does
+this. Verify its daily dispatch, receiver lease, complete dual-JSON publication
+and public byte equality separately from the cron acceptance described below.
 
 First automatic acceptance requires an actual GitHub run with `event=schedule`
 after activation, not a manual dispatch or synthetic fixture. Decode its complete
@@ -76,7 +106,8 @@ path is this request file. A normal price/data/code push cannot start collection
 The controller independently compares the before/after event trees and rejects
 a push that did not change the request file. It rejects forks, other refs, force
 pushes, pull requests, and other servers. The separate daily route is described
-above; a manual dispatch always remains manual.
+above; dispatch with omitted/default `mode=manual` remains manual. Only the
+explicit `mode=daily` input selects the bounded relay fallback.
 
 The optional manual **Run workflow** button reads the same committed request. It
 does not generate a new ID, change a budget, or override deduplication. Re-running
@@ -104,7 +135,7 @@ The original collector retains its 25-minute computation limit, 35-minute lease,
 worker bound and fixed public sources. A 40-minute job timeout permits cleanup
 and bounded Pages verification; it does not extend the collector or lease.
 The production run inherits its budget from the read-back durable lease.
-Scheduled leases always use 256; a manual 320 request remains specific to that
+Cron and relay daily leases always use 256; a manual 320 request remains specific to that
 explicit request. The next ordinary lease defaults to 256 again. Both routes
 retain shared two-second RPC admission and the existing event-header-only
 bounded read-timeout retries, with failed retries charged to the same budget.

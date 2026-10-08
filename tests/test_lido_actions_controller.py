@@ -729,6 +729,7 @@ class BoundaryTests(unittest.TestCase):
                 api = Mock(_token='secret')
                 with (patch.object(sys, 'argv', ['controller', '--root', str(ROOT)]),
                       patch.object(ac, 'validate_invocation'),
+                      patch.object(ac, 'invocation_mode', return_value='manual'),
                       patch.object(ac, 'read_request', return_value={'requestId': 'unit'}),
                       patch.object(ac.subprocess, 'run'), patch.object(ac, 'GitHub', return_value=api),
                       patch.object(ac, 'Controller', return_value=controller),

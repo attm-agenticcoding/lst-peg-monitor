@@ -78,7 +78,7 @@ def day_key(now):
 
 def propose_lease(snapshot, now, run_id, *, trigger='scheduled', manual_request_id=None,
                   rpc_call_budget=DEFAULT_RPC_CALLS):
-    if trigger not in ('scheduled', 'manual'):
+    if trigger not in ('scheduled', 'relay-dispatch', 'manual'):
         raise ValueError('invalid refresh trigger')
     if trigger == 'manual':
         if not isinstance(manual_request_id, str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._:-]{0,159}', manual_request_id):
@@ -92,7 +92,7 @@ def propose_lease(snapshot, now, run_id, *, trigger='scheduled', manual_request_
     lease = refresh.get('lease', {})
     if lease and int(lease.get('expiresAtEpoch', 0)) > now:
         return None, 'another refresh owns an unexpired lease'
-    if trigger == 'scheduled' and refresh.get('attemptDay') == day_key(now):
+    if trigger != 'manual' and refresh.get('attemptDay') == day_key(now):
         return None, 'this UTC day has already been attempted'
     manual_attempts = list(refresh.get('manualAttemptIds', []))
     if trigger == 'manual' and manual_request_id in manual_attempts:
@@ -106,9 +106,9 @@ def propose_lease(snapshot, now, run_id, *, trigger='scheduled', manual_request_
         'lease': {'runId': run_id, 'acquiredAtEpoch': now,
                   'expiresAtEpoch': now + LEASE_SECONDS, 'trigger': trigger,
                   'rpcCallBudget': rpc_call_budget,
-                  'requestKey': day_key(now) if trigger == 'scheduled' else manual_request_id},
+                  'requestKey': day_key(now) if trigger != 'manual' else manual_request_id},
     }
-    if trigger == 'scheduled':
+    if trigger != 'manual':
         result['refresh']['attemptDay'] = day_key(now)
     else:
         result['refresh']['manualAttemptIds'] = (manual_attempts + [manual_request_id])[-MAX_MANUAL_ATTEMPTS:]

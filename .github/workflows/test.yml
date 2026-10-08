@@ -1,10 +1,10 @@
 name: tests
 on:
   pull_request:
-    paths: ['**.js', 'scripts/lido/**', 'tests/**', 'config.json', 'data/lido-cutoff-snapshot.json', 'data/lido-collector-state.json', 'index.html', '.github/workflows/test.yml']
+    paths: ['**.js', 'scripts/loop.sh', 'scripts/lido/**', 'tests/**', 'config.json', 'data/lido-cutoff-snapshot.json', 'data/lido-collector-state.json', 'index.html', '.github/workflows/test.yml', '.github/workflows/lido-manual.yml']
   push:
     branches: ['main', 'feat/steth-redemption-estimator']
-    paths: ['**.js', 'scripts/lido/**', 'tests/**', 'config.json', 'data/lido-cutoff-snapshot.json', 'data/lido-collector-state.json', 'index.html', '.github/workflows/test.yml']
+    paths: ['**.js', 'scripts/loop.sh', 'scripts/lido/**', 'tests/**', 'config.json', 'data/lido-cutoff-snapshot.json', 'data/lido-collector-state.json', 'index.html', '.github/workflows/test.yml', '.github/workflows/lido-manual.yml']
 permissions:
   contents: read
 jobs:
@@ -20,6 +20,7 @@ jobs:
           python-version: '3.12'
       - run: node --check app.js && node --check core.js && node --check redemption.js && node --check lido-cutoff.js && node --check display-time.js
       - run: node tests/core.test.js && node tests/redemption.test.js && node tests/collect-redemption.test.js && node tests/app-redemption.test.js && node tests/lido-cutoff.test.js
+      - run: bash -n scripts/loop.sh && node tests/lido-daily-dispatch.test.js
       - run: python -m unittest discover -s tests -p 'test_*.py' -v
         env:
           PYTHONPATH: scripts/lido
