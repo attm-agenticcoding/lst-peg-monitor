@@ -177,6 +177,9 @@ def scheduled_request(api, environment, now, *, relay=False):
                'githubHeadSha': run['head_sha'], 'utcDayBasis': 'github_run_created_at'}
     validate_schedule_day(request, now)
     if relay:
+        if (run.get('actor', {}).get('login') != 'github-actions[bot]'
+                or run.get('actor', {}).get('type') != 'Bot'):
+            raise Stopped('daily fallback must be dispatched by the relay GitHub Actions token')
         parent = api.workflow_run(inputs['relay_run_id'])
         if (type(parent.get('id')) is not int or str(parent['id']) != inputs['relay_run_id']
                 or parent.get('path') != RELAY_WORKFLOW_PATH or parent.get('head_branch') != 'main'
@@ -186,6 +189,14 @@ def scheduled_request(api, environment, now, *, relay=False):
                 or not re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z', parent['created_at'])
                 or second(parent['created_at']) > created):
             raise Stopped('daily dispatch lacks matching snapshot relay provenance')
+        # The parent can finish its ordinary handoff while this run is queued.
+        # A historical completed relay cannot serve as current sender evidence.
+        if parent.get('status') != 'in_progress':
+            updated = parent.get('updated_at')
+            if (parent.get('status') != 'completed' or not isinstance(updated, str)
+                    or not re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z', updated)
+                    or second(updated) < created):
+                raise Stopped('referenced relay was not active for this daily dispatch')
         request.update(relayRunId=inputs['relay_run_id'], dispatchAttemptDay=inputs['attempt_day'],
                        relayHeadSha=checked_sha(parent.get('head_sha')))
     else:

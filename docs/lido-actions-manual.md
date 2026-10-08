@@ -66,7 +66,8 @@ An API/input failure or uncertain dispatch stops further checks for that UTC day
 in the current relay process; a later process checks durable state again.
 
 The receiver validates the original dispatch run and referenced snapshot relay
-metadata, rejects reruns and cross-day delivery, and records `relay-dispatch`
+metadata and GitHub Actions bot actor, rejects historical completed relay IDs,
+reruns and cross-day delivery, and records `relay-dispatch`
 as the trigger in the durable lease, refresh metadata and diagnostic audit. The
 audit's `scheduledRequest` field carries this daily identity, including the relay
 run ID and dispatched day; it does not claim a native cron event occurred.

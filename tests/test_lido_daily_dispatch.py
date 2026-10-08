@@ -20,9 +20,10 @@ class RelayControllerTests(ControllerFixture, unittest.TestCase):
                             'GITHUB_SHA': '1' * 40}
         self.run = {'id': 123456, 'event': 'workflow_dispatch', 'run_attempt': 1,
                     'path': ac.WORKFLOW_PATH, 'head_branch': 'main', 'head_sha': '1' * 40,
-                    'created_at': utc(self.now - 60), 'repository': {'full_name': ac.REPOSITORY}}
+                    'created_at': utc(self.now - 60), 'repository': {'full_name': ac.REPOSITORY},
+                    'actor': {'login': 'github-actions[bot]', 'type': 'Bot'}}
         self.parent = {**self.run, 'id': 98765, 'path': ac.RELAY_WORKFLOW_PATH,
-                       'created_at': utc(self.now - 600)}
+                       'created_at': utc(self.now - 600), 'status': 'in_progress'}
         self.api.workflow_run = Mock(side_effect=lambda run_id: self.run if run_id == '123456' else self.parent)
         self.controller = ac.Controller(self.api, ROOT, self.scratch, now=lambda: self.now,
                                         child=self.child, environment=self.environment)
@@ -105,6 +106,26 @@ class RelayControllerTests(ControllerFixture, unittest.TestCase):
             self.controller.execute()
         self.child.assert_not_called()
         self.assertEqual(self.api.commits, [])
+
+    def test_human_dispatch_or_historical_parent_cannot_claim_relay_provenance(self):
+        for actor in ({'login': 'human', 'type': 'User'}, {},
+                      {'login': 'github-actions[bot]', 'type': 'User'}):
+            self.run['actor'] = actor
+            with self.assertRaises(ac.Stopped):
+                self.controller.execute()
+        self.run['actor'] = {'login': 'github-actions[bot]', 'type': 'Bot'}
+        for changes in ({'status': 'completed', 'updated_at': utc(self.now - 61)},
+                        {'status': 'queued'}, {'status': 'completed', 'updated_at': None}):
+            self.parent.update(changes)
+            with self.assertRaises(ac.Stopped):
+                self.controller.execute()
+        self.child.assert_not_called()
+        self.assertEqual(self.api.commits, [])
+
+    def test_parent_may_finish_handoff_after_dispatch_before_receiver_starts(self):
+        self.parent.update(status='completed', updated_at=utc(self.now - 50))
+        self.assertEqual(self.controller.execute()['stage'], 'failed')
+        self.assertEqual(self.child.call_count, 1)
 
     def test_next_day_eligible_but_relay_can_never_select_320(self):
         self.controller.execute()
