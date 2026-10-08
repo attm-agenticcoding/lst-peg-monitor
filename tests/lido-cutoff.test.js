@@ -186,4 +186,20 @@ test("failed daily attempt displays failure and original source", () => {
   const html=L.render(L.evaluate(x, null, cfg, t+3600));
   assert(html.includes("重算失败"));assert(html.includes("RPC timeout"));assert(html.includes("2026-10-04 12:16:23 EDT"));
 });
+test("twice-daily cadence displays both slots with bounded operational age", () => {
+  const x = clone(s); x.refresh = {mode: "twice-daily", state: "ok", expectedIntervalSeconds: 43200,
+    scheduleUtc: ["00:00", "12:00"], maxOperationalAgeSeconds: 48600};
+  const v = L.evaluate(x, quote(), cfg, t + 43200);
+  assert(v.twiceDaily && v.daily && v.scheduled && !v.hourly);
+  assert(!v.sourceStale && v.stale);
+  assert.equal(v.rows[0].mainEconomics, null);
+  assert(L.render(v).includes("每日 00:00 / 12:00 UTC 重算"));
+  assert(L.render(v).includes("每天 00:00 / 12:00 UTC 尝试重算"));
+  assert(!L.evaluate(x, quote(), cfg, t + 48600).sourceStale);
+  assert(L.evaluate(x, quote(), cfg, t + 48601).sourceStale);
+  x.refresh.state = "error";
+  assert(L.render(L.evaluate(x, null, cfg, t + 43200)).includes("保留上次成功快照"));
+  assert.equal(x.asOf, s.asOf);
+  assert.deepEqual(x.tiers, s.tiers);
+});
 console.log(`${count} cutoff integration tests passed`);

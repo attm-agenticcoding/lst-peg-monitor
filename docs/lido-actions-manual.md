@@ -1,95 +1,80 @@
-# Daily and explicit manual Lido runtime
+# Twice-daily and explicit manual Lido runtime
 
-The existing GitHub Actions controller runs the Lido collector once each day at
-**00:00 UTC**, or for one explicitly requested manual attempt. Both routes use
-the same workflow, concurrency group, durable lease, model and exact-head
-publication gate. The existing two-minute price relay also checks whether the
-current UTC day needs a daily fallback dispatch; it does not collect Lido data.
+The Lido collector attempts one refresh per UTC slot: **00:00–11:59:59** and
+**12:00–23:59:59**. Native cron and the existing price relay share the same
+workflow, concurrency group, durable lease, model and exact-head publication gate.
+The user explicitly approved publication and automatic acceptance of this cadence
+on 2026-10-08. The prior external daily task was confirmed paused by its owner on
+2026-10-07; this is owner confirmation, not API-verified task state.
 
-Before activating the repository schedule, the old external daily task must be
-paused through its supported owner controls. A denied task-control request must
-not be worked around through another route or a repository gate. Local code and
-offline tests do not themselves activate a schedule or establish automatic-run
-acceptance. The user confirmed the old task was paused on 2026-10-07; that is an
-owner confirmation, not an API-verified task state.
+## UTC slot identity, migration and acceptance
 
-## Daily event, UTC-day identity and acceptance
+`.github/workflows/lido-manual.yml` has two UTC cron entries: `0 0 * * *` and
+`0 12 * * *`. The receiver validates the original GitHub run ID, event, attempt,
+workflow, main branch, repository and head SHA before consuming a slot. The
+original run's `created_at` determines its 12-hour slot, recorded explicitly as
+`utcSlotBasis=github_run_created_at`. The cron expression's hour must match that
+slot. A delayed midnight event created after noon is rejected, not reinterpreted
+as a noon event. GitHub supplies no documented nominal occurrence timestamp, so
+creation-slot evidence does not claim exact on-time cron delivery.
 
-`.github/workflows/lido-manual.yml` has exactly one scheduled expression:
-`0 0 * * *`, using GitHub's default UTC timezone. It does not add a noon/evening
-cadence, dispatch itself, or create an automatic manual request. Its existing
-`lido-explicit-manual` concurrency group now serializes both trigger types with
-`cancel-in-progress: false`; the shared durable lease remains authoritative.
+Durable `refresh.attemptSlot` and the lease's `requestKey` use
+`YYYY-MM-DDT00:00:00Z` or `YYYY-MM-DDT12:00:00Z`. The slot must still be current at
+lease acquisition, each CAS retry and immediately before collector launch. Reruns
+and cross-slot queued dispatches stop. If the slot changes after lease acquisition
+but before launch, the old slot is marked failed and the owned lease is released
+without source work. Once launched, the original unexpired lease and compute/source
+freshness limits govern completion even across noon or midnight.
 
-Only a genuine `GITHUB_EVENT_NAME=schedule` with the exact cron and original
-`GITHUB_RUN_ATTEMPT=1` can acquire a scheduled lease. The controller reads this
-public repository's original workflow-run metadata without authentication and
-checks the run ID, event, attempt, workflow path, main branch, repository and
-event head SHA. It adds no token permission. A missing, denied, mismatched or
-unavailable provenance read stops before any lease write or source collection.
+A successful or failed attempt consumes its slot. A missed slot is never backfilled;
+a same-slot delayed wake remains eligible. A code release after noon therefore may
+run the current noon slot, never an invented midnight catch-up. Every trigger also
+checks source access blocks and the same active lease, including a lease carried
+across a slot boundary. Exact-head CAS rejects a competing cron/relay acquisition
+before source queries. Only price-data advances are eligible for bounded CAS retry.
 
-The attempt key is the UTC date of that original run's `created_at`, explicitly
-recorded as `utcDayBasis=github_run_created_at`. It must still be the current UTC
-day at lease acquisition, every acquisition CAS attempt, and immediately before
-launching the collector process. A run queued across midnight cannot consume the new day's
-key; a rerun cannot become a new daily attempt. A lease acquired just before
-midnight whose collector has not yet launched is released as a failed old-day
-attempt without source collection. Once the collector has launched, its original unexpired lease
-and source-freshness requirements still govern completion/publication.
-This boundary does not claim the child process's first download byte arrives
-before midnight; the collector and its acquisition rules are unchanged.
+Legacy once-daily state is migrated without rewriting historical `attemptDay`:
 
-GitHub documents that scheduled events can be delayed or dropped, especially at
-the start of an hour. It exposes the cron expression but no documented nominal
-occurrence timestamp. Therefore creation-day evidence does not establish the
-intended nominal cron date after an extreme delay before run creation. The
-controller never guesses a missed day or backfills it. Same-day delays can run
-once; missing days stay missing. Midnight remains the configured cadence.
+- A legacy day consumes its midnight slot.
+- Its noon slot is eligible only when `trigger` is scheduled/relay-dispatch and an
+  exact same-day `attemptAt` proves that the old automatic attempt ran before noon.
+- A noon legacy attempt, missing/invalid timestamp, or manual-overwritten timestamp
+  conservatively consumes that entire legacy day. Older days do not block today.
+- After the first new slot lease, `attemptSlot` is authoritative. Legacy fields and
+  manual request history remain preserved. A future slot/day fails closed.
 
-The collector's existing `attemptDay` prevents a second scheduled collection on
-the same UTC day, including after failure. Scheduled leases always select the
-ordinary 256 RPC attempts, even if the manual request file is inert, malformed,
-or still records an earlier approved 320 catch-up. The manual file remains in
-the unchanged-file fence but is not scheduled intent or scheduled configuration.
-An active manual or scheduled lease blocks the other trigger without source
-reads or replacement dispatch by the receiver.
+Acquisition sets `mode=twice-daily`, `expectedIntervalSeconds=43200`,
+`scheduleUtc=["00:00","12:00"]` and `maxOperationalAgeSeconds=48600`. The 5,400-second
+source freshness and 300-second economic compatibility limits are unchanged. The
+Lido display supports both historical daily snapshots and the new cadence.
 
-### Existing relay fallback
+## Existing relay fallback
 
-The relay's `scripts/lido-daily-dispatch.js` reads current `main` snapshot state,
-checks all noncompleted Lido workflow statuses, and re-reads the snapshot before
-sending. A consumed UTC `attemptDay`, source-access block, or active lease prevents
-dispatch. It submits `mode=daily`, the UTC `attempt_day`, and its `relay_run_id`
-using its existing ephemeral `GITHUB_TOKEN` with `actions:write`. No new token,
-permission or manual request is created. Each API request has a ten-second limit.
-An API/input failure or uncertain dispatch stops further checks for that UTC day
-in the current relay process; a later process checks durable state again.
+The relay reads current main state, checks all active Lido workflow statuses, then
+re-reads state immediately before sending. It dispatches `mode=scheduled`,
+`attempt_slot`, and its `relay_run_id` using the existing ephemeral repository token
+with `actions:write`. Legacy `mode=daily`/`attempt_day` inputs are rejected. The
+receiver validates GitHub Actions bot identity and an active referenced relay
+(or one that completed after dispatch), then records `trigger=relay-dispatch`.
+The audit's `scheduledRequest` carries the slot, original run creation time, relay
+run/head and dispatched slot; it never labels a relay event as native cron.
 
-The receiver validates the original dispatch run and referenced snapshot relay
-metadata and GitHub Actions bot actor, rejects historical completed relay IDs,
-reruns and cross-day delivery, and records `relay-dispatch`
-as the trigger in the durable lease, refresh metadata and diagnostic audit. The
-audit's `scheduledRequest` field carries this daily identity, including the relay
-run ID and dispatched day; it does not claim a native cron event occurred.
-Cron and relay consume the same `attemptDay` by the same exact-head atomic lease
-acquisition before any source work. A race between send/preflight and cron can
-enqueue a redundant workflow but cannot start duplicate collection. Success or
-failure consumes the day; the relay cannot turn it into a manual retry or 320
-budget. Both daily routes retain 256 calls, 1,500 compute seconds and a 2,100-second
-lease, with the existing model, pacing and finite source timeout retries.
+No new credential, permission, relay service, or manual request is created. Sender
+API requests retain a ten-second bound. Dispatch/consumed-slot outcomes and API
+failures stop additional checks in that relay process for the current slot; its
+shell gate resets at the next 12-hour boundary. An active lease/run may be checked
+again later. A later process always checks durable state before sending.
 
-Updating `loop.sh` does not update a running shell. The next relay process must
-start from the new main revision before acceptance; a normal relay handoff does
-this. Verify its daily dispatch, receiver lease, complete dual-JSON publication
-and public byte equality separately from the cron acceptance described below.
+Updating `loop.sh` does not change a running shell. The next natural relay handoff
+loads the new slot gate. Verify the new process's actual start/head rather than
+claiming the existing shell changed in place. The price sampling, ntfy and relay
+handoff behavior are unchanged.
 
-First automatic acceptance requires an actual GitHub run with `event=schedule`
-after activation, not a manual dispatch or synthetic fixture. Decode its complete
-standard audit and verify `githubEventName`, `githubRunId`, `githubRunAttempt`,
-`trigger=scheduled`, `scheduledRequest` (cron, creation time/day, head, 256 budget),
-and the read-back lease. Then verify the model/RPC evidence, exact two-file
-publication and separate public Pages byte equality as usual. A skipped/failed
-event does not prove a successful automatic refresh.
+Acceptance requires a real new-slot collection, either native cron or relay,
+with verified slot/256-query lease, full model/RPC audit, atomic snapshot and
+checkpoint publication, and public byte equality for both JSON files. Report the
+actual trigger, start time and source `asOf`; a skipped run or green tests alone
+are not acceptance. No automatic manual retry is authorized by this schedule.
 
 ## Explicit request and deduplication
 
@@ -105,9 +90,9 @@ approved one-off catch-up. Commit that file to `main`. The workflow's only push
 path is this request file. A normal price/data/code push cannot start collection.
 The controller independently compares the before/after event trees and rejects
 a push that did not change the request file. It rejects forks, other refs, force
-pushes, pull requests, and other servers. The separate daily route is described
+pushes, pull requests, and other servers. The separate scheduled-slot route is described
 above; dispatch with omitted/default `mode=manual` remains manual. Only the
-explicit `mode=daily` input selects the bounded relay fallback.
+explicit `mode=scheduled` input selects the bounded relay fallback.
 
 The optional manual **Run workflow** button reads the same committed request. It
 does not generate a new ID, change a budget, or override deduplication. Re-running
@@ -135,7 +120,7 @@ The original collector retains its 25-minute computation limit, 35-minute lease,
 worker bound and fixed public sources. A 40-minute job timeout permits cleanup
 and bounded Pages verification; it does not extend the collector or lease.
 The production run inherits its budget from the read-back durable lease.
-Cron and relay daily leases always use 256; a manual 320 request remains specific to that
+Cron and relay slot leases always use 256; a manual 320 request remains specific to that
 explicit request. The next ordinary lease defaults to 256 again. Both routes
 retain shared two-second RPC admission and the existing event-header-only
 bounded read-timeout retries, with failed retries charged to the same budget.
@@ -198,7 +183,7 @@ group is confirmed stopped, `actions_audit.py` emits a gzip/base64 diagnostic
 bundle into ordinary Actions logs. The exact whitelist contains the original
 result manifests, complete model audit, RPC audit, sealed journal and independent
 seal, plus only the raw RPC response files referenced by that verified journal.
-It also records GitHub event/run provenance, scheduled creation-day identity or
+It also records GitHub event/run provenance, scheduled creation-slot identity or
 manual request, fresh-main/data/code identities, exact-head CAS and commit
 readbacks, six-tier/cutoff results, and separate Pages verification status.
 
@@ -237,7 +222,7 @@ node tests/lido-cutoff.test.js
 ```
 
 Controller tests cover genuine schedule provenance, rerun/wrong-cron rejection,
-midnight boundaries, daily failure consumption and next-day eligibility,
+midnight boundaries, slot failure consumption and next-slot eligibility,
 scheduled 256 despite manual 320, explicit-request gating, duplicate/failed-ID
 consumption, shared leases, manual 320/default 256, strict head CAS, blob/code/request races,
 uncertain-write reconciliation, expired lease refusal, failure retention,

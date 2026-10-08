@@ -9,7 +9,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lido'))
 from refresh import (propose_lease, validate_lease, failure_snapshot, blob_sha,
-                     hour_key, day_key, manifest, SNAPSHOT_PATH, STATE_PATH, Rpc,
+                     hour_key, day_key, slot_key, manifest, SNAPSHOT_PATH, STATE_PATH, Rpc,
                      MAX_SOURCE_AGE, MAX_OPERATIONAL_AGE)
 from scenarios import report_references, build_scenarios
 from publication import validate_result
@@ -83,32 +83,32 @@ class RefreshTests(unittest.TestCase):
         failed = failure_snapshot(leased, at, 'source unavailable')
         new, reason = propose_lease(failed, at + 1, 'B')
         self.assertIsNone(reason)
-        self.assertEqual(new['refresh']['attemptDay'], '2026-10-05')
+        self.assertEqual(new['refresh']['attemptSlot'], '2026-10-05T00:00:00Z')
 
     def test_daily_metadata_keeps_acquisition_and_operational_freshness_separate(self):
         leased, _ = propose_lease(self.old, self.now, 'A')
         refresh = leased['refresh']
-        self.assertEqual(refresh['mode'], 'daily')
-        self.assertEqual(refresh['expectedIntervalSeconds'], 86400)
-        self.assertEqual(refresh['scheduleUtc'], '00:00')
+        self.assertEqual(refresh['mode'], 'twice-daily')
+        self.assertEqual(refresh['expectedIntervalSeconds'], 43200)
+        self.assertEqual(refresh['scheduleUtc'], ['00:00', '12:00'])
         self.assertEqual(refresh['maxSourceAgeSeconds'], 5400)
-        self.assertEqual(refresh['maxOperationalAgeSeconds'], 91800)
+        self.assertEqual(refresh['maxOperationalAgeSeconds'], 48600)
 
     def test_historical_hourly_metadata_does_not_consume_daily_attempt(self):
         old = copy.deepcopy(self.old)
         old['refresh'] = {'mode': 'hourly', 'attemptHour': hour_key(self.now)}
         leased, reason = propose_lease(old, self.now, 'A')
         self.assertIsNone(reason)
-        self.assertEqual(leased['refresh']['attemptDay'], day_key(self.now))
+        self.assertEqual(leased['refresh']['attemptSlot'], slot_key(self.now))
         self.assertEqual(leased['refresh']['attemptHour'], old['refresh']['attemptHour'])
 
     def test_manual_then_daily_same_day_has_independent_keys(self):
         manual, _ = propose_lease(self.old, self.now, 'M', trigger='manual', manual_request_id='request-1')
-        self.assertNotIn('attemptDay', manual['refresh'])
+        self.assertNotIn('attemptSlot', manual['refresh'])
         finished = failure_snapshot(manual, self.now + 10, 'source unavailable')
         daily, reason = propose_lease(finished, self.now + 11, 'D')
         self.assertIsNone(reason)
-        self.assertEqual(daily['refresh']['attemptDay'], day_key(self.now))
+        self.assertEqual(daily['refresh']['attemptSlot'], slot_key(self.now))
         self.assertEqual(daily['refresh']['manualAttemptIds'], ['request-1'])
 
     def test_daily_then_manual_does_not_consume_next_day(self):
@@ -116,7 +116,7 @@ class RefreshTests(unittest.TestCase):
         done = failure_snapshot(daily, self.now + 1, 'source unavailable')
         manual, reason = propose_lease(done, self.now + 2, 'M', trigger='manual', manual_request_id='request-2')
         self.assertIsNone(reason)
-        self.assertEqual(manual['refresh']['attemptDay'], daily['refresh']['attemptDay'])
+        self.assertEqual(manual['refresh']['attemptSlot'], daily['refresh']['attemptSlot'])
         finished = failure_snapshot(manual, self.now + 3, 'source unavailable')
         self.assertIsNone(propose_lease(finished, self.now + 4, 'D2')[0])
         self.assertIsNotNone(propose_lease(finished, self.now + 86400, 'D3')[0])
@@ -257,7 +257,7 @@ class RefreshTests(unittest.TestCase):
         self.assertEqual(len(entries), 2)
 
     def test_publication_rejects_changed_attempt_identity_and_freshness(self):
-        for field, changed in [('trigger', 'manual'), ('attemptDay', '2026-10-05'),
+        for field, changed in [('trigger', 'manual'), ('attemptSlot', '2026-10-05'),
                                ('manualAttemptIds', ['unrequested']), ('maxSourceAgeSeconds', 86400),
                                ('expectedIntervalSeconds', 3600)]:
             result, current = self.success_fixture()
@@ -278,7 +278,7 @@ class RefreshTests(unittest.TestCase):
         result = manifest('failed', 'M', current, {SNAPSHOT_PATH: failed})
         result['localVerificationOnly'] = False
         self.assertEqual(len(validate_result(result, current, self.now + 10)), 1)
-        self.assertEqual(failed['refresh']['attemptDay'], daily['refresh']['attemptDay'])
+        self.assertEqual(failed['refresh']['attemptSlot'], daily['refresh']['attemptSlot'])
 
     def test_manual_success_uses_same_atomic_publication_gate(self):
         from refresh import canonical
@@ -293,7 +293,7 @@ class RefreshTests(unittest.TestCase):
         result = manifest('complete', 'M', current, files)
         result['localVerificationOnly'] = False
         self.assertEqual(len(validate_result(result, current, self.now)), 2)
-        self.assertEqual(output['refresh']['attemptDay'], previous['refresh']['attemptDay'])
+        self.assertEqual(output['refresh']['attemptSlot'], previous['refresh']['attemptSlot'])
 
     def test_success_rejects_changed_checkpoint_and_misalignment(self):
         result, current = self.success_fixture(); current[STATE_PATH] = b'{ }'

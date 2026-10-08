@@ -13,7 +13,7 @@ class RelayControllerTests(ControllerFixture, unittest.TestCase):
     def setUp(self):
         super().setUp()
         self.event = self.scratch / 'event.json'
-        self.inputs = {'mode': 'daily', 'attempt_day': ac.day_key(self.now), 'relay_run_id': '98765'}
+        self.inputs = {'mode': 'scheduled', 'attempt_slot': ac.slot_key(self.now), 'relay_run_id': '98765'}
         self.event.write_bytes(raw({'inputs': self.inputs}))
         self.environment = {'GITHUB_EVENT_NAME': 'workflow_dispatch', 'GITHUB_RUN_ID': '123456',
                             'GITHUB_RUN_ATTEMPT': '1', 'GITHUB_EVENT_PATH': str(self.event),
@@ -34,7 +34,7 @@ class RelayControllerTests(ControllerFixture, unittest.TestCase):
             refresh = json.loads(self.api.current.files[ac.SNAPSHOT_PATH])['refresh']
             self.assertEqual(refresh['trigger'], 'relay-dispatch')
             lease = refresh['lease']
-            self.assertEqual(lease['requestKey'], self.inputs['attempt_day'])
+            self.assertEqual(lease['requestKey'], self.inputs['attempt_slot'])
             self.assertEqual(lease['rpcCallBudget'], 256)
             self.assertEqual(lease['expiresAtEpoch'] - lease['acquiredAtEpoch'], 2100)
             self.assertEqual(kwargs['timeout'], 1530)
@@ -80,7 +80,7 @@ class RelayControllerTests(ControllerFixture, unittest.TestCase):
         self.assertEqual(self.api.commits, [])
 
     def test_invalid_input_rerun_parent_or_day_cannot_write_or_collect(self):
-        for changes in ({'mode': 'bad'}, {'attempt_day': '2026-01-01'}, {'relay_run_id': '../bad'},
+        for changes in ({'mode': 'bad'}, {'attempt_slot': '2026-01-01'}, {'relay_run_id': '../bad'},
                         {'rpcCallBudget': '320'}, {'mode': 'manual'}):
             self.event.write_bytes(raw({'inputs': {**self.inputs, **changes}}))
             with self.subTest(changes=changes), self.assertRaises(ac.Stopped):
@@ -126,6 +126,16 @@ class RelayControllerTests(ControllerFixture, unittest.TestCase):
         self.parent.update(status='completed', updated_at=utc(self.now - 50))
         self.assertEqual(self.controller.execute()['stage'], 'failed')
         self.assertEqual(self.child.call_count, 1)
+
+    def test_obsolete_daily_inputs_never_fall_back_to_manual_or_collect(self):
+        for inputs in ({'mode': 'daily', 'attempt_day': '2026-10-04', 'relay_run_id': '98765'},
+                       {'mode': 'daily'}, {'attempt_day': '2026-10-04'},
+                       {'mode': 'scheduled', 'attempt_slot': '2026-10-04'}):
+            self.event.write_bytes(raw({'inputs': inputs}))
+            with self.assertRaises(ac.Stopped):
+                self.controller.execute(self.request)
+        self.child.assert_not_called()
+        self.assertEqual(self.api.commits, [])
 
     def test_next_day_eligible_but_relay_can_never_select_320(self):
         self.controller.execute()
