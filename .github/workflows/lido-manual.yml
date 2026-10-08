@@ -7,6 +7,18 @@ on:
     branches: [main]
     paths: ['.github/lido-manual-request.json']
   workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Explicit manual request or daily relay fallback'
+        type: choice
+        options: [manual, daily]
+        default: manual
+      attempt_day:
+        description: 'Relay UTC day (daily mode only)'
+        type: string
+      relay_run_id:
+        description: 'Sending snapshot workflow run (daily mode only)'
+        type: string
 
 permissions:
   contents: write

@@ -37,6 +37,7 @@ SHA = re.compile(r'[0-9a-f]{40}')
 MAX_BYTES = 8 * 1024 * 1024
 CAS_ATTEMPTS = 3
 DAILY_CRON = '0 0 * * *'
+RELAY_WORKFLOW_PATH = '.github/workflows/snapshot.yml'
 
 
 class Stopped(RuntimeError):
@@ -116,8 +117,25 @@ def validate_schedule_day(schedule, now):
         raise Stopped('scheduled run crossed its original UTC creation day; no catch-up allowed')
 
 
-def scheduled_request(api, environment, now):
-    """Bind a genuine first schedule attempt to GitHub's original creation day.
+def invocation_mode(environment):
+    if environment.get('GITHUB_EVENT_NAME') == 'schedule':
+        return 'scheduled'
+    if environment.get('GITHUB_EVENT_NAME') != 'workflow_dispatch':
+        return 'manual'
+    event = json.loads(Path(environment['GITHUB_EVENT_PATH']).read_bytes())
+    inputs = event.get('inputs') or {}
+    if not isinstance(inputs, dict) or set(inputs) - {'mode', 'attempt_day', 'relay_run_id'}:
+        raise Stopped('unexpected dispatch inputs')
+    mode = inputs.get('mode', 'manual')
+    if mode == 'daily':
+        return 'relay-dispatch'
+    if mode != 'manual' or inputs.get('attempt_day') or inputs.get('relay_run_id'):
+        raise Stopped('invalid manual dispatch inputs')
+    return 'manual'
+
+
+def scheduled_request(api, environment, now, *, relay=False):
+    """Bind a first cron or relay daily attempt to GitHub's creation day.
 
     GitHub does not expose a documented nominal occurrence timestamp. The
     original run's UTC creation day is explicit audit evidence, not an inferred
@@ -125,14 +143,20 @@ def scheduled_request(api, environment, now):
     """
     event = json.loads(Path(environment['GITHUB_EVENT_PATH']).read_bytes())
     run_id = environment.get('GITHUB_RUN_ID', '')
-    if (environment.get('GITHUB_EVENT_NAME') != 'schedule'
-            or event.get('schedule') != DAILY_CRON
+    expected_event = 'workflow_dispatch' if relay else 'schedule'
+    inputs = event.get('inputs') or {}
+    if (environment.get('GITHUB_EVENT_NAME') != expected_event
+            or (not relay and event.get('schedule') != DAILY_CRON)
+            or (relay and (invocation_mode(environment) != 'relay-dispatch'
+                          or inputs.get('attempt_day') != day_key(now)
+                          or not isinstance(inputs.get('relay_run_id'), str)
+                          or not re.fullmatch(r'[1-9][0-9]*', inputs.get('relay_run_id', ''))))
             or not re.fullmatch(r'[1-9][0-9]*', run_id)
             or environment.get('GITHUB_RUN_ATTEMPT') != '1'):
-        raise Stopped('only the original daily 00:00 UTC schedule event is allowed')
+        raise Stopped('only an original current-day daily event is allowed')
     run = api.workflow_run(run_id)
     if (type(run.get('id')) is not int or str(run['id']) != run_id
-            or run.get('event') != 'schedule' or run.get('run_attempt') != 1
+            or run.get('event') != expected_event or run.get('run_attempt') != 1
             or type(run.get('run_attempt')) is not int
             or run.get('path') != WORKFLOW_PATH or run.get('head_branch') != 'main'
             or run.get('head_sha') != environment.get('GITHUB_SHA')
@@ -147,11 +171,25 @@ def scheduled_request(api, environment, now):
         raise Stopped('scheduled run has an invalid UTC creation timestamp') from None
     if created > now:
         raise Stopped('scheduled run creation timestamp is in the future')
-    request = {'trigger': 'scheduled', 'requestKey': day_key(created),
-               'rpcCallBudget': DEFAULT_RPC_CALLS, 'schedule': DAILY_CRON,
+    request = {'trigger': 'relay-dispatch' if relay else 'scheduled', 'requestKey': day_key(created),
+               'rpcCallBudget': DEFAULT_RPC_CALLS,
                'githubRunId': run_id, 'githubRunAttempt': 1, 'createdAt': created_at,
                'githubHeadSha': run['head_sha'], 'utcDayBasis': 'github_run_created_at'}
     validate_schedule_day(request, now)
+    if relay:
+        parent = api.workflow_run(inputs['relay_run_id'])
+        if (type(parent.get('id')) is not int or str(parent['id']) != inputs['relay_run_id']
+                or parent.get('path') != RELAY_WORKFLOW_PATH or parent.get('head_branch') != 'main'
+                or parent.get('repository', {}).get('full_name') != REPOSITORY
+                or parent.get('event') not in ('workflow_dispatch', 'schedule')
+                or not isinstance(parent.get('created_at'), str)
+                or not re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z', parent['created_at'])
+                or second(parent['created_at']) > created):
+            raise Stopped('daily dispatch lacks matching snapshot relay provenance')
+        request.update(relayRunId=inputs['relay_run_id'], dispatchAttemptDay=inputs['attempt_day'],
+                       relayHeadSha=checked_sha(parent.get('head_sha')))
+    else:
+        request['schedule'] = DAILY_CRON
     return request
 
 
@@ -454,7 +492,7 @@ class Controller:
 
     def acquire(self, current, request, *, schedule=None):
         self.schedule = schedule
-        self.trigger = 'scheduled' if schedule is not None else 'manual'
+        self.trigger = schedule['trigger'] if schedule is not None else 'manual'
         now = int(self.now())
         if schedule is not None:
             validate_schedule_day(schedule, now)
@@ -552,8 +590,11 @@ class Controller:
         return result
 
     def execute(self, request_raw=None):
+        mode = invocation_mode(self.environment)
         schedule = (scheduled_request(self.api, self.environment, int(self.now()))
-                    if self.environment.get('GITHUB_EVENT_NAME') == 'schedule' else None)
+                    if mode == 'scheduled' else
+                    scheduled_request(self.api, self.environment, int(self.now()), relay=True)
+                    if mode == 'relay-dispatch' else None)
         request = None if schedule is not None else read_request(request_raw)
         if schedule is None and request is None:
             return {'stage': 'skipped', 'reason': 'manual request is inert'}
@@ -619,7 +660,7 @@ def main():
     args = parser.parse_args()
     validate_invocation(os.environ)
     root = args.root.resolve()
-    scheduled = os.environ['GITHUB_EVENT_NAME'] == 'schedule'
+    scheduled = invocation_mode(os.environ) != 'manual'
     request_raw = None if scheduled else (root / REQUEST_PATH).read_bytes()
     if not scheduled and read_request(request_raw) is None:
         print(json.dumps({'stage': 'skipped', 'reason': 'manual request is inert'}))

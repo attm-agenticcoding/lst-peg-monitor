@@ -23,9 +23,18 @@ commit_push() {
 }
 
 i=0
+lido_done_day=''
 while :; do
   t0=$(date +%s); i=$((i + 1))
   node scripts/snapshot.js || echo "::warning::本轮采样失败（exit $?）"
+  lido_day=$(date -u +%Y-%m-%d)
+  if [ "$lido_done_day" != "$lido_day" ]; then
+    node scripts/lido-daily-dispatch.js
+    lido_status=$?
+    # Dispatch/consumed day (10), or an API failure (1): do not repeat today
+    # in this process. Active leases/runs remain eligible for a later check.
+    [ "$lido_status" -ne 0 ] && lido_done_day=$lido_day
+  fi
   if [ -f "$URGENT_FLAG" ] || [ $((i % COMMIT_EVERY)) -eq 0 ]; then
     rm -f "$URGENT_FLAG"
     commit_push

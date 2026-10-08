@@ -5,8 +5,11 @@ requested one-off run uses the same collector and publication safeguards, with
 its own idempotency key. The schedule uses the proven GitHub Actions runtime in
 `.github/workflows/lido-manual.yml`, sharing its durable lease and publication
 guards with manual attempts. The prior external daily task must be paused through
-supported owner controls before activation. No relay, new account, credentials
-or paid service is created; the existing spot-price sampler remains independent.
+supported owner controls before activation. The existing spot-price relay also
+checks for an unattempted UTC day and dispatches the daily mode as a fallback.
+No new relay, account, credentials or paid service is created. Its existing
+ephemeral GitHub token handles the dispatch; source collection stays in the
+Lido workflow.
 See [runtime and scheduled-event acceptance](lido-actions-manual.md) for the
 genuine schedule provenance, UTC-day handling and first automatic-run checks.
 
@@ -110,14 +113,18 @@ retained. An old ID outside that bounded history must not be replayed by the
 caller. A new manual ID requires a new explicit user request, not an automatic
 retry. Manual runs never clear or change the scheduled `attemptDay` key.
 
-Scheduled attempts deduplicate on UTC `attemptDay`. Legacy `attemptHour` may
+Cron and `relay-dispatch` attempts deduplicate on the same UTC `attemptDay`. Legacy `attemptHour` may
 remain as historical metadata, but is ignored by daily scheduling. A failed
 scheduled attempt consumes that day's attempt key. A new day is eligible.
 In Actions the original GitHub run creation day must match the current UTC day
 before lease acquisition and collector process launch; cross-day queued events and reruns
 stop. GitHub can delay or drop schedules and supplies no documented nominal
 occurrence timestamp. The audit explicitly records its creation-day basis;
-there is no missed-day backfill or replacement dispatch.
+there is no missed-day backfill or replacement dispatch by the receiver. The
+existing price relay may wake the daily mode while today's key is unconsumed,
+after checking active Lido runs and the current lease. Its dispatch day and the
+receiver creation day must both match today's UTC date. See the
+[relay fallback and acceptance](lido-actions-manual.md#existing-relay-fallback).
 Manual attempts are independent of that key, but every trigger shares the
 same active lease, so overlapping scheduled/manual runs cannot both acquire
 ownership. If a scheduled wake encounters an active lease, it may retry lease
