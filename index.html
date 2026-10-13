@@ -2,6 +2,8 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0b1018">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>LST Peg Monitor</title>
 <meta name="description" content="stETH（含 wstETH）与 cbETH 的脱锚监测：兑付锚读代币合约，市价取流动性最深的场所，多场所交叉确认。">
@@ -10,37 +12,22 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 <style>
 :root{
-  --ground:#f4f5f7; --panel:#fff; --panel-2:#eef0f4; --line:#d9dde4; --line-soft:#e7eaef;
-  --ink:#121821; --ink-2:#4c5766; --ink-3:#77818f;
-  --accent:#4263eb; --cat-1:#4263eb; --cat-2:#b45309; --cat-3:#0e9488;
-  --ok:#0f7a55; --ok-bg:#e3f3ec; --watch:#8a6100; --watch-bg:#f8eed6;
-  --alert:#a8480f; --alert-bg:#fbe8dc; --crisis:#ab2318; --crisis-bg:#fbe2df;
-  --dead:#77818f; --dead-bg:#e9ecf1;
-  --shadow:0 1px 2px rgba(18,24,33,.06), 0 6px 18px -12px rgba(18,24,33,.28);
-  color-scheme:light;
-}
-@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
-  --ground:#0c1016; --panel:#141a22; --panel-2:#1c232d; --line:#2a333f; --line-soft:#212932;
-  --ink:#e7edf5; --ink-2:#a3aebd; --ink-3:#778393;
-  --accent:#7b93f5; --cat-1:#7b93f5; --cat-2:#e0912f; --cat-3:#2cc0ae;
-  --ok:#4ac38f; --ok-bg:#10281f; --watch:#d6a83c; --watch-bg:#2b2413;
-  --alert:#e08a54; --alert-bg:#2e1d12; --crisis:#f0736a; --crisis-bg:#331614;
-  --dead:#778393; --dead-bg:#1c232d;
-  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  /* Dark by default, including the first paint and native form controls. */
   color-scheme:dark;
-}}
-:root[data-theme="dark"]{
-  --ground:#0c1016; --panel:#141a22; --panel-2:#1c232d; --line:#2a333f; --line-soft:#212932;
-  --ink:#e7edf5; --ink-2:#a3aebd; --ink-3:#778393;
-  --accent:#7b93f5; --cat-1:#7b93f5; --cat-2:#e0912f; --cat-3:#2cc0ae;
-  --ok:#4ac38f; --ok-bg:#10281f; --watch:#d6a83c; --watch-bg:#2b2413;
-  --alert:#e08a54; --alert-bg:#2e1d12; --crisis:#f0736a; --crisis-bg:#331614;
-  --dead:#778393; --dead-bg:#1c232d;
-  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
-  color-scheme:dark;
+  --ground:#0b1018; --panel:#131c29; --panel-2:#1b2738; --line:#334257; --line-soft:#263448;
+  --ink:#edf3fc; --ink-2:#b8c5d6; --ink-3:#95a5ba;
+  --accent:#9bafff; --cat-1:#9bafff; --cat-2:#f2bc72; --cat-3:#60d8c4;
+  --ok:#68ddb0; --ok-bg:#143529; --watch:#f2ce74; --watch-bg:#3b3019;
+  --alert:#ffb27b; --alert-bg:#422a1d; --crisis:#ff9898; --crisis-bg:#432329;
+  --dead:#95a5ba; --dead-bg:#1b2738; --chart-grid:#697c97;
+  --band:rgba(149,165,186,.14);
+  --shadow:0 1px 2px rgba(0,0,0,.24), 0 8px 24px -16px rgba(0,0,0,.65);
 }
 *{box-sizing:border-box}
-html,body{margin:0}
+html,body{margin:0;background:var(--ground)}
+html{scrollbar-color:var(--ink-3) var(--ground)}
+::selection{background:var(--accent);color:var(--ground)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 body{
   background:var(--ground); color:var(--ink); font-size:15px; line-height:1.55;
   font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
@@ -61,8 +48,8 @@ header.mast{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;
 .mast-right{margin-left:auto;display:flex;align-items:center;gap:10px}
 .clock{font-size:12px;color:var(--ink-2);font-family:"IBM Plex Mono",monospace}
 button.refresh{font:inherit;font-size:12.5px;font-weight:500;color:var(--ink);background:var(--panel);
-  border:1px solid var(--line);border-radius:7px;padding:5px 11px;cursor:pointer;display:flex;align-items:center;gap:6px}
-button.refresh:hover{background:var(--panel-2)}
+  border:1px solid var(--chart-grid);border-radius:7px;min-height:36px;padding:5px 11px;cursor:pointer;display:flex;align-items:center;gap:6px}
+button.refresh:hover{background:var(--panel-2);border-color:var(--accent)}
 button.refresh:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 button.refresh[disabled]{opacity:.55;cursor:default}
 .spin{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--accent);border-top-color:transparent;animation:sp .8s linear infinite}
@@ -154,9 +141,6 @@ footer{margin-top:24px;padding-top:14px;border-top:1px solid var(--line-soft);fo
   color:var(--ink-3);text-align:center;line-height:1.7}
 a{color:var(--accent)}
 
-:root{--band:rgba(119,129,143,.16)}
-@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){--band:rgba(160,172,190,.14)}}
-:root[data-theme="dark"]{--band:rgba(160,172,190,.14)}
 .tag.agg{background:color-mix(in srgb,var(--cat-3) 16%,transparent);color:var(--cat-3)}
 .tag.dex{background:color-mix(in srgb,var(--cat-1) 14%,transparent);color:var(--cat-1)}
 .tag.main{background:var(--ink);color:var(--panel)}
@@ -170,12 +154,12 @@ td.dim{color:var(--ink-3)}
 .sp-line{fill:none;stroke:var(--cat-1);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
 .sp-band{fill:var(--band)}
 .sp-med{stroke:var(--ink-3);stroke-width:1;stroke-dasharray:3 3}
-.sp-zero{stroke:var(--line);stroke-width:1}
+.sp-zero{stroke:var(--chart-grid);stroke-width:1}
 .sp-dot{fill:var(--cat-1);stroke:var(--panel);stroke-width:2}
 .sp-xh{stroke:var(--ink-3);stroke-width:1}
 .sp-t{font:11px "IBM Plex Mono",monospace;fill:var(--ink-3)}
 .sp-hit{fill:transparent;cursor:crosshair}
-.tip{position:absolute;top:0;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:6px;
+.tip{position:absolute;top:0;pointer-events:none;background:var(--panel-2);border:1px solid var(--chart-grid);border-radius:6px;
   box-shadow:var(--shadow);padding:4px 8px;font-size:12px;white-space:nowrap;color:var(--ink);transform:translateX(-50%)}
 .empty{font-size:12.5px;color:var(--ink-3);margin:0}
 table.src{min-width:540px}
@@ -247,10 +231,25 @@ table.cutoff-economics td:last-child{white-space:normal;min-width:220px;font-siz
 .st-settings summary{cursor:pointer;font-size:13px;font-weight:600}
 .st-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
 .st-fields label{font-size:11px;color:var(--ink-2)}
-.st-fields input{display:block;width:100%;margin-top:4px;padding:7px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);font:inherit;font-size:13px}
+.st-fields input{display:block;width:100%;margin-top:4px;padding:7px;border:1px solid var(--line);border-radius:6px;background:var(--ground);color:var(--ink);font:inherit;font-size:13px}
+.st-fields input{border-color:var(--chart-grid)}
+.st-fields input::placeholder{color:var(--ink-3);opacity:1}
+.st-fields input:focus-visible{border-color:var(--accent)}
 .st-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 #st-settings-status{font-size:12px;color:var(--ink-2)}
 @media(max-width:640px){.st-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:400px){
+  .wrap{padding-inline:12px}
+  header.mast{margin-inline:-12px;padding-inline:12px}
+  .mast-in{gap:8px}
+  .mast-right{width:100%;justify-content:space-between}
+  .card-head,.headline{padding-inline:12px}
+  .sect{padding-inline:12px}
+  .tw{margin-inline:-12px;padding-inline:12px}
+  .kpi{padding:10px 12px;min-width:0;overflow-wrap:anywhere}
+  .hnote{margin-left:0;text-align:left;flex-basis:100%}
+  .st-fields{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
