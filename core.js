@@ -290,7 +290,7 @@
   }
 
   /* ---------- 取数 ---------- */
-  async function collect(cfg, fetchFn) {
+  async function collect(cfg, fetchFn, options = {}) {
     const F = fetchFn || fetch;
     const A = cfg.addresses, sizes = cfg.sizes, err = [];
     const E18 = 10n ** 18n;
@@ -325,7 +325,7 @@
               ({ jsonrpc: "2.0", id: i + j, method: "eth_call", params: [{ to, data }, block] }));
             const res = await getJSON(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }, 15000);
             if (!Array.isArray(res)) throw new Error("节点不接受批量请求");
-            for (const x of res) if (x && x.id >= 0 && x.id < out.length) out[x.id] = x.result || null;
+            for (const x of res) if (x && x.id >= 0 && x.id < out.length) out[x.id] = x.error ? null : x.result || null;
           }
           sticky[chain || "eth"] = url;
           return out;
@@ -335,6 +335,29 @@
       return calls.map(() => null);
     }
 
+    // The public conversion export needs the source block's time, not the time
+    // at which the much longer market/ETA collection finishes. Only the snapshot
+    // publisher opts in; browser polling keeps its existing RPC request count.
+    async function conversionBlock() {
+      let last;
+      for (const url of cfg.rpcs) {
+        try {
+          const b = await getJSON(url, { method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_getBlockByNumber", params: ["latest", false] }) }, 8000);
+          const block = b && !b.error && b.result;
+          if (!block || !/^0x[0-9a-f]+$/i.test(block.number) || !/^0x[0-9a-f]+$/i.test(block.timestamp)
+              || !/^0x[0-9a-f]{64}$/i.test(block.hash)) throw new Error("invalid conversion source block");
+          const at = Number(BigInt(block.timestamp));
+          if (!Number.isSafeInteger(at) || at <= 0 || BigInt(block.number) <= 0n) throw new Error("invalid conversion block time/number");
+          sticky.eth = url;
+          return { number: block.number, hash: block.hash, at };
+        } catch (e) { last = e; }
+      }
+      note("wstETH source block", last);
+      return null;
+    }
+
+    let wstethConversion = null;
     const stSizes = (cfg.stRedeem && cfg.stRedeem.sizes) || [], st = { quoteMeta: {}, waits: {} };
     const quoteMeta = (via, x, extra) => {
       const now = Math.floor(Date.now() / 1000), remoteAt = extra && Number(extra.routeTimestamp);
@@ -343,13 +366,27 @@
       (st.quoteMeta[via] = st.quoteMeta[via] || {})[x] = Object.assign({ quotedAt, fetchedAt: now }, extra);
     };
     const chain = (async () => {
+      const block = options.conversionSource ? await conversionBlock() : null;
       // 1) 兑付锚 + Curve 的 coin 顺序（每轮实时验证，顺序反了会静默返回倒数）
-      const r1 = await ethCalls([
+      const anchorCalls = [
         [A.wstETH, "0x035faf82"],                      // stEthPerToken()
         [A.cbETH, "0x3ba0b9a9"],                       // exchangeRate()
         [A.curveStEth, "0xc6610657" + U(0)],           // coins(0)
         [A.curveStEthNg, "0xc6610657" + U(0)],
-      ]);
+      ];
+      // EIP-1898 binds rate and metadata to the same block even if RPC fallback
+      // crosses a reorg. A height alone could name a different block on that RPC.
+      let r1 = await ethCalls(anchorCalls, null, block ? { blockHash: block.hash, requireCanonical: true } : "latest");
+      // Reuse the exact same stEthPerToken result as the dashboard anchor. Never
+      // reconstruct this from nav.wstETH (a rounded Number), quotes, or history.
+      if (block && /^0x[0-9a-f]{64}$/i.test(r1[0]) && word0(r1[0]) > 0n) {
+        wstethConversion = { raw: word0(r1[0]).toString(), observedAt: block.at,
+          fetchedAt: Math.floor(Date.now() / 1000), blockNumber: BigInt(block.number).toString(),
+          blockHash: block.hash, rpcUrl: sticky.eth, contract: A.wstETH };
+      }
+      // If a provider cannot serve a canonical hash, retain the dashboard's
+      // ordinary latest-block anchors, but do not publish them as a pinned rate.
+      if (block && !wstethConversion) r1 = await ethCalls(anchorCalls);
       const rateW = word0(r1[0]), rateC = word0(r1[1]);
       const ord = (h) => (h && word0(h) != null
         ? ("0x" + h.slice(-40)).toLowerCase() === A.ETH.toLowerCase() ? [1, 0] : [0, 1] : null); // [i=stETH, j=ETH]
@@ -523,7 +560,7 @@
       queueP,
     ]);
     await lidoWaits();
-    return { ts: Math.floor(Date.now() / 1000), nav, px, rt, st, err };
+    return { ts: Math.floor(Date.now() / 1000), nav, px, rt, st, err, wstethConversion };
   }
 
   return { VENUES, ASSETS, LEVEL, TEXT, quantile, median, fmt, tier, sellBook, analyse, evaluate, roundTrip, stRedeem, baseline, thin, guardLevel, guard, toRecord, collect };

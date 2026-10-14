@@ -20,6 +20,7 @@ jobs:
           python-version: '3.12'
       - run: node --check app.js && node --check core.js && node --check redemption.js && node --check lido-cutoff.js && node --check display-time.js
       - run: node tests/core.test.js && node tests/redemption.test.js && node tests/collect-redemption.test.js && node tests/app-redemption.test.js && node tests/lido-cutoff.test.js && node tests/theme.test.js
+      - run: node tests/conversion-rate.test.js && node tests/collect-conversion.test.js
       - run: bash -n scripts/loop.sh && node tests/lido-daily-dispatch.test.js
       - run: python -m unittest discover -s tests -p 'test_*.py' -v
         env:
