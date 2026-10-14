@@ -22,9 +22,39 @@ node tests/core.test.js            # 原有 peg/guard 逻辑
 node tests/redemption.test.js      # 净收益/等待/质量门槛
 node tests/collect-redemption.test.js # mock API 集成，无外部调用
 node tests/app-redemption.test.js   # 页面控制器 smoke（不能替代视觉 QA）
+node tests/conversion-rate.test.js # 精度、来源时间、失效语义、原子写入
+node tests/collect-conversion.test.js # 同一链上兑换率的区块固定和失败回退
 node scripts/snapshot.js --dry-run # 取一份快照看看（需要能连外网）
 python3 -m http.server 8080        # 本地预览（前端要读 config.json，必须起 http）
 gh workflow run snapshot.yml       # 手动拉起接力链（看门狗也会自动拉）
+```
+
+## wstETH → stETH 公共 JSON 接口
+
+**[data/wsteth-conversion-rate.json](https://attm-agenticcoding.github.io/lst-peg-monitor/data/wsteth-conversion-rate.json)**
+
+`schema_version: 1`，`base: "wstETH"`，`quote: "stETH"`，`base_amount: "1"`。
+`amount` 是字符串，意思是 **1 wstETH = amount stETH**；保留合约返回值的全部 18 位小数。
+来源是 Ethereum 主网 wstETH 合约 `stEthPerToken()`（`0x035faf82`），复用看板采集的同一个结果；不是市场成交价、stETH/ETH 脱锚比例或反向兑换率。看板本身的数字格式与计算不变。
+
+- `source` 标明链 ID、合约、方法、实际返回兑换率的公开 RPC，以及固定查询的区块号和哈希。
+- `observed_at` 是该来源区块的 UTC 时间；`fetched_at` 是 RPC 返回后的采集时间；`generated_at` 仅是 JSON 生成时间，三者不能互相替代。它不声称是 Lido 最近一次 rebase 的时间，也不声称区块已 finalized。
+- `status: "ok"` 表示生成时来源有效。客户端仍须检查当前时间早于 `valid_until`（来源时间 + `max_age_seconds: 1800`），并按自身需求设置更严格的时效门槛。静态 JSON 的状态不会随时钟自动改变。
+- 来源缺失、格式不合法、时间在未来或生成时已超过 30 分钟时，写入 `status: "unavailable"`、`amount: null`、`observed_at: null`，不把旧值标成新值。整个刷新或部署停滞时，公开文件可能仍是上一版本；必须检查 `valid_until`，不能只看 HTTP 200 或 `generated_at`。
+- 现有流水线约每 2 分钟采样，通常每 10 分钟提交并触发 Pages 部署（另有构建时间；预警可能提前提交）。GitHub Pages 当前响应 `Cache-Control: max-age=600`，客户端/CDN 可能再缓存 10 分钟；不是实时接口，也没有更新 SLA。
+- 文件通过同目录临时文件 + rename 原子替换，和原有 `data/` 一起提交/部署；没有新增服务、凭据、权限或自动任务。`--dry-run` 仅打印接口结果与原快照，不写文件。
+
+读取示例：
+
+```js
+const rate = await fetch("https://attm-agenticcoding.github.io/lst-peg-monitor/data/wsteth-conversion-rate.json").then(r => {
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+});
+if (rate.schema_version !== 1 || rate.status !== "ok" || rate.base !== "wstETH" ||
+    rate.quote !== "stETH" || rate.base_amount !== "1" || typeof rate.amount !== "string" ||
+    !(Date.now() < Date.parse(rate.valid_until))) throw new Error("Conversion rate unavailable or stale");
+console.log(`1 wstETH = ${rate.amount} stETH`); // 后续计算请用 decimal / BigInt，避免 Number 丢精度
 ```
 
 ## 推送（ntfy）

@@ -9,11 +9,13 @@ const fs = require("fs");
 const path = require("path");
 const zlib = require("zlib");
 const Core = require("../core.js");
+const { buildConversionRate, writeConversionRate } = require("./conversion-rate.js");
 
 const ROOT = path.join(__dirname, "..");
 const CFG = JSON.parse(fs.readFileSync(path.join(ROOT, "config.json"), "utf8"));
 const DATA = path.join(ROOT, "data");
 const HIST = path.join(DATA, "history.json");
+const CONVERSION = path.join(DATA, "wsteth-conversion-rate.json");
 const ARCH = path.join(DATA, "archive");
 const URGENT = process.env.URGENT_FLAG || "/tmp/lpm-urgent"; // 有推送时留个标记，loop.sh 看到就立刻提交
 const PAGE = "https://attm-agenticcoding.github.io/lst-peg-monitor/";
@@ -92,7 +94,8 @@ function step(prev, G, rec, res) {
 }
 
 (async () => {
-  const snap = await Core.collect(CFG, fetch);
+  const snap = await Core.collect(CFG, fetch, { conversionSource: true });
+  if (!dry) writeConversionRate(CONVERSION, snap, CFG);
   const res = Core.evaluate(snap, CFG);
   const rec = Core.toRecord(snap, res, CFG);
   rec.rv = CFG.guard.version; // 当时生效的预警规则版本，复盘时按版本分开算
@@ -139,6 +142,7 @@ function step(prev, G, rec, res) {
     return `${s} ${f(rec[s].peg)}bps/${rec[s].st} via ${rec[s].via} 线 ${r ? f(r.level) : "—"} | 大额 ${b ? `${f(b.x)}/线 ${f(b.level)}` : "—"}`;
   }).join(" || ");
   if (dry) {
+    console.log(JSON.stringify(buildConversionRate(snap, CFG), null, 2));
     console.log(JSON.stringify(rec, null, 2));
     console.log(line);
     for (const m of msgs) console.log("[推送]", m.title, "—", m.body);
@@ -151,4 +155,11 @@ function step(prev, G, rec, res) {
   if (msgs.length) fs.writeFileSync(URGENT, String(rec.ts));
   console.log(`写入 ${records.length} 条 | ${line}${msgs.length ? ` | 推送 ${msgs.length} 条${pushed ? "" : "（未发出）"}` : ""}${rec.err ? " | 失败：" + rec.err.join("; ") : ""}`);
   if (Core.ASSETS.every((s) => rec[s].st === "dead")) process.exitCode = 2; // 全灭时让 Actions 里看得见
-})().catch((e) => { console.error("快照失败：", e); process.exit(1); });
+})().catch((e) => {
+  // A failed collection must not reissue an old value with a new observation time.
+  if (!dry) {
+    try { writeConversionRate(CONVERSION, null, CFG); }
+    catch (writeError) { console.error("conversion publication failed:", writeError); }
+  }
+  console.error("快照失败：", e); process.exit(1);
+});
