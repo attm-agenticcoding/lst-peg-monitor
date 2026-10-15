@@ -64,6 +64,18 @@ if (rate.schema_version !== 1 || rate.status !== "ok" || rate.base !== "wstETH" 
 console.log(`1 wstETH = ${rate.amount} stETH`); // 后续计算请用 decimal / BigInt，避免 Number 丢精度
 ```
 
+## cbETH → ETH 公共 JSON 接口
+
+**[data/cbeth-conversion-rate.json](https://attm-agenticcoding.github.io/lst-peg-monitor/data/cbeth-conversion-rate.json)**
+
+沿用上述版本 1 schema、30 分钟有效期、失败置空和原子发布机制，`base: "cbETH"`、`quote: "ETH"`、`base_amount: "1"`。`amount` 字符串表示 **1 cbETH = amount ETH** 的底层质押 ETH 兑换率（Coinbase 文档称为 ETH2），保留全部 18 位小数；不是 DEX/CEX 市价，也不表示可立即链上赎回成可用 ETH。
+
+- 复用看板本来就采集的 Ethereum 主网 cbETH 合约 `0xBe9895146f7AF43049ca1c1AE358B0541Ea49704` 的 `exchangeRate()`（`0x3ba0b9a9`）。和 wstETH 共用已有区块查询及固定区块哈希的 RPC 批次，不增加兑换率请求。
+- [Coinbase 合约源码](https://github.com/coinbase/wrapped-tokens-os/blob/main/contracts/wrapped-tokens/staking/StakedTokenV1.sol) 定义 `exchangeRate()` 以 `10**18` 缩放；[官方 API 文档](https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/wrapped-assets/get-wrapped-asset-details) 定义方向为每 1 cbETH 对应的底层质押 ETH 单位。导出直接格式化原始整数，不经过 `nav.cbETH` / `rt.rate` 的浮点数，也不乘任何市场价格。
+- `observed_at` 是查询区块的时间，`fetched_at` 是该链上结果的接收时间，`generated_at` 是生成 JSON 的时间；`source` 提供实际 RPC、区块号和哈希。`provider_updated_at: null` 表示没有采集 Coinbase 最近一次更改兑换率的时间，不能用区块、采样或 HTTP Date 冒充。每日兑换率不变时，后续区块仍可提供新的有效观测。
+- cbETH 与 wstETH 各自验证来源；一方失败不会丢弃另一方的有效来源。不用 Coinbase 详情接口、市场报价、未固定区块的备用值或旧缓存填充失败的公开结果。看板原来的兑换与回退计算不变。
+- 消费者按上述示例将 URL、`base`、`quote` 改为 cbETH 对应值，并检查 `status === "ok"` 和当前时间早于 `valid_until`。仍由原有采样、提交与 Pages 部署更新，受相同的部署及缓存延迟影响。
+
 ## 推送（ntfy）
 
 预警要在采样的那台机器上当场发出，才能做到偏离出现后约 2 分钟内到手机；Claude 的定时任务最短一小时一次，只用来发现后台本身停了。

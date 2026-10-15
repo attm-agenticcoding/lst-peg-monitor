@@ -331,11 +331,11 @@
     const note = (who, e) => err.push(`${who}: ${e && e.name === "AbortError" ? "超时" : (e && e.message) || e}`);
     const px = { stETH: {}, cbETH: {} };
     const nav = { stETH: 1, wstETH: null, cbETH: null }, sectionAt = {};
-    let wstethConversion = null;
+    let wstethConversion = null, cbethConversion = null;
     const stSizes = (cfg.stRedeem && cfg.stRedeem.sizes) || [], st = { quoteMeta: {}, waits: {} };
     const rtSizes = (cfg.roundTrip && cfg.roundTrip.sizes) || [], rt = {};
     const wsSizes = (cfg.wrapSell && cfg.wrapSell.sizes) || [];
-    const snapshot = () => ({ ts: Math.floor(Date.now() / 1000), nav, px, rt, st, err, wstethConversion, sectionAt });
+    const snapshot = () => ({ ts: Math.floor(Date.now() / 1000), nav, px, rt, st, err, wstethConversion, cbethConversion, sectionAt });
     function publish(...sections) {
       check();
       for (const section of sections) sectionAt[section] = Math.floor(Date.now() / 1000);
@@ -427,6 +427,14 @@
         wstethConversion = { raw: word0(r1[0]).toString(), observedAt: block.at,
           fetchedAt: Math.floor(Date.now() / 1000), blockNumber: BigInt(block.number).toString(),
           blockHash: block.hash, rpcUrl: sticky.eth, contract: A.wstETH };
+      }
+      // exchangeRate() is ETH backing per cbETH, scaled by 1e18. Keep all
+      // decimals from the existing anchor call, independently of wstETH success.
+      // The Coinbase details API / nav Numbers can have less precision.
+      if (block && /^0x[0-9a-f]{64}$/i.test(r1[1]) && word0(r1[1]) > 0n) {
+        cbethConversion = { raw: word0(r1[1]).toString(), observedAt: block.at,
+          fetchedAt: Math.floor(Date.now() / 1000), blockNumber: BigInt(block.number).toString(),
+          blockHash: block.hash, rpcUrl: sticky.eth, contract: A.cbETH };
       }
       // If a provider cannot serve a canonical hash, retain the dashboard's
       // ordinary latest-block anchors, but do not publish them as a pinned rate.
