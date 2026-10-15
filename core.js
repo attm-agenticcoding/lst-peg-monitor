@@ -290,8 +290,39 @@
   }
 
   /* ---------- 取数 ---------- */
+  // Bound both fetch and body decoding, even when a transport ignores abort.
+  // An outer signal cancels retries/fallbacks as well as the current request.
+  async function bounded(task, timeoutMs, signal) {
+    const controller = new AbortController();
+    let timer, cancel;
+    const stopped = new Promise((_, reject) => {
+      const stop = (reason) => { controller.abort(reason); reject(reason); };
+      cancel = () => stop(signal.reason || new Error("读取已取消"));
+      if (signal) {
+        if (signal.aborted) cancel();
+        else signal.addEventListener("abort", cancel, { once: true });
+      }
+      if (timeoutMs > 0) timer = setTimeout(() => stop(new Error("读取超时")), timeoutMs);
+    });
+    try {
+      return await Promise.race([stopped, Promise.resolve().then(() => {
+        controller.signal.throwIfAborted();
+        return task(controller.signal);
+      })]);
+    } finally {
+      clearTimeout(timer);
+      if (signal) signal.removeEventListener("abort", cancel);
+    }
+  }
+
   async function collect(cfg, fetchFn, options = {}) {
+    return bounded((signal) => collectSources(cfg, fetchFn, Object.assign({}, options, { signal })), options.timeoutMs, options.signal);
+  }
+
+  async function collectSources(cfg, fetchFn, options) {
     const F = fetchFn || fetch;
+    const signal = options.signal;
+    const check = () => signal.throwIfAborted();
     const A = cfg.addresses, sizes = cfg.sizes, err = [];
     const E18 = 10n ** 18n;
     const pad = (h) => String(h).replace(/^0x/, "").toLowerCase().padStart(64, "0");
@@ -299,16 +330,30 @@
     const word0 = (h) => (typeof h === "string" && /^0x[0-9a-f]{64}/i.test(h) ? BigInt(h.slice(0, 66)) : null);
     const note = (who, e) => err.push(`${who}: ${e && e.name === "AbortError" ? "超时" : (e && e.message) || e}`);
     const px = { stETH: {}, cbETH: {} };
-    const put = (sym, id, s, v) => { if (num(v) && v > 0) (px[sym][id] = px[sym][id] || {})[s] = v; };
+    const nav = { stETH: 1, wstETH: null, cbETH: null }, sectionAt = {};
+    let wstethConversion = null;
+    const stSizes = (cfg.stRedeem && cfg.stRedeem.sizes) || [], st = { quoteMeta: {}, waits: {} };
+    const rtSizes = (cfg.roundTrip && cfg.roundTrip.sizes) || [], rt = {};
+    const wsSizes = (cfg.wrapSell && cfg.wrapSell.sizes) || [];
+    const snapshot = () => ({ ts: Math.floor(Date.now() / 1000), nav, px, rt, st, err, wstethConversion, sectionAt });
+    function publish(...sections) {
+      check();
+      for (const section of sections) sectionAt[section] = Math.floor(Date.now() / 1000);
+      // Consumers must never receive the mutable working objects: a late request
+      // from an expired refresh cannot mutate data already displayed or cached.
+      if (options.onProgress) options.onProgress(JSON.parse(JSON.stringify(snapshot())));
+    }
+    const put = (sym, id, s, v) => {
+      if (num(v) && v > 0) { (px[sym][id] = px[sym][id] || {})[s] = v; publish(sym); }
+    };
 
     async function getJSON(url, init, ms) {
-      const ctl = new AbortController();
-      const t = setTimeout(() => ctl.abort(), ms || 12000);
-      try {
-        const r = await F(url, Object.assign({ signal: ctl.signal }, init || {}));
+      check();
+      return bounded(async (requestSignal) => {
+        const r = await F(url, Object.assign({}, init || {}, { signal: requestSignal }));
         if (!r.ok) throw new Error("HTTP " + r.status);
         return await r.json();
-      } finally { clearTimeout(t); }
+      }, ms || 12000, signal);
     }
 
     // 公开 RPC：小批量发（大批量会被断开），一个节点不行换下一个
@@ -329,7 +374,7 @@
           }
           sticky[chain || "eth"] = url;
           return out;
-        } catch (e) { last = e; }
+        } catch (e) { check(); last = e; }
       }
       note(`rpc ${chain || "eth"}`, last);
       return calls.map(() => null);
@@ -351,19 +396,18 @@
           if (!Number.isSafeInteger(at) || at <= 0 || BigInt(block.number) <= 0n) throw new Error("invalid conversion block time/number");
           sticky.eth = url;
           return { number: block.number, hash: block.hash, at };
-        } catch (e) { last = e; }
+        } catch (e) { check(); last = e; }
       }
       note("wstETH source block", last);
       return null;
     }
 
-    let wstethConversion = null;
-    const stSizes = (cfg.stRedeem && cfg.stRedeem.sizes) || [], st = { quoteMeta: {}, waits: {} };
     const quoteMeta = (via, x, extra) => {
       const now = Math.floor(Date.now() / 1000), remoteAt = extra && Number(extra.routeTimestamp);
       // Kyber may return cached routes. Prefer its timestamp when present.
       const quotedAt = Number.isFinite(remoteAt) && remoteAt > 0 ? (remoteAt > 1e12 ? remoteAt / 1000 : remoteAt) : now;
       (st.quoteMeta[via] = st.quoteMeta[via] || {})[x] = Object.assign({ quotedAt, fetchedAt: now }, extra);
+      publish("st");
     };
     const chain = (async () => {
       const block = options.conversionSource ? await conversionBlock() : null;
@@ -388,6 +432,8 @@
       // ordinary latest-block anchors, but do not publish them as a pinned rate.
       if (block && !wstethConversion) r1 = await ethCalls(anchorCalls);
       const rateW = word0(r1[0]), rateC = word0(r1[1]);
+      Object.assign(nav, { wstETH: rateW ? Number(rateW) / 1e18 : null, cbETH: rateC ? Number(rateC) / 1e18 : null });
+      publish("stETH", "cbETH");
       const ord = (h) => (h && word0(h) != null
         ? ("0x" + h.slice(-40)).toLowerCase() === A.ETH.toLowerCase() ? [1, 0] : [0, 1] : null); // [i=stETH, j=ETH]
       const oA = ord(r1[2]), oB = ord(r1[3]);
@@ -423,10 +469,10 @@
         try {
           const g = await getJSON(sticky.eth || cfg.rpcs[0], { method: "POST", headers: { "content-type": "application/json" },
             body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_gasPrice", params: [] }) }, 10000);
-          if (g && g.result) { st.gasGwei = Number(BigInt(g.result)) / 1e9; st.gasAt = Math.floor(Date.now() / 1000); }
+          if (g && g.result) { st.gasGwei = Number(BigInt(g.result)) / 1e9; st.gasAt = Math.floor(Date.now() / 1000); publish("st"); }
         } catch (e) { note("gas 价", e); }
       }
-      return { stETH: 1, wstETH: rateW ? Number(rateW) / 1e18 : null, cbETH: rateC ? Number(rateC) / 1e18 : null };
+      return nav;
     })();
 
     // Independent queue observation: pin all three calls to the same explicit block.
@@ -447,12 +493,11 @@
         const bool = (v) => v === 0n ? false : v === 1n ? true : null;
         st.queue = { at: Math.floor(Date.now() / 1000), blockNumber: Number(BigInt(block.number)), blockTimestamp: Number(BigInt(block.timestamp)),
           bunker: bool(vals[0]), paused: bool(vals[1]), unfinalizedSteth: vals[2] == null ? null : Number(vals[2]) / 1e18 };
+        publish("st");
       } catch (e) { note("lido 链上队列", e); }
     })();
 
     // Base：Aerodrome Slipstream cbETH/WETH，QuoterV2.quoteExactInputSingle((tokenIn,tokenOut,amountIn,int24 tickSpacing,sqrtPriceLimitX96))
-    const rtSizes = (cfg.roundTrip && cfg.roundTrip.sizes) || [], rt = {};
-    const wsSizes = (cfg.wrapSell && cfg.wrapSell.sizes) || [];
     const cbinfoP = cbInfo();
     // 包装得到多少 cbETH 要先知道兑换率：优先 Coinbase 公布的，取不到用主网合约 exchangeRate
     const rateP = (async () => { await cbinfoP; if (num(rt.rate) && rt.rate > 0) return rt.rate; const n = await chain; return n.cbETH; })();
@@ -466,14 +511,19 @@
       const rb = await ethCalls(rtSizes.map((x) => [B.aeroQuoter, "0x9e7defe6" + pad(B.WETH) + pad(B.cbETH)
         + U(BigInt(x) * E18) + U(B.aeroTickSpacing) + U(0)]), "base");
       rb.forEach((h, i) => { const w = word0(h); if (w != null) (rt.aero = rt.aero || {})[rtSizes[i]] = Number(w) / 1e18; });
+      publish("rt");
       // 反方向：Coinbase 上质押包装出来的 cbETH 拿到 Base 上卖（Aerodrome 单池）
       const amts = await wsWei();
       if (amts.length) {
         const rs = await ethCalls(amts.map((w) => [B.aeroQuoter, "0x9e7defe6" + pad(B.cbETH) + pad(B.WETH) + U(w) + U(B.aeroTickSpacing) + U(0)]), "base");
         rs.forEach((h, i) => { const w = word0(h); if (w != null) ((rt.ws = rt.ws || {}).aero = rt.ws.aero || {})[wsSizes[i]] = Number(w) / 1e18; });
+        publish("rt");
       }
     })();
 
+    // Browser ETA reads can start after stETH buys, independently of cbETH work.
+    let stQuotesReady;
+    const stQuotesP = new Promise((resolve) => { stQuotesReady = resolve; });
     // KyberSwap 对并发很敏感（并发 8 个会回 503 overloaded），所以逐个发，失败的隔 0.8 秒重试一次
     async function kyber() {
       const jobs = [
@@ -481,12 +531,12 @@
         { name: "kyber_base cbETH", url: cfg.http.kyberBase, tin: cfg.base.cbETH, tout: A.ETH, sizes, put: (s, o) => put("cbETH", "kyber_base", s, o / s) },
         { name: "kyber cbETH", url: cfg.http.kyber, tin: A.cbETH, tout: A.ETH, sizes, put: (s, o) => put("cbETH", "kyber", s, o / s) },
         { name: "kyber 买入 stETH", url: cfg.http.kyber, tin: A.ETH, tout: A.stETH, sizes: stSizes, put: (x, o, summary) => { (st.kyber = st.kyber || {})[x] = o; quoteMeta("kyber", x, { gasUnits: Number(summary.gas), routeTimestamp: summary.timestamp || null }); } },
-        { name: "kyber_base 买入", url: cfg.http.kyberBase, tin: A.ETH, tout: cfg.base.cbETH, sizes: rtSizes, put: (x, o) => { (rt.kyber = rt.kyber || {})[x] = o; } },
+        { name: "kyber_base 买入", url: cfg.http.kyberBase, tin: A.ETH, tout: cfg.base.cbETH, sizes: rtSizes, put: (x, o) => { (rt.kyber = rt.kyber || {})[x] = o; publish("rt"); } },
       ];
       // 反方向：包装得到的 cbETH 在 Base 上的聚合卖出报价（数量 = X / 兑换率，所以排在最后、等兑换率到手）
       if (wsSizes.length) jobs.push({ name: "kyber_base 包装后卖出", url: cfg.http.kyberBase, tin: cfg.base.cbETH, tout: A.ETH, sizes: wsSizes,
         amount: async (x) => { const a = await wsWei(); return a[wsSizes.indexOf(x)]; },
-        put: (x, o) => { ((rt.ws = rt.ws || {}).kyber = rt.ws.kyber || {})[x] = o; } });
+        put: (x, o) => { ((rt.ws = rt.ws || {}).kyber = rt.ws.kyber || {})[x] = o; publish("rt"); } });
       for (const j of jobs) {
         let last = null, ok = 0;
         for (const s of j.sizes) {
@@ -500,10 +550,14 @@
               j.put(s, Number(BigInt(out)) / 1e18, d.data.routeSummary);
               ok++;
               break;
-            } catch (e) { last = e; if (k === 0) await new Promise((r) => setTimeout(r, 800)); }
+            } catch (e) {
+              check(); last = e;
+              if (k === 0) await bounded(() => new Promise((r) => setTimeout(r, 800)), 0, signal);
+            }
           }
         }
         if (ok < j.sizes.length) note(`${j.name}（${ok}/${j.sizes.length}）`, last);
+        if (j.name === "kyber 买入 stETH") stQuotesReady();
       }
     }
     // Coinbase 自己公布的 cbETH 兑换率、赎回排队天数估计、质押年化
@@ -511,6 +565,7 @@
       try {
         const d = await getJSON(cfg.http.coinbaseCbethInfo, null, 10000);
         rt.rate = +d.conversion_rate; rt.waitDays = +d.redeem_time_estimate_days; rt.apy = +d.apy;
+        publish("rt");
       } catch (e) { note("coinbase 兑换率", e); }
     }
     // Official ETA is only an unvalidated reference. Query after buy quotes are available,
@@ -518,12 +573,14 @@
     async function lidoWaits() {
       let unavailable = null;
       for (const x of stSizes) {
+        check();
         const best = Redemption.selectQuote(st, x, cfg);
         if (!best) continue;
         if (unavailable) { st.waits[x] = { status: "unavailable", reason: unavailable }; continue; }
         try {
           const d = await getJSON(`${cfg.http.lidoWq}?amount=${encodeURIComponent(best.got.toFixed(12))}`, null, 8000);
           st.waits[x] = Redemption.parseWait(d, best.got, Math.floor(Date.now() / 1000));
+          publish("st");
         } catch (e) {
           st.waits[x] = { status: "unavailable", reason: `官方参考时间不可用（${e.message}）` };
           note("lido 排队参考", e);
@@ -538,6 +595,7 @@
         const d = await getJSON(cfg.http.lidoApr, null, 10000);
         if (d && d.data && num(d.data.smaApr) && d.data.smaApr >= 0) {
           st.apr = d.data.smaApr; st.aprAt = Math.floor(Date.now() / 1000);
+          publish("st");
         }
       } catch (e) { note("lido APR", e); }
     }
@@ -549,19 +607,24 @@
       } catch (e) { note(id, e); }
     }
 
-    const [nav] = await Promise.all([
+    const kyberP = kyber();
+    const waitsP = options.onProgress ? Promise.all([chain, stQuotesP]).then(lidoWaits) : null;
+    await Promise.all([
       chain,
       base,
-      kyber(),
+      kyberP,
       book("stETH", "okx", cfg.http.okxBook, (d) => d && d.data && d.data[0] && d.data[0].bids),
       book("cbETH", "coinbase", cfg.http.coinbaseBook, (d) => d && d.bids),
       cbinfoP,
+      rateP, // Consume cancellation even if Base/Kyber never reach wrap/sell.
       lidoInfo(),
       queueP,
+      waitsP,
     ]);
-    await lidoWaits();
-    return { ts: Math.floor(Date.now() / 1000), nav, px, rt, st, err, wstethConversion };
+    if (!waitsP) await lidoWaits();
+    check();
+    return snapshot();
   }
 
-  return { VENUES, ASSETS, LEVEL, TEXT, quantile, median, fmt, tier, sellBook, analyse, evaluate, roundTrip, stRedeem, baseline, thin, guardLevel, guard, toRecord, collect };
+  return { VENUES, ASSETS, LEVEL, TEXT, quantile, median, fmt, tier, sellBook, analyse, evaluate, roundTrip, stRedeem, baseline, thin, guardLevel, guard, toRecord, bounded, collect };
 });

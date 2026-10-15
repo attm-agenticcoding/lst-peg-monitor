@@ -13,6 +13,10 @@ stETH（含 wstETH）与 cbETH 的脱锚监测看板：https://attm-agenticcodin
 | `scripts/snapshot.js` | 采样一次 → 判断撤离预警和档位变化 → 需要时推送到手机（ntfy）→ 追加进 `data/history.json` |
 | `scripts/loop.sh` + `.github/workflows/snapshot.yml` | 一个 run 在 runner 上循环约 5.5 小时、每 2 分钟采样、每 10 分钟提交一次（有推送时立刻提交），结束前用 `workflow_dispatch` 接力下一个 run；cron 每小时只当看门狗 |
 
+网页先显示本机缓存及原采集时间；首次访问也会独立读取小文件 `data/latest.json`（现有采样脚本原子写入，随原有 `data/` 提交）。它只是上次后台采样，可能受部署/CDN 延迟影响，不标为实时。实时直读按卖出卡片、stETH 赎回、cbETH 赎回逐步显示；同一区块不混用旧场所和新场所报价。缓存、部分数据、失败和过期都会标明；超过报价时效门槛仍可查看旧卖出数据，净收益继续按原来源时间与原门槛失效。
+
+单轮网页直读最多 30 秒，超时中止后续重试并恢复刷新按钮；已有结果保留。连续点击只启动一轮，超时后的旧回调不能覆盖下一轮。Kyber 仍逐个请求，后台采样没有套用网页总时限。历史每 5 分钟独立读取一次，8 秒超时（包含响应体读取）；失败保留上次历史并显示原时间，不阻塞实时报价或按钮。配置、最新后台样本和 Lido 静态快照也有各自的 8 秒时限。本地缓存只保存默认参数，页面临时设置不持久化。
+
 为什么不用 cron 定时：GitHub 的 schedule 是尽力而为，拥堵时直接丢弃。旧版「每 30 分钟」的 cron 实测 2–5.5 小时才跑一次（中位约 4 小时），这正是巡检误报「快照停更」的原因。
 `GITHUB_TOKEN` 触发的 `workflow_dispatch` 会真的起新 run，所以接力链不需要任何私钥；公共仓库的 Actions 分钟数不计费。
 
@@ -24,6 +28,9 @@ node tests/collect-redemption.test.js # mock API 集成，无外部调用
 node tests/app-redemption.test.js   # 页面控制器 smoke（不能替代视觉 QA）
 node tests/conversion-rate.test.js # 精度、来源时间、失效语义、原子写入
 node tests/collect-conversion.test.js # 同一链上兑换率的区块固定和失败回退
+node tests/app-refresh.test.js     # 缓存/分区更新、慢请求、超时、重入、晚到结果、历史失败
+node tests/collect-progress.test.js # 取数取消、响应体挂起、独立来源与原时间戳
+node tests/latest-cache.test.js    # 小快照原子发布、原时间、失败隔离与 dry-run
 node scripts/snapshot.js --dry-run # 取一份快照看看（需要能连外网）
 python3 -m http.server 8080        # 本地预览（前端要读 config.json，必须起 http）
 gh workflow run snapshot.yml       # 手动拉起接力链（看门狗也会自动拉）

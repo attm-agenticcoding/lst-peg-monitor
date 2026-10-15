@@ -46,7 +46,7 @@ const collect = async (cfg) => {
 const documentEvents = {};
 const ctx = { window: { LidoCutoff, PegCore: Object.assign({}, Core, { collect }) }, document: { getElementById: element, addEventListener(type, fn) { documentEvents[type] = fn; }, hidden: false },
   AbortController, setTimeout(fn, ms) { const timer = setTimeout(fn, ms); timer.unref(); return timer; }, clearTimeout,
-  fetch: async (url) => cutoffPending && url === "data/lido-cutoff-snapshot.json" ? new Promise(() => {}) : url === "config.json" ? { json: async () => config } : url === "data/lido-cutoff-snapshot.json" ? { ok: true, json: async () => cutoff } : { ok: false },
+  fetch: async (url) => cutoffPending && url === "data/lido-cutoff-snapshot.json" ? new Promise(() => {}) : url === "config.json" ? { ok: true, json: async () => config } : url === "data/lido-cutoff-snapshot.json" ? { ok: true, json: async () => cutoff } : { ok: false },
   setInterval(fn, ms) { intervals.push({ fn, ms }); return intervals.length; }, clearInterval() {}, Date: TestDate, console };
 const flush = () => new Promise((r) => setImmediate(r));
 const submit = () => form.events.submit({ preventDefault() {} });

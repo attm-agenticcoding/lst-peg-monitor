@@ -151,6 +151,18 @@ function step(prev, G, rec, res) {
   fs.mkdirSync(DATA, { recursive: true });
   fs.rmSync(path.join(DATA, "recent.json"), { force: true }); // 旧版前端用的切片，已不用
   fs.writeFileSync(HIST, JSON.stringify(out));
+  // Small first-paint cache, published with the same sample and original times.
+  // Never read back into sampling, alerts, or the public conversion-rate export.
+  const latest = path.join(DATA, "latest.json"), temporary = latest + ".tmp";
+  try {
+    fs.writeFileSync(temporary, JSON.stringify({ schema: 1, config: JSON.stringify(CFG), snapshot: snap }));
+    fs.renameSync(temporary, latest);
+  } catch (e) {
+    // An optional display cache must not prevent archival or invalidate the
+    // independently published contract conversion rate.
+    console.error("latest cache publication failed:", e.message);
+    try { fs.rmSync(temporary, { force: true }); } catch { /* best effort */ }
+  }
   archive(rec);
   if (msgs.length) fs.writeFileSync(URGENT, String(rec.ts));
   console.log(`写入 ${records.length} 条 | ${line}${msgs.length ? ` | 推送 ${msgs.length} 条${pushed ? "" : "（未发出）"}` : ""}${rec.err ? " | 失败：" + rec.err.join("; ") : ""}`);
