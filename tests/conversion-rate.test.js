@@ -3,11 +3,16 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { buildConversionRate, writeConversionRate } = require("../scripts/conversion-rate.js");
+const rates = require("../scripts/conversion-rate.js");
 const cfg = require("../config.json");
 const NOW = 1_792_022_400;
 const UINT256_MAX = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
 const iso = (seconds) => new Date(seconds * 1000).toISOString();
+let passed = 0;
+for (const [base, quote, key, method, selector, buildConversionRate, writeConversionRate] of [
+  ["wstETH", "stETH", "wstethConversion", "stEthPerToken()", "0x035faf82", rates.buildConversionRate, rates.writeConversionRate],
+  ["cbETH", "ETH", "cbethConversion", "exchangeRate()", "0x3ba0b9a9", rates.buildCbethConversionRate, rates.writeCbethConversionRate],
+]) {
 const observation = (changes = {}) => Object.assign({
   raw: "1234567890123456789",
   observedAt: NOW - 30,
@@ -15,9 +20,10 @@ const observation = (changes = {}) => Object.assign({
   blockNumber: "24000000",
   blockHash: "0x" + "ab".repeat(32),
   rpcUrl: cfg.rpcs[0],
-  contract: cfg.addresses.wstETH,
+  contract: cfg.addresses[base],
 }, changes);
-const snap = (changes = {}) => ({ ts: NOW, nav: { wstETH: 999, stETH: 1 }, px: { wstETH: 0.8 }, wstethConversion: observation(changes) });
+const snap = (changes = {}) => ({ ts: NOW, nav: { wstETH: 999, cbETH: 888, stETH: 1 },
+  px: { wstETH: 0.8, cbETH: 0.7 }, rt: { rate: 777 }, [key]: observation(changes) });
 const build = (changes = {}, now = NOW) => buildConversionRate(snap(changes), cfg, now);
 function unavailable(out) {
   assert.equal(out.status, "unavailable");
@@ -25,24 +31,25 @@ function unavailable(out) {
   for (const key of ["amount", "observed_at", "fetched_at", "valid_until"]) assert.equal(out[key], null, key);
   for (const key of ["block_number", "block_hash", "rpc_url"]) assert.equal(out.source[key], null, key);
 }
-let passed = 0;
-function test(name, fn) { fn(); passed++; console.log("ok -", name); }
+function test(name, fn) { fn(); passed++; console.log("ok -", base, name); }
 
-test("exact contract ratio is stETH received for one wstETH, independent of market prices", () => {
+test("exact contract ratio has the correct direction, independent of market prices or rounded Numbers", () => {
   const out = build();
   assert.equal(out.schema_version, 1);
   assert.equal(out.status, "ok");
-  assert.equal(out.base, "wstETH");
-  assert.equal(out.quote, "stETH");
+  assert.equal(out.base, base);
+  assert.equal(out.quote, quote);
   assert.equal(out.base_amount, "1");
   assert.equal(out.amount, "1.234567890123456789");
   assert.equal(typeof out.amount, "string");
   assert.equal("error" in out, false);
   assert.deepEqual(out.source, {
-    type: "ethereum_contract", chain_id: 1, contract: cfg.addresses.wstETH,
-    method: "stEthPerToken()", selector: "0x035faf82", block_number: "24000000",
+    type: "ethereum_contract", chain_id: 1, contract: cfg.addresses[base],
+    method, selector, block_number: "24000000",
     block_hash: "0x" + "ab".repeat(32), rpc_url: cfg.rpcs[0],
   });
+  if (base === "cbETH") assert.equal(out.provider_updated_at, null, "block time is not the last Coinbase rate update");
+  else assert.equal("provider_updated_at" in out, false, "existing wstETH schema stays unchanged");
 });
 
 test("all 18 decimals are preserved across the uint256 range", () => {
@@ -81,7 +88,7 @@ test("freshness is based on the source block with an explicit 1800-second bounda
 
 test("missing source data never falls back to history, market prices, or snapshot time", () => {
   for (const input of [null, undefined, {}, { ts: NOW, nav: { wstETH: 1.25 } },
-    { wstethConversion: null }, { wstethConversion: [] }, { wstethConversion: "1.25" }]) {
+    { [key]: null }, { [key]: [] }, { [key]: "1.25" }]) {
     unavailable(buildConversionRate(input, cfg, NOW));
   }
 });
@@ -102,7 +109,7 @@ test("invalid or mismatched source provenance fails closed", () => {
     { rpcUrl: null }, { rpcUrl: "https://unconfigured.invalid" },
   ];
   for (const changes of cases) unavailable(build(changes));
-  assert.equal(build({ contract: cfg.addresses.wstETH.toLowerCase(), rpcUrl: cfg.rpcs[1] }).status, "ok");
+  assert.equal(build({ contract: cfg.addresses[base].toLowerCase(), rpcUrl: cfg.rpcs[1] }).status, "ok");
   unavailable(buildConversionRate(snap(), {}, NOW));
   for (const rpc of ["not-a-url", "file:///tmp/rpc", "http://rpc.invalid", "https://user:password@rpc.invalid"]) {
     unavailable(buildConversionRate(snap({ rpcUrl: rpc }), { ...cfg, rpcs: [rpc] }, NOW));
@@ -174,5 +181,17 @@ test("partial temporary write failure cannot corrupt the previous public file", 
     fs.rmSync(directory, { recursive: true, force: true });
   }
 });
+
+}
+
+const publishedWsteth = require("../data/wsteth-conversion-rate.json");
+if (publishedWsteth.status === "ok") {
+  const previous = publishedWsteth;
+  assert.deepEqual(rates.buildConversionRate({ wstethConversion: {
+    raw: previous.amount.replace(".", ""), observedAt: Date.parse(previous.observed_at) / 1000,
+    fetchedAt: Date.parse(previous.fetched_at) / 1000, blockNumber: previous.source.block_number,
+    blockHash: previous.source.block_hash, rpcUrl: previous.source.rpc_url, contract: previous.source.contract,
+  } }, cfg, Date.parse(previous.generated_at) / 1000), previous, "existing wstETH response is byte-for-byte schema compatible");
+}
 
 console.log(`${passed} conversion-rate tests passed`);

@@ -9,13 +9,14 @@ const fs = require("fs");
 const path = require("path");
 const zlib = require("zlib");
 const Core = require("../core.js");
-const { buildConversionRate, writeConversionRate } = require("./conversion-rate.js");
+const { buildConversionRate, writeConversionRate, buildCbethConversionRate, writeCbethConversionRate } = require("./conversion-rate.js");
 
 const ROOT = path.join(__dirname, "..");
 const CFG = JSON.parse(fs.readFileSync(path.join(ROOT, "config.json"), "utf8"));
 const DATA = path.join(ROOT, "data");
 const HIST = path.join(DATA, "history.json");
 const CONVERSION = path.join(DATA, "wsteth-conversion-rate.json");
+const CBETH_CONVERSION = path.join(DATA, "cbeth-conversion-rate.json");
 const ARCH = path.join(DATA, "archive");
 const URGENT = process.env.URGENT_FLAG || "/tmp/lpm-urgent"; // 有推送时留个标记，loop.sh 看到就立刻提交
 const PAGE = "https://attm-agenticcoding.github.io/lst-peg-monitor/";
@@ -96,6 +97,7 @@ function step(prev, G, rec, res) {
 (async () => {
   const snap = await Core.collect(CFG, fetch, { conversionSource: true });
   if (!dry) writeConversionRate(CONVERSION, snap, CFG);
+  if (!dry) writeCbethConversionRate(CBETH_CONVERSION, snap, CFG);
   const res = Core.evaluate(snap, CFG);
   const rec = Core.toRecord(snap, res, CFG);
   rec.rv = CFG.guard.version; // 当时生效的预警规则版本，复盘时按版本分开算
@@ -143,6 +145,7 @@ function step(prev, G, rec, res) {
   }).join(" || ");
   if (dry) {
     console.log(JSON.stringify(buildConversionRate(snap, CFG), null, 2));
+    console.log(JSON.stringify(buildCbethConversionRate(snap, CFG), null, 2));
     console.log(JSON.stringify(rec, null, 2));
     console.log(line);
     for (const m of msgs) console.log("[推送]", m.title, "—", m.body);
@@ -172,6 +175,8 @@ function step(prev, G, rec, res) {
   if (!dry) {
     try { writeConversionRate(CONVERSION, null, CFG); }
     catch (writeError) { console.error("conversion publication failed:", writeError); }
+    try { writeCbethConversionRate(CBETH_CONVERSION, null, CFG); }
+    catch (writeError) { console.error("cbETH conversion publication failed:", writeError); }
   }
   console.error("快照失败：", e); process.exit(1);
 });
