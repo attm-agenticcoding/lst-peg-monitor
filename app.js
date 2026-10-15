@@ -16,7 +16,7 @@
   let cutoffSnapshot = null, cutoffLoadFailed = false, cutoffLoading = false;
   const LIVE_TIMEOUT_MS = 30000, FILE_TIMEOUT_MS = 8000, CACHE_KEY = "lpm-view-v1";
   const SECTIONS = ["stETH", "cbETH", "st", "rt"];
-  let views = {}, generation = 0, renderTimer = null, histLoading = false, histFailed = false, liveError = "";
+  let views = {}, generation = 0, renderTimer = null, histLoading = false, histFailed = false, liveError = "", liveErrors = [];
   const currentCfg = () => Object.assign({}, CFG, { stRedeem: Object.assign({}, CFG.stRedeem, stOverrides, customAmount == null ? {} : { sizes: [customAmount] }) });
   const readJSON = (url) => C.bounded(async (signal) => {
     const r = await fetch(url, { cache: "no-store", signal });
@@ -412,8 +412,7 @@
     $("cards").innerHTML = C.ASSETS.map((s) => card(s, res[s], views[s] ? Object.assign({}, views[s].snap, { ts: views[s].at }) : empty)).join("");
     redrawScenarios(res);
     for (const s of C.ASSETS) drawSpark(s, res[s], views[s] ? views[s].at : now);
-    const snapshots = Object.values(views).map((v) => v.snap);
-    verdict(res, { err: [...new Set(snapshots.flatMap((s) => s.err))] });
+    verdict(res, { err: liveErrors });
     const times = Object.values(views).map((v) => v.at);
     $("clock").textContent = times.length ? "最近采集 " + hm(Math.max(...times)) : busy ? "读取中…" : "暂无数据";
     redrawCutoff();
@@ -428,7 +427,7 @@
   async function run() {
     if (busy) return;
     busy = true; const runId = ++generation;
-    liveError = "";
+    liveError = ""; liveErrors = [];
     for (const v of Object.values(views)) { if (v.origin === "实时") v.origin = "上轮数据"; v.failed = false; }
     $("spin").hidden = false; $("refresh").disabled = true; $("rlabel").textContent = "读取中";
     renderView();
@@ -439,9 +438,11 @@
       const cfg = currentCfg();
       const snap = await C.bounded((signal) => C.collect(cfg, undefined, { signal, onProgress: (next) => {
         if (runId !== generation || !busy || signal.aborted) return;
+        liveErrors = next.err;
         accept(next, cfg, "实时", runId); scheduleRender(runId);
       } }), LIVE_TIMEOUT_MS);
       if (runId !== generation) return;
+      liveErrors = snap.err;
       accept(snap, cfg, "实时", runId, snap.err.length > 0);
       if (snap.err.length) liveError = "部分来源读取失败";
       for (const key of SECTIONS) if (!views[key] || views[key].runId !== runId) {

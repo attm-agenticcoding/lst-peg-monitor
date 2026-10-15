@@ -75,11 +75,13 @@ function harness({ cached, collect, history, latest, brokenStorage = false } = {
 
 (async () => {
   const cached = snapshot(1792065000, 0.99), live = deferred(), latest = deferred();
+  cached.err = ["old cached source failure"];
   let progress;
   const h = harness({ cached, collect: (_, opts) => { progress = opts.onProgress; return live.promise; }, latest: () => latest.promise });
   await flush();
   assert.match(h.el("cards").innerHTML, /本地缓存.*已过期/);
   assert.match(h.el("cards").innerHTML, /−100\.0/);
+  assert.ok(!h.el("vnote").innerHTML.includes("old cached source failure"), "cached failures are never described as current-run failures");
   const originalClock = h.el("clock").textContent;
   assert.equal(h.el("refresh").disabled, true);
   const partial = snapshot(h.now(), 1.002); partial.px.stETH = {}; partial.st = null; partial.rt = null;
