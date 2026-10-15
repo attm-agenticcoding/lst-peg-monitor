@@ -14,7 +14,77 @@
   const KIND = { agg: "聚合", dex: "链上", cex: "交易所" };
   let CFG = null, hist = null, histAt = 0, busy = false, timer = null, stOverrides = {}, customAmount = null, lastSnap = null, lastCfg = null, refreshFailed = false;
   let cutoffSnapshot = null, cutoffLoadFailed = false, cutoffLoading = false;
+  const LIVE_TIMEOUT_MS = 30000, FILE_TIMEOUT_MS = 8000, CACHE_KEY = "lpm-view-v1";
+  const SECTIONS = ["stETH", "cbETH", "st", "rt"];
+  let views = {}, generation = 0, renderTimer = null, histLoading = false, histFailed = false, liveError = "";
   const currentCfg = () => Object.assign({}, CFG, { stRedeem: Object.assign({}, CFG.stRedeem, stOverrides, customAmount == null ? {} : { sizes: [customAmount] }) });
+  const readJSON = (url) => C.bounded(async (signal) => {
+    const r = await fetch(url, { cache: "no-store", signal });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  }, FILE_TIMEOUT_MS);
+  const validSnap = (s) => s && Number.isFinite(s.ts) && s.ts > 0 && s.ts <= Date.now() / 1000 + 30
+    && s.nav && s.px && s.px.stETH && s.px.cbETH && Array.isArray(s.err);
+  const hasPrices = (px) => Object.values(px || {}).some((row) => Object.values(row || {}).some((v) => Number.isFinite(v) && v > 0));
+  function usable(s, key) {
+    if (C.ASSETS.includes(key)) return hasPrices(s.px[key]) && (key === "stETH" || s.nav.cbETH > 0);
+    if (key === "st") return s.st && ["kyber", "curve", "curve_ng"].some((v) => hasPrices({ row: s.st[v] }));
+    return s.rt && (s.rt.rate > 0 || s.nav.cbETH > 0) && [s.rt.kyber, s.rt.aero, s.rt.ws && s.rt.ws.kyber, s.rt.ws && s.rt.ws.aero].some((row) => hasPrices({ row }));
+  }
+  function complete(s, key, cfg) {
+    if (C.ASSETS.includes(key)) return C.VENUES[key].every((v) => cfg.sizes.every((size) => Number.isFinite(s.px[key][v.id] && s.px[key][v.id][size])));
+    if (key === "st") {
+      const result = C.stRedeem(s.st, cfg, Date.now() / 1000);
+      return result && result.apr != null && !!s.st.queue && result.rows.every((r) => r.expected && r.totalDays != null);
+    }
+    const result = C.roundTrip(s.rt, s.nav.cbETH, cfg);
+    return result && result.waitDays != null && result.apy != null && result.rows.every((r) => r.back != null) && result.ws.every((r) => r.back != null);
+  }
+  function sectionNote(key) {
+    const v = views[key];
+    if (!v) return `<p class="data-status">${busy ? "读取中 · 暂无数据" : "本轮无可用数据"}</p>`;
+    const age = Date.now() / 1000 - v.at;
+    const stale = age > (v.cfg.stRedeem.quoteMaxAgeSeconds || 180);
+    const state = [v.origin, v.partial ? "部分数据" : "", stale ? "已过期" : "", v.failed ? "更新失败，保留已有数据" : "", busy ? "更新中" : ""].filter(Boolean).join(" · ");
+    return `<p class="data-status${stale || v.failed ? " stale" : ""}">${state} · 采集 ${hm(v.at)}（${ago(age)}）</p>`;
+  }
+  function accept(snap, cfg, origin, runId, partial = true) {
+    if (!validSnap(snap)) return;
+    for (const key of SECTIONS) {
+      if (!usable(snap, key)) continue;
+      const at = snap.sectionAt && snap.sectionAt[key] || snap.ts, prev = views[key];
+      // Published/local data may fill gaps, but never replace this run's live data
+      // or a newer cached observation. Do not combine old and new venues in a card.
+      if (origin !== "实时" && prev && (prev.runId === runId || prev.at >= at)) continue;
+      views[key] = { snap, cfg, origin, runId: origin === "实时" ? runId : null, at, partial: partial || !complete(snap, key, cfg), failed: false };
+    }
+  }
+  function loadCache() {
+    try {
+      const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
+      if (!cached || cached.config !== JSON.stringify(CFG)) return;
+      for (const key of SECTIONS) {
+        const v = cached.views[key];
+        if (v && validSnap(v.snap) && usable(v.snap, key)) views[key] = Object.assign({}, v,
+          { cfg: CFG, origin: "本地缓存", runId: null, failed: false });
+      }
+    } catch { /* Storage may be disabled, full, or contain an older schema. */ }
+  }
+  function saveCache() {
+    try {
+      const config = JSON.stringify(CFG), saved = {};
+      for (const key of SECTIONS) if (views[key] && JSON.stringify(views[key].cfg) === config) saved[key] = views[key];
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ config, views: saved }));
+    } catch { /* A cache failure must not break live data or the refresh button. */ }
+  }
+  async function loadLatest(runId) {
+    try {
+      const data = await readJSON("data/latest.json");
+      if (runId !== generation || !busy || data.schema !== 1 || data.config !== JSON.stringify(CFG)) return;
+      accept(data.snapshot, CFG, "后台缓存", runId, !!(data.snapshot && data.snapshot.err.length));
+      renderView();
+    } catch { /* Live reads and local cache remain available. */ }
+  }
 
   function redrawCutoff() {
     const panel = $("lido-cutoff");
@@ -47,15 +117,14 @@
   }
 
   async function loadHist() {
-    if (hist && Date.now() - histAt < 5 * 60e3) return;
+    if (histLoading || hist && Date.now() - histAt < 5 * 60e3) return;
+    histLoading = true;
     try {
-      const r = await fetch(`data/history.json?t=${Math.floor(Date.now() / 60e3)}`, { cache: "no-store" });
-      if (r.ok) {
-        const h = await r.json();
-        hist = h && h.schema === 2 ? h : null; // 旧版文件在第一条新快照写入前还在，忽略
-        histAt = Date.now();
-      }
-    } catch { /* 历史取不到不影响实时数 */ }
+      const h = await readJSON(`data/history.json?t=${Math.floor(Date.now() / 60e3)}`);
+      if (!h || h.schema !== 2 || !Array.isArray(h.records) || !Number.isFinite(h.updated)) throw new Error("invalid history");
+      hist = h; histAt = Date.now(); histFailed = false;
+    } catch { histFailed = true; }
+    finally { histLoading = false; renderView(); }
   }
 
   /* ---------- 卡片 ---------- */
@@ -85,6 +154,7 @@
       <div class="card-head"><span class="tick">${sym}</span>
         <span class="anchor-kind">${sym === "stETH" ? "含 wstETH · 锚 1:1" : "锚 exchangeRate"}</span>
         <span class="pill p-${a.status}">${C.TEXT[a.status]}</span></div>
+      ${sectionNote(sym)}
       <div class="headline"><span class="big num v-${a.status}">${fmt(a.peg)}</span><span class="big-unit">bps</span>
         <div class="hnote">主报价 · ${esc(a.primaryLabel || "—")} 卖 1 枚<br><span class="why">${esc(a.why)}</span>${on ? '<br><b class="stale">偏离预警中</b>' : ""}</div></div>
       <dl class="kpis">
@@ -173,6 +243,7 @@
     }).join("");
     return `<details class="card scenario-panel" id="st-redemption"><summary id="st-redemption-summary"><span>买入 stETH → Lido 赎回</span><span class="scenario-caption">价差 ÷ 天数 × 365${missing ? " · 部分数据缺失" : ""}</span></summary>
       <div class="sect">
+      ${sectionNote("st")}
       <p class="redemption-assumption">按名义 1:1 赎回；x 含排队和领取，实际等待或兑付额变化会改变收益。</p>
       ${operationalWarnings.length ? `<p class="redemption-availability" role="status">${esc(operationalWarnings.join("；"))}</p>` : ""}
       ${missing || queueStale ? `<p class="redemption-availability" role="status">${queueStale ? "链上队列不可用或已过期。" : ""}${missing ? "缺失或过期的结果显示 —；请设定等待天数或刷新报价。" : ""}</p>` : ""}
@@ -197,7 +268,7 @@
   const restoreScenarios = (opened) => { for (const id of opened) if ($(id)) $(id).open = true; };
   function redrawScenarios(res) {
     const opened = openScenarios(), focusedId = document.activeElement && document.activeElement.id;
-    $("scenarios").innerHTML = stSection(res.stETH.rt) + (res.cbETH.rt ? `<details class="card scenario-panel" id="cb-redemption"><summary><span>cbETH 买入赎回 / 质押卖出</span><span class="scenario-caption">收益测算</span></summary>${rtSection(res.cbETH.rt)}</details>` : "");
+    $("scenarios").innerHTML = stSection(res.stETH.rt) + (res.cbETH.rt ? `<details class="card scenario-panel" id="cb-redemption"><summary><span>cbETH 买入赎回 / 质押卖出</span><span class="scenario-caption">收益测算</span></summary>${sectionNote("rt")}${rtSection(res.cbETH.rt)}</details>` : "");
     restoreScenarios(opened);
     if (focusedId && $(focusedId) && $(focusedId).focus) $(focusedId).focus({ preventScroll: true });
   }
@@ -225,7 +296,7 @@
       .map((r) => [r.ts, r[sym].peg]);
     if (a.peg != null) pts.push([now, a.peg]);
     if (pts.length < 3) {
-      el.innerHTML = `<p class="empty">后台快照积累中，攒够几条后这里出走势。</p>`;
+      el.innerHTML = `<p class="empty">${histFailed ? "历史读取失败，稍后重试；实时报价独立更新。" : histLoading ? "历史单独加载中…" : "后台快照积累中，攒够几条后这里出走势。"}</p>`;
       return;
     }
     const b = C.baseline(hist.records, sym, now, CFG.baseline);
@@ -253,7 +324,7 @@
       <path class="sp-line" d="${d}"/>
       <circle class="sp-dot" cx="${X(lt)}" cy="${Y(lv)}" r="4"/>
       <text class="sp-t" x="${L}" y="${H - 4}">${hm(x0)}</text>
-      <text class="sp-t" x="${W - R}" y="${H - 4}" text-anchor="end">现在</text>
+      <text class="sp-t" x="${W - R}" y="${H - 4}" text-anchor="end">${hm(now)}</text>
       <line class="sp-xh" id="xh-${sym}" y1="${T}" y2="${H - B}" visibility="hidden"/>
       <rect class="sp-hit" x="${L}" y="0" width="${W - L - R}" height="${H}"/>
     </svg><div class="tip" hidden></div>`;
@@ -267,7 +338,7 @@
       tip.hidden = false;
       tip.style.left = `${Math.min(Math.max(x, 70), W - 70)}px`;
       tip.style.top = `${Math.max(0, Y(best[1]) - 34)}px`;
-      tip.innerHTML = `${best[0] === now ? "现在" : hm(best[0])} · <b class="num">${fmt(best[1], 2)}</b> bps`;
+      tip.innerHTML = `${hm(best[0])} · <b class="num">${fmt(best[1], 2)}</b> bps`;
     };
     const leave = () => { tip.hidden = true; xh.setAttribute("visibility", "hidden"); };
     svg.addEventListener("pointermove", move);
@@ -282,11 +353,20 @@
     $("vtitle").textContent = allOk
       ? `都在锚附近：${C.ASSETS.map((s) => `${s} ${fmt(res[s].peg)} bps`).join("，")}`
       : C.ASSETS.filter((s) => res[s].status !== "ok").map((s) => `${s} ${C.TEXT[res[s].status]}：${res[s].why}`).join("；");
-    let note = `页面每 ${CFG.refreshSeconds} 秒直读一次。`;
+    const current = SECTIONS.filter((key) => views[key] && views[key].runId === generation).length;
+    const qualified = busy || liveError || SECTIONS.some((key) => !views[key] || views[key].origin !== "实时" || views[key].partial || Date.now() / 1000 - views[key].at > (CFG.stRedeem.quoteMaxAgeSeconds || 180));
+    if (qualified) {
+      $("vtitle").textContent = `${busy ? "分区更新中" : liveError ? "更新未完成" : "部分数据 / 缓存参考"}：${current}/${SECTIONS.length} 个区块已有本轮数据`;
+      $("verdict").className = "verdict s-dead";
+    }
+    let note = `页面每 ${CFG.refreshSeconds} 秒直读一次，单轮最多 ${LIVE_TIMEOUT_MS / 1000} 秒；各区块标注各自采集时间。`;
+    if (liveError) note += ` ${esc(liveError)}；保留已收到的数据，可再次刷新。`;
     if (hist) {
-      const age = snap.ts - hist.updated;
+      const age = Date.now() / 1000 - hist.updated;
       note += ` 后台每 ${CFG.snapshotMinutes} 分钟采样、当场判断预警并推送；历史 <span class="${age > 30 * 60 ? "stale" : ""}">${ago(age)}</span>同步（每 ${CFG.commitMinutes} 分钟）。`;
-    } else note += " 后台快照还在按新口径积累。";
+    }
+    if (histLoading) note += " 历史单独加载中。";
+    if (histFailed) note += hist ? " 历史更新失败，保留上次历史及原时间。" : " 历史读取失败，走势与常态暂不可用。";
     if (snap.err.length) note += ` 本轮取不到：${esc(snap.err.join("；"))}`;
     $("vnote").innerHTML = note;
   }
@@ -315,34 +395,76 @@
     if (focusedId && $(focusedId) && $(focusedId).focus) $(focusedId).focus({ preventScroll: true });
   }
 
+  function renderView() {
+    if (!CFG) return;
+    const cfg = currentCfg(), now = Math.floor(Date.now() / 1000);
+    const empty = { ts: now, px: { stETH: {}, cbETH: {} }, nav: {}, err: [] };
+    const res = {};
+    for (const sym of C.ASSETS) {
+      const v = views[sym];
+      res[sym] = C.evaluate(v ? v.snap : empty, v ? v.cfg : cfg)[sym];
+    }
+    const stView = views.st, rtView = views.rt;
+    lastSnap = stView ? stView.snap : null; lastCfg = stView ? stView.cfg : null;
+    refreshFailed = !!(stView && (stView.failed || stView.origin !== "实时" || stView.partial));
+    res.stETH.rt = stView ? C.stRedeem(Object.assign({}, stView.snap.st, { refreshFailed }), stView.cfg, now) : null;
+    res.cbETH.rt = rtView ? C.roundTrip(rtView.snap.rt, rtView.snap.nav.cbETH, rtView.cfg) : null;
+    $("cards").innerHTML = C.ASSETS.map((s) => card(s, res[s], views[s] ? Object.assign({}, views[s].snap, { ts: views[s].at }) : empty)).join("");
+    redrawScenarios(res);
+    for (const s of C.ASSETS) drawSpark(s, res[s], views[s] ? views[s].at : now);
+    const snapshots = Object.values(views).map((v) => v.snap);
+    verdict(res, { err: [...new Set(snapshots.flatMap((s) => s.err))] });
+    const times = Object.values(views).map((v) => v.at);
+    $("clock").textContent = times.length ? "最近采集 " + hm(Math.max(...times)) : busy ? "读取中…" : "暂无数据";
+    redrawCutoff();
+  }
+
+  function scheduleRender(runId) {
+    if (renderTimer != null) return;
+    renderTimer = setTimeout(() => { renderTimer = null; if (generation === runId && busy) renderView(); }, 50);
+  }
+
   /* ---------- 主循环 ---------- */
   async function run() {
     if (busy) return;
-    busy = true;
+    busy = true; const runId = ++generation;
+    liveError = "";
+    for (const v of Object.values(views)) { if (v.origin === "实时") v.origin = "上轮数据"; v.failed = false; }
     $("spin").hidden = false; $("refresh").disabled = true; $("rlabel").textContent = "读取中";
+    renderView();
+    void loadCutoff();
+    void loadHist();
+    void loadLatest(runId);
     try {
       const cfg = currentCfg();
-      void loadCutoff(); // Independent static file must never hold live quotes or refresh controls.
-      const [snap] = await Promise.all([C.collect(cfg), loadHist()]);
-      const res = C.evaluate(snap, cfg);
-      lastSnap = snap; lastCfg = cfg; refreshFailed = false; redrawCutoff();
-      $("cards").innerHTML = C.ASSETS.map((s) => card(s, res[s], snap)).join("");
-      redrawScenarios(res);
-      for (const s of C.ASSETS) drawSpark(s, res[s], snap.ts);
-      verdict(res, snap);
-      $("clock").textContent = new Date().toLocaleTimeString("zh-CN", { timeZone: "America/New_York", hour12: false }) + " ET";
+      const snap = await C.bounded((signal) => C.collect(cfg, undefined, { signal, onProgress: (next) => {
+        if (runId !== generation || !busy || signal.aborted) return;
+        accept(next, cfg, "实时", runId); scheduleRender(runId);
+      } }), LIVE_TIMEOUT_MS);
+      if (runId !== generation) return;
+      accept(snap, cfg, "实时", runId, snap.err.length > 0);
+      if (snap.err.length) liveError = "部分来源读取失败";
+      for (const key of SECTIONS) if (!views[key] || views[key].runId !== runId) {
+        liveError = liveError || "部分区块无可用数据";
+        if (views[key]) views[key].failed = true;
+      }
     } catch (e) {
-      refreshFailed = true; redrawRedemption(); redrawCutoff();
-      $("vtitle").textContent = "读取失败";
-      $("vnote").textContent = String((e && e.message) || e);
+      if (runId !== generation) return;
+      liveError = String((e && e.message) || e);
+      for (const v of Object.values(views)) v.failed = true;
     } finally {
-      busy = false; $("spin").hidden = true; $("refresh").disabled = false; $("rlabel").textContent = "刷新";
+      if (runId === generation) {
+        clearTimeout(renderTimer); renderTimer = null;
+        busy = false; $("spin").hidden = true; $("refresh").disabled = false; $("rlabel").textContent = "刷新";
+        renderView(); saveCache();
+      }
     }
   }
 
   async function boot() {
-    CFG = await (await fetch("config.json", { cache: "no-store" })).json();
+    CFG = await readJSON("config.json");
     staticBits();
+    loadCache();
     $("refresh").addEventListener("click", run);
     const form = $("st-settings");
     const fill = () => {
@@ -381,7 +503,7 @@
     });
     await run();
     timer = setInterval(run, CFG.refreshSeconds * 1000);
-    setInterval(() => { redrawRedemption(); redrawCutoff(); }, 10000);
+    setInterval(() => { renderView(); redrawRedemption(); }, 10000);
   }
   boot().catch((e) => { $("vtitle").textContent = "初始化失败"; $("vnote").textContent = String(e); });
 })();
