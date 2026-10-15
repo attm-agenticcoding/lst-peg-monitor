@@ -616,6 +616,7 @@
       book("stETH", "okx", cfg.http.okxBook, (d) => d && d.data && d.data[0] && d.data[0].bids),
       book("cbETH", "coinbase", cfg.http.coinbaseBook, (d) => d && d.bids),
       cbinfoP,
+      rateP, // Consume cancellation even if Base/Kyber never reach wrap/sell.
       lidoInfo(),
       queueP,
       waitsP,

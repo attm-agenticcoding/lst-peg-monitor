@@ -73,6 +73,8 @@ function transport({ hang, fail = false } = {}) {
   let requests = 0;
   await assert.rejects(Core.collect(cfg, () => { requests++; }, { signal: aborted.signal }), /superseded/);
   assert.equal(requests, 0);
+  await assert.rejects(Core.collect(cfg, () => new Promise(() => {}), { timeoutMs: 10, onProgress() {} }), /超时/);
+  await flush(); // An unused rate dependency must not leave an unhandled rejection.
   const failed = transport({ fail: true });
   const partial = await Core.collect(cfg, failed.fetch, { timeoutMs: 2000, onProgress() {} });
   assert.match(partial.err.join(" "), /OKX unavailable/);
