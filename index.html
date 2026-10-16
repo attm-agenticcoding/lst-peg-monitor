@@ -2,8 +2,45 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#0b1018">
+<script id="theme-bootstrap">
+// Resolve the preference before styles or body content can paint.
+(() => {
+  "use strict";
+  const key = "dashboard-theme";
+  const valid = (value) => ["light", "dark"].includes(value) ? value : "system";
+  const media = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+  let preference = "system", select;
+  try { preference = valid(localStorage.getItem(key)); } catch (_) {}
+  function apply() {
+    const theme = preference === "system" ? media && media.matches ? "dark" : "light" : preference;
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+    document.querySelector('meta[name="color-scheme"]').content = theme;
+    document.querySelector('meta[name="theme-color"]').content = theme === "dark" ? "#0b1018" : "#f5f7fb";
+    if (select) select.value = preference;
+  }
+  apply();
+  if (media && media.addEventListener) media.addEventListener("change", apply);
+  else if (media && media.addListener) media.addListener(apply);
+  window.addEventListener("storage", (event) => {
+    if (event.key === key || event.key === null) {
+      preference = valid(event.newValue);
+      apply();
+    }
+  });
+  document.addEventListener("DOMContentLoaded", () => {
+    select = document.getElementById("theme-select");
+    select.value = preference;
+    select.addEventListener("change", () => {
+      preference = valid(select.value);
+      try { localStorage.setItem(key, preference); } catch (_) {}
+      apply();
+    });
+  }, { once: true });
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>LST Peg Monitor</title>
 <meta name="description" content="stETH（含 wstETH）与 cbETH 的脱锚监测：兑付锚读代币合约，市价取流动性最深的场所，多场所交叉确认。">
@@ -12,7 +49,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 <style>
 :root{
-  /* Dark by default, including the first paint and native form controls. */
+  /* Keep the original dark palette; the head bootstrap resolves System before paint. */
   color-scheme:dark;
   --ground:#0b1018; --panel:#131c29; --panel-2:#1b2738; --line:#334257; --line-soft:#263448;
   --ink:#edf3fc; --ink-2:#b8c5d6; --ink-3:#95a5ba;
@@ -23,6 +60,29 @@
   --band:rgba(149,165,186,.14);
   --shadow:0 1px 2px rgba(0,0,0,.24), 0 8px 24px -16px rgba(0,0,0,.65);
 }
+:root[data-theme="light"]{
+  color-scheme:light;
+  --ground:#f5f7fb; --panel:#ffffff; --panel-2:#e9eef5; --line:#bcc8d8; --line-soft:#d7dfe9;
+  --ink:#172437; --ink-2:#34455d; --ink-3:#50617a;
+  --accent:#354eb8; --cat-1:#354eb8; --cat-2:#85500d; --cat-3:#006b5d;
+  --ok:#006743; --ok-bg:#e0f3e9; --watch:#765000; --watch-bg:#fff0c9;
+  --alert:#963d0a; --alert-bg:#ffeadb; --crisis:#a22537; --crisis-bg:#ffe4e8;
+  --dead:#50617a; --dead-bg:#e9eef5; --chart-grid:#718096;
+  --band:rgba(80,97,122,.12);
+  --shadow:0 1px 2px rgba(23,36,55,.06), 0 8px 24px -16px rgba(23,36,55,.22);
+}
+/* System preference also works when scripts are unavailable. */
+@media(prefers-color-scheme:light){:root:not([data-theme]){
+  color-scheme:light;
+  --ground:#f5f7fb; --panel:#ffffff; --panel-2:#e9eef5; --line:#bcc8d8; --line-soft:#d7dfe9;
+  --ink:#172437; --ink-2:#34455d; --ink-3:#50617a;
+  --accent:#354eb8; --cat-1:#354eb8; --cat-2:#85500d; --cat-3:#006b5d;
+  --ok:#006743; --ok-bg:#e0f3e9; --watch:#765000; --watch-bg:#fff0c9;
+  --alert:#963d0a; --alert-bg:#ffeadb; --crisis:#a22537; --crisis-bg:#ffe4e8;
+  --dead:#50617a; --dead-bg:#e9eef5; --chart-grid:#718096;
+  --band:rgba(80,97,122,.12);
+  --shadow:0 1px 2px rgba(23,36,55,.06), 0 8px 24px -16px rgba(23,36,55,.22);
+}}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--ground)}
 html{scrollbar-color:var(--ink-3) var(--ground)}
@@ -46,6 +106,16 @@ header.mast{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;
 .mast h1{font-size:16px;font-weight:600;margin:0;letter-spacing:-.01em;white-space:nowrap}
 .mast .sub{font-size:11.5px;color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase;font-weight:500}
 .mast-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.theme-control{display:flex;align-items:center;gap:6px;color:var(--ink-2);font-size:12px;white-space:nowrap}
+.theme-control select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--chart-grid);
+  border-radius:7px;min-height:44px;max-width:100%;padding:7px 8px;cursor:pointer}
+.theme-control select:hover{background:var(--panel-2);border-color:var(--accent)}
+@media(max-width:720px){
+  .mast-in{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px}
+  .mast .sub{grid-column:1;grid-row:2}
+  .theme-control{grid-column:2;grid-row:1 / span 2}
+  .mast-right{grid-column:1 / -1;margin-left:0;justify-content:space-between}
+}
 .clock{font-size:12px;color:var(--ink-2);font-family:"IBM Plex Mono",monospace}
 .data-status{font-size:12px;color:var(--ink-2);margin:10px 20px;line-height:1.6}
 button.refresh{font:inherit;font-size:12.5px;font-weight:500;color:var(--ink);background:var(--panel);
@@ -263,6 +333,13 @@ table.cutoff-economics td:last-child{white-space:normal;min-width:220px;font-siz
         <span class="clock" id="clock">读取中…</span>
         <button class="refresh" id="refresh" type="button"><span id="spin" class="spin" hidden></span><span id="rlabel">刷新</span></button>
       </div>
+      <label class="theme-control" for="theme-select"><span>Theme</span>
+        <select id="theme-select" aria-label="Theme / 显示主题">
+          <option value="system">System</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </label>
     </div>
   </header>
 
