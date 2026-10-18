@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "status": "ok",
+  "status": "unavailable",
   "base": "cbETH",
   "quote": "ETH",
   "base_amount": "1",
-  "amount": "1.141852509284572984",
-  "observed_at": "2026-10-18T14:48:35.000Z",
-  "fetched_at": "2026-10-18T14:48:37.000Z",
-  "generated_at": "2026-10-18T14:48:46.000Z",
-  "valid_until": "2026-10-18T15:18:35.000Z",
+  "amount": null,
+  "observed_at": null,
+  "fetched_at": null,
+  "generated_at": "2026-10-18T14:56:46.000Z",
+  "valid_until": null,
   "max_age_seconds": 1800,
   "source": {
     "type": "ethereum_contract",
@@ -16,9 +16,10 @@
     "contract": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
     "method": "exchangeRate()",
     "selector": "0x3ba0b9a9",
-    "block_number": "26220145",
-    "block_hash": "0xca335da8e327cfeff7ff2155920fb7aa41606d7a45bfd0d105c02fd5324da9c7",
-    "rpc_url": "https://ethereum-rpc.publicnode.com"
+    "block_number": null,
+    "block_hash": null,
+    "rpc_url": null
   },
+  "error": "source_unavailable",
   "provider_updated_at": null
 }
