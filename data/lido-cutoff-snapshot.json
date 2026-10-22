@@ -333,7 +333,7 @@
   },
   "refresh": {
     "mode": "twice-daily",
-    "state": "running",
+    "state": "error",
     "scheduleUtc": [
       "00:00",
       "12:00"
@@ -342,19 +342,12 @@
     "maxSourceAgeSeconds": 5400,
     "maxOperationalAgeSeconds": 48600,
     "lastSuccessAt": "2026-10-14T12:09:43Z",
-    "lease": {
-      "runId": "fc1fea49-fed0-4cf4-b0cc-a60539689b70",
-      "acquiredAtEpoch": 1792672821,
-      "expiresAtEpoch": 1792676121,
-      "trigger": "manual",
-      "rpcCallBudget": 1024,
-      "requestKey": "manual-20261022-user-timeout-retry-02"
-    },
-    "error": null,
+    "lease": null,
+    "error": "The read operation timed out",
     "attemptAt": "2026-10-22T12:40:21Z",
     "trigger": "manual",
     "attemptDay": "2026-10-08",
-    "finishedAt": "2026-10-22T12:27:33Z",
+    "finishedAt": "2026-10-22T12:45:01Z",
     "accessBlocked": false,
     "manualAttemptIds": [
       "manual-20261007-diagnostic-fb355c4d",
