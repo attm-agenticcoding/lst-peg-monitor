@@ -21,7 +21,7 @@ MAX_MESSAGE_CHARS = MAX_MESSAGE_BYTES
 MAX_TYPE_BYTES = 96
 MAX_SOURCE_CHARS = 8192
 TIMEOUT_RETRY_POLICY = {'per_request': 1, 'per_run': 3, 'cooldown_seconds': 5,
-                        'roles': ['event_header']}
+                        'roles': ['anchor', 'historical_logs', 'event_header', 'balance', 'terminal']}
 
 
 def transport_read_timeout(error, phase):

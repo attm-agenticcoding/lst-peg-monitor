@@ -267,7 +267,7 @@ concurrently, with at most four requests in flight. IDs, admission, evidence and
 the original lease's call budget are shared and synchronized. The header batch first reserves
 six calls for the three same-block balances and final seed/target/child rereads;
 those final rereads are always new requests. A fatal error stops new admission and
-discards the batch. The narrowly bounded historical-header timeout exception
+discards the batch. The narrowly bounded read-timeout exception
 below can recover its own request without cancelling valid peer reads.
 A read returning after the deadline is rejected, and the
 final result has an independent deadline check. Already admitted reads may finish
@@ -290,15 +290,15 @@ journal's original monotonic clock, including failed or unknown attempts;
 neither the clock, call budget nor pacing history resets on resume. There is no
 CLI or environment override for the production pace.
 
-### Bounded historical-header read timeout
+### Bounded same-request read timeout
 
 The durable collector permits one narrowly classified timeout retry for each
 identical method-and-parameters key, with at most three retry allowances in the
-original run. Only the `event_header` role is eligible: a fixed, canonical
-`eth_getBlockByNumber [hex_block_number, false]` strictly inside the authenticated
-seed-to-target interval. Anchors, finalized polling, balances, historical logs,
-terminal rereads, SSZ acquisition and the non-durable local collector retain
-their previous behavior.
+original run. The eligible durable roles are `anchor`, `historical_logs`,
+`event_header`, `balance` and `terminal`, within their existing pinned source and
+method/parameter scope. This includes the observed log and finalized-head read
+timeouts from October 22. SSZ acquisition and the non-durable local collector
+retain their previous behavior. No endpoint or method is added.
 
 Eligibility requires a direct built-in `TimeoutError` whose exact message is
 `The read operation timed out`, raised during transport open/read, with no
@@ -322,8 +322,11 @@ Allowances and their admitted retry IDs are restored from the original sealed
 journal on an otherwise authorized same-run resume. An allowance still waiting
 for admission keeps its original cooldown; its limit is already spent. A retry
 already admitted cannot be sent again if its outcome is unknown, cancelled or
-paused. A sealed successful response may only use the existing revalidated
-historical cache. No allowance or budget resets. An exhausted retry becomes a
+paused. A sealed successful historical response may only use the existing
+revalidated historical cache. Fresh-only anchors, balances and terminal checks
+are still sent anew after a successful retry; they never reuse that response or
+obtain a second retry allowance for the same method/parameters. No allowance
+or budget resets. An exhausted retry becomes a
 terminal failure; this does not restart a whole run or revive a failed run.
 
 Full model replay, fresh authentication, the exact final three successful
@@ -367,3 +370,16 @@ For this explicitly requested outage recovery, a manual lease may select **1024*
 The completed failed run's original diagnostic manifest can release its still-owned lease only after fresh input-blob validation and verification that the GitHub job has terminated. This publishes only failure metadata and retains the October 14 source, scenario and checkpoint; it does not relabel diagnostic data as a fresh result. A new manual request must then acquire its own lease and collect all sources anew.
 
 Expired scenario dates are collapsed under a dated historical disclosure; the visible panel says no current scenario is available. The summary now correctly lists both 00:00 and 12:00 UTC attempts.
+
+### October 22 transport evidence
+
+Production run 39778101441 authenticated a new source but failed on an
+`eth_getLogs` transport read timeout (attempt 23). The publication repair
+correctly released its lease and retained the original successful snapshot.
+A separate fresh retry, 39780230135, failed on `eth_getBlockByNumber` with
+`["finalized", false]` (attempt 10), again with a direct read timeout and no
+access denial. These are distinct roles previously excluded from the existing
+three-per-run timeout allowance. The shared allowance now covers all five
+existing RPC roles, retaining exactly one retry per parameter key, three total,
+five-second cooldown, all budget/deadline guards and no retry for HTTP errors,
+redirects, malformed data or denied access. The old failed runs remain terminal.

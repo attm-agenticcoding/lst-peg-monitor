@@ -122,8 +122,8 @@ and bounded Pages verification; it does not extend the collector or lease.
 The production run inherits its budget from the read-back durable lease.
 Cron and relay slot leases always use 256; a manual 320 request remains specific to that
 explicit request. The next ordinary lease defaults to 256 again. Both routes
-retain shared two-second RPC admission and the existing event-header-only
-bounded read-timeout retries, with failed retries charged to the same budget.
+retain shared two-second RPC admission and bounded same-request read-timeout retries across the existing RPC roles
+(once per parameter key, at most three per run), with failed retries charged to the same budget.
 
 The controller never calls `resume`. An eligible `paused` result is deliberately
 aborted in the same job under the original journal/lease guards because this

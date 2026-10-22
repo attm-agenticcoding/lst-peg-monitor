@@ -277,7 +277,7 @@ class BoundedTimeoutRetryTests(unittest.TestCase):
         self.assertEqual(self.journal.status, 'terminal')
         self.assert_pacing_and_seal()
 
-    def test_timeout_retries_do_not_apply_to_anchor_balance_terminal_or_logs(self):
+    def test_other_read_roles_retry_once_then_stop_on_a_second_timeout(self):
         targets = [('anchor', 'eth_getBlockByNumber', ['0x64', False]),
                    ('terminal', 'eth_getBlockByNumber', ['0x64', False]),
                    ('balance', 'eth_getBalance', [ex.ADDRESSES['core'], '0x69']),
@@ -295,9 +295,54 @@ class BoundedTimeoutRetryTests(unittest.TestCase):
                 transport = Transport(lambda _: (_ for _ in ()).throw(read_timeout()))
                 with patch('refresh.open_rpc', side_effect=transport), self.assertRaises(TimeoutError):
                     self.rpc(method, params)
-                self.assertEqual(len(transport.requests), 1)
-                self.assertEqual(self.grant_count(), 0)
+                self.assertEqual(len(transport.requests), 2)
+                self.assertEqual(self.grant_count(), 1)
                 self.assertEqual(self.journal.status, 'terminal')
+
+    def test_read_role_retries_preserve_fresh_rereads_and_only_cache_historical_logs(self):
+        targets = [('anchor', 'eth_getBlockByNumber', ['finalized', False]),
+                   ('terminal', 'eth_getBlockByNumber', ['0x64', False]),
+                   ('balance', 'eth_getBalance', [ex.ADDRESSES['core'], '0x69']),
+                   ('historical_logs', 'eth_getLogs', [{'address': self.journal.context['log_addresses'],
+                                                       'fromBlock': '0x65', 'toBlock': '0x69'}])]
+        for index, (role, method, params) in enumerate(targets):
+            with self.subTest(role=role):
+                if index:
+                    self.fixture.directory = self.fixture.root / f'success-role-{index}'
+                    self.fixture.seal_path = self.fixture.root / f'success-role-{index}.seal.json'
+                    self.journal = self.fixture.create()
+                    self.rpc = self.new_rpc(self.journal)
+                if role != 'anchor':
+                    self.authenticate()
+                count = 0
+                def respond(request):
+                    nonlocal count
+                    count += 1
+                    if count == 1:
+                        raise read_timeout()
+                    return self.fake(request['method'], request['params'])
+                transport = Transport(respond)
+                with patch('refresh.open_rpc', side_effect=transport):
+                    first = self.rpc(method, params)
+                    second = self.rpc(method, params)
+                self.assertEqual(first, second)
+                self.assertEqual(count, 2 if role == 'historical_logs' else 3)
+                self.assertEqual(self.grant_count(), 1)
+                self.assert_pacing_and_seal()
+                self.journal.close()
+                self.journal = self.fixture.reopen()
+                self.rpc = self.new_rpc(self.journal)
+                if role != 'anchor':
+                    self.authenticate()
+                with patch('refresh.open_rpc', side_effect=self.fixture.transport()):
+                    self.assertEqual(self.rpc(method, params), first)
+                self.assertEqual(self.grant_count(), 1, 'sealed role allowance survives replay without resetting')
+                if role != 'historical_logs':
+                    wire = Transport(lambda _: (_ for _ in ()).throw(read_timeout()))
+                    with patch('refresh.open_rpc', side_effect=wire), self.assertRaises(TimeoutError):
+                        self.rpc(method, params)
+                    self.assertEqual(len(wire.requests), 1, 'same parameters cannot obtain another retry')
+                    self.assertEqual(self.grant_count(), 1)
 
     def test_cooldown_uses_original_deadline_and_cannot_spend_completion_reserve(self):
         self.authenticate()

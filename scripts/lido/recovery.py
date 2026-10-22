@@ -569,10 +569,11 @@ class RunJournal:
             self._scope(data['role'], req['method'], req['params'])
             key = self._request_key(req['method'], req['params'])
             retry = self._timeout_retries.get(key)
-            pending = (data['role'] == 'event_header' and retry is not None
+            pending = (data['role'] in TIMEOUT_RETRY_POLICY['roles'] and retry is not None
                        and retry['retry_id'] is None)
-            if data['role'] == 'event_header' and retry is not None and not pending:
-                raise Corrupt('identical header timeout retry was already admitted')
+            if (retry is not None and not pending
+                    and (data['role'] in CACHE_ROLES or retry['retry_id'] not in self.responses)):
+                raise Corrupt('identical request timeout retry was already admitted')
             if pending:
                 if (data.get('timeoutRetryOf') != retry['id']
                         or row['stamp']['monotonic'] < retry['not_before']
@@ -608,7 +609,7 @@ class RunJournal:
                 if (category != 'transport_read_timeout' or code is not None or data.get('denied')
                         or data.get('phase') not in ('open', 'read')
                         or data.get('knownCancellation') is not False
-                        or self.requests[ident]['role'] != 'event_header'
+                        or self.requests[ident]['role'] not in TIMEOUT_RETRY_POLICY['roles']
                         or self.status not in ('anchors', 'collecting') or self.denied
                         or key in self._timeout_retries
                         or len(self._timeout_retries) >= TIMEOUT_RETRY_POLICY['per_run']
@@ -753,9 +754,13 @@ class RunJournal:
             raw = encoded(request)
             retry = self._timeout_retries.get(self._request_key(method, params))
             metadata = {}
-            if role == 'event_header' and retry is not None:
-                if retry['retry_id'] is not None:
-                    raise Stopped('identical header timeout retry was already admitted')
+            if retry is not None and retry['retry_id'] is not None:
+                # Fresh-only anchors, balances and terminal checks may be read
+                # again after a successful retry; they never reuse that response
+                # or acquire another timeout allowance for the same parameters.
+                if role in CACHE_ROLES or retry['retry_id'] not in self.responses:
+                    raise Stopped('identical request timeout retry was already admitted')
+            if role in TIMEOUT_RETRY_POLICY['roles'] and retry is not None and retry['retry_id'] is None:
                 now = self._stamp()['monotonic']
                 if (now < retry['not_before']
                         or now - retry['failed_at'] < TIMEOUT_RETRY_POLICY['cooldown_seconds']):
@@ -773,7 +778,7 @@ class RunJournal:
     def timeout_retry_not_before(self, role, method, params):
         with self._mutex:
             retry = self._timeout_retries.get(self._request_key(method, params))
-            return (retry['not_before'] if role == 'event_header' and retry is not None
+            return (retry['not_before'] if role in TIMEOUT_RETRY_POLICY['roles'] and retry is not None
                     and retry['retry_id'] is None else None)
 
     def retry_timeout(self, ident, error, phase):
@@ -794,7 +799,7 @@ class RunJournal:
             if (ident not in self.requests or ident in self.responses or ident in self.failures
                     or ident not in self._active_callbacks
                     or self.requests[ident]['epoch'] != self.epoch
-                    or self.requests[ident]['role'] != 'event_header'
+                    or self.requests[ident]['role'] not in TIMEOUT_RETRY_POLICY['roles']
                     or self.status not in ('anchors', 'collecting') or self.denied):
                 return False
             req = self.requests[ident]
