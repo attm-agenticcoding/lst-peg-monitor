@@ -39,3 +39,28 @@ Formula checks: buy back = cbETH × exchangeRate; wrap amount = ETH / exchangeRa
 - Mobile Chromium regression uses a 390 × 844 touch viewport, checks retained DOM identity and scroll offset across the 10-second tick and refresh, and missing/recovered aggregator states. This does not claim a physical iPhone Safari test.
 - No collection schedules, alert thresholds, private services or credentials changed.
 - Public sources: [Kyber API](https://api-docs.kyberswap.com/aggregator-api.html), [Coinbase wrapped asset endpoint](https://api.exchange.coinbase.com/wrapped-assets/CBETH), [Aerodrome Quoter deployed source](https://basescan.org/address/0x254cf9e1e6e233aa1ac962cb9b05b2cfeaae15b0).
+
+## Follow-up: partially loaded mobile tables
+
+A real browser against the deployed page received all ten cbETH quotes after
+about 22 seconds, but the serial fair queue spent many requests on unrelated
+markets before finishing the larger amounts. Increasing the overall deadline
+alone did not make the expanded panel responsive. The browser now reprioritizes
+the remaining requests for an open scenario without restarting any completed
+request or adding concurrency. Backend ordering stays unchanged. Missing rows
+identify waiting, in-flight, failed, interrupted or expired quotes.
+
+The live slow-network check also exposed a separate first-load DOM bug: when
+stETH arrived after cbETH, positional patching repurposed the existing cbETH
+subtree. Patching now matches stable element IDs, and the mobile regression
+explicitly opens/scrolls cbETH before inserting the late stETH section.
+
+Verification: all JavaScript tests passed; mobile Chromium retained the same
+scroller and horizontal offset through cold-start insertion and later refreshes.
+With an added 1.5-second delay on every real aggregator request, the revised
+390px browser obtained 10/10 cbETH rows in 31.3 seconds, retaining its 160px
+horizontal offset. All ten prioritized requests were sent before unrelated
+remaining markets. At this observation the 100 ETH buy/redeem returned about
+99.9898 ETH; the 300 ETH wrap/sell returned about 299.8015 ETH, both before
+external costs. These are timestamped test observations, not guarantees for a
+user's network or future execution.

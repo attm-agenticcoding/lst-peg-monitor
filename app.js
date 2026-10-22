@@ -9,23 +9,35 @@
   // interrupt iOS momentum. Details/focus remain on the same DOM objects.
   function patchNode(current, next) {
     if (current.nodeType !== next.nodeType || current.nodeName !== next.nodeName) {
-      current.replaceWith(next.cloneNode(true)); return;
+      const replacement = next.cloneNode(true);
+      current.replaceWith(replacement); return replacement;
     }
     if (current.nodeType !== 1) {
       if (current.nodeValue !== next.nodeValue) current.nodeValue = next.nodeValue;
-      return;
+      return current;
     }
     for (const attr of [...current.attributes]) {
       if (current.tagName === "DETAILS" && attr.name === "open") continue;
       if (!next.hasAttribute(attr.name)) current.removeAttribute(attr.name);
     }
     for (const attr of [...next.attributes]) if (current.getAttribute(attr.name) !== attr.value) current.setAttribute(attr.name, attr.value);
-    const old = [...current.childNodes], incoming = [...next.childNodes];
-    for (let i = 0; i < Math.max(old.length, incoming.length); i++) {
-      if (!incoming[i]) old[i].remove();
-      else if (!old[i]) current.appendChild(incoming[i].cloneNode(true));
-      else patchNode(old[i], incoming[i]);
+    // Sections arrive independently. Match their stable IDs before patching;
+    // inserting stETH before cbETH must not repurpose the open cbETH subtree.
+    let cursor = current.firstChild;
+    for (const incoming of [...next.childNodes]) {
+      const key = incoming.nodeType === 1 && incoming.id;
+      let node = key ? [...current.childNodes].find(child => child.nodeType === 1 && child.id === key) : cursor;
+      if (!key && node && node.nodeType === 1 && node.id) node = null;
+      if (!node) {
+        node = incoming.cloneNode(true); current.insertBefore(node, cursor);
+      } else {
+        if (node !== cursor) current.insertBefore(node, cursor);
+        node = patchNode(node, incoming);
+      }
+      cursor = node.nextSibling;
     }
+    while (cursor) { const nextSibling = cursor.nextSibling; cursor.remove(); cursor = nextSibling; }
+    return current;
   }
   function patchHTML(el, html, outer = false) {
     if (!document.createElement) { el[outer ? "outerHTML" : "innerHTML"] = html; return; }
@@ -219,15 +231,23 @@
 
   /* ---------- Base 买入 → Coinbase 赎回 ---------- */
   const RT_VIA = { kyber_base: "KyberSwap · Base", aero_base: "Aerodrome · Base" };
+  function rtMissing(r) {
+    if (r.quoteState === "expired") return "报价过期";
+    if (r.quoteState === "failed") return "报价失败";
+    if (r.quoteState === "loading") return busy ? "正在报价…" : "读取中断";
+    if (r.quoteState === "waiting") return busy ? "等待报价…" : "本轮未完成";
+    return busy ? "等待报价…" : "暂无有效报价";
+  }
+  const rtPending = r => `<span class="dim">${rtMissing(r)}</span>`;
   function rtSection(rt) {
     if (!rt) return "";
     const n = (x, d) => (x == null ? "—" : x.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }));
     const days = rt.waitDays != null ? rt.waitDays.toFixed(1) : "—";
-    const rows = rt.rows.map((r) => `<tr><td class="num">${r.eth}</td><td class="r num">${n(r.cbeth, 4)}</td>
+    const rows = rt.rows.map((r) => `<tr><td class="num">${r.eth}</td><td class="r num">${r.cbeth == null ? rtPending(r) : n(r.cbeth, 4)}</td>
       <td class="r num">${n(r.back, 4)}</td>
       <td class="r num">${r.diff == null ? "—" : `${r.diff >= 0 ? "+" : "−"}${n(Math.abs(r.diff), 4)}`}<span class="vmeta">${fmt(r.bps, 1)} bps</span></td>
       <td class="r num">${r.apr == null ? "—" : `${r.apr >= 0 ? "" : "−"}${Math.abs(r.apr * 100).toFixed(2)}%`}</td>
-      <td class="dim" style="padding-left:16px">${RT_VIA[r.via] || (r.status === "single-pool" ? "仅单池 · 等待聚合报价" : "聚合报价缺失或过期")}</td></tr>`).join("");
+      <td class="dim" style="padding-left:16px">${RT_VIA[r.via] || `${r.status === "single-pool" ? "仅单池 · " : ""}${rtMissing(r)}`}</td></tr>`).join("");
     return `<div class="sect"><h3>Base 买入 → Coinbase 赎回 <span class="cnt">兑换率 ${rt.rate.toFixed(6)}${rt.src === "coinbase" ? "（Coinbase 公布）" : "（取不到 Coinbase 的，用链上 exchangeRate）"} · 赎回排队约 ${days} 天</span></h3>
       <div class="tw"><table class="src"><thead><tr><th>投入 ETH</th><th class="r">买到 cbETH</th><th class="r">赎回得 ETH</th>
         <th class="r">差额 ETH</th><th class="r">折合年化</th><th style="padding-left:16px">买入路由</th></tr></thead><tbody>${rows}</tbody></table></div>
@@ -307,10 +327,12 @@
   // Keep disclosure choices stable during the 10-second expiry check and live refresh.
   const scenarioIds = ["st-redemption", "st-redemption-details", "cb-redemption"];
   const openScenarios = () => scenarioIds.filter((id) => $(id) && $(id).open);
+  const quotePriority = () => $("cb-redemption") && $("cb-redemption").open ? "rt"
+    : $("st-redemption") && $("st-redemption").open ? "st" : null;
   const restoreScenarios = (opened) => { for (const id of opened) if ($(id)) $(id).open = true; };
   function redrawScenarios(res) {
     const opened = openScenarios(), focusedId = document.activeElement && document.activeElement.id;
-    patchHTML($("scenarios"), stSection(res.stETH.rt) + (res.cbETH.rt ? `<details class="card scenario-panel" id="cb-redemption"><summary><span>cbETH 买入赎回 / 质押卖出</span><span class="scenario-caption">收益测算</span></summary>${sectionNote("rt")}<p class="data-status">${busy ? "正在逐档读取；网络较慢时最多等待 2 分钟。" : ""}空白表示该档尚未取得有效聚合报价，不代表没有流动性。</p>${rtSection(res.cbETH.rt)}</details>` : ""));
+    patchHTML($("scenarios"), stSection(res.stETH.rt) + (res.cbETH.rt ? `<details class="card scenario-panel" id="cb-redemption"><summary><span>cbETH 买入赎回 / 质押卖出</span><span class="scenario-caption">收益测算</span></summary>${sectionNote("rt")}<p class="data-status">${busy ? "展开后优先完成这 10 档报价；正在逐档更新，网络较慢时最多等待 2 分钟。" : ""}未报价的档位会标出等待、失败或过期状态，不代表没有流动性。</p>${rtSection(res.cbETH.rt)}</details>` : ""));
     restoreScenarios(opened);
     if (focusedId && $(focusedId) && $(focusedId).focus) $(focusedId).focus({ preventScroll: true });
   }
@@ -319,9 +341,9 @@
   function wsSection(rt, n) {
     if (!rt.ws || !rt.ws.length) return "";
     const rows = rt.ws.map((r) => `<tr><td class="num">${r.eth}</td><td class="r num">${n(r.cbeth, 4)}</td>
-      <td class="r num">${n(r.back, 4)}</td>
+      <td class="r num">${r.back == null ? rtPending(r) : n(r.back, 4)}</td>
       <td class="r num">${r.diff == null ? "—" : `${r.diff >= 0 ? "+" : "−"}${n(Math.abs(r.diff), 4)}`}<span class="vmeta">${fmt(r.bps, 1)} bps</span></td>
-      <td class="dim" style="padding-left:16px">${RT_VIA[r.via] || (r.status === "single-pool" ? "仅单池 · 等待聚合报价" : "聚合报价缺失或过期")}</td></tr>`).join("");
+      <td class="dim" style="padding-left:16px">${RT_VIA[r.via] || `${r.status === "single-pool" ? "仅单池 · " : ""}${rtMissing(r)}`}</td></tr>`).join("");
     return `<div class="sect"><h3>Coinbase 质押包装 → Base 卖出 <span class="cnt">按兑换率 ${rt.rate.toFixed(6)} 包装；可用性与到账时间依 Coinbase</span></h3>
       <div class="tw"><table class="src"><thead><tr><th>投入 ETH</th><th class="r">包装得 cbETH</th><th class="r">Base 卖出得 ETH</th>
         <th class="r">差额 ETH</th><th style="padding-left:16px">卖出路由</th></tr></thead><tbody>${rows}</tbody></table></div>
@@ -489,7 +511,7 @@
         };
         progress();
         try {
-          return await C.bounded(() => C.collect(cfg, undefined, { signal: controller.signal, onProgress: (next) => {
+          return await C.bounded(() => C.collect(cfg, undefined, { signal: controller.signal, quotePriority, onProgress: (next) => {
             if (runId !== generation || !busy || controller.signal.aborted) return;
             progress();
             liveErrors = next.err;

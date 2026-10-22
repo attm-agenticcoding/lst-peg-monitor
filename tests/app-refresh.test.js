@@ -159,6 +159,23 @@ function harness({ cached, collect, history, latest, brokenStorage = false } = {
   assert.equal(slow.el("refresh").disabled, false);
   assert.match(slow.el("scenarios").innerHTML, /有效聚合报价 10\/10/);
 
+  let priorityOptions;
+  const focusedDone = deferred();
+  const focused = harness({ collect: (_, opts) => { priorityOptions = opts; return focusedDone.promise; } });
+  await flush();
+  assert.equal(priorityOptions.quotePriority(), null);
+  focused.el("cb-redemption").open = true;
+  assert.equal(priorityOptions.quotePriority(), "rt", "opening a panel reprioritizes the existing collection");
+  const pending = snapshot(focused.now());
+  pending.rt.kyber = { 25: 25 }; pending.rt.ws.kyber = { 5: 5 };
+  pending.rt.requests = { kyber: { 50: "loading", 75: "waiting", 100: "failed" }, wsKyber: { 10: "waiting" } };
+  priorityOptions.onProgress(pending); await focused.tick(50);
+  for (const text of ["正在报价…", "等待报价…", "报价失败"]) assert.ok(focused.el("scenarios").innerHTML.includes(text), text);
+  focusedDone.resolve(pending); await flush();
+  assert.match(focused.el("scenarios").innerHTML, /读取中断/);
+  assert.match(focused.el("scenarios").innerHTML, /本轮未完成/);
+  assert.equal(focused.count(), 1);
+
   let cappedOptions;
   const capped = harness({ collect: (_, opts) => { cappedOptions = opts; return new Promise(() => {}); } });
   await flush();

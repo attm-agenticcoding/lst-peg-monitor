@@ -64,6 +64,28 @@ function transport({ hang, fail = false } = {}) {
   const backend = transport(); await Core.collect(cfg, backend.fetch);
   assert.ok(backend.calls.findIndex((url) => url.startsWith(cfg.http.lidoWq)) > backend.calls.map((url, i) => url.includes("routes?") ? i : -1).reduce((a, b) => Math.max(a, b)), "backend request ordering is unchanged");
 
+  const opened = transport(); let priority = null, routeCount = 0;
+  const scheduled = await Core.collect(cfg, async (url, init) => {
+    if (url.includes("routes?") && ++routeCount === 1) priority = "rt";
+    return opened.fetch(url, init);
+  }, { quotePriority: () => priority, onProgress() {} });
+  const prioritized = opened.calls.filter(url => url.includes("routes?"));
+  assert.ok(prioritized.slice(1, 11).every(url => url.startsWith(cfg.http.kyberBase)), "opening cbETH moves all ten quotes ahead of other market requests");
+  assert.deepEqual([...prioritized].sort(), [...routeCalls].sort(), "reprioritizing issues the same bounded request set");
+  assert.equal(opened.max(), 1, "priority never increases upstream concurrency");
+  assert.equal(Core.roundTrip(scheduled.rt, scheduled.nav.cbETH, cfg, now, now).ws.length, 6);
+
+  const unavailable = transport(), states = []; let attempts = 0;
+  const target = url => url.startsWith(cfg.http.kyberBase) && new URL(url).searchParams.get("tokenIn") === cfg.addresses.ETH && new URL(url).searchParams.get("amountIn") === "100000000000000000000";
+  const rejected = await Core.collect(cfg, (url, init) => {
+    if (url.includes("routes?") && target(url)) { attempts++; return Promise.resolve({ ok: false, status: 503 }); }
+    return unavailable.fetch(url, init);
+  }, { quotePriority: () => "rt", onProgress: s => states.push(s.rt.requests.kyber[100]) });
+  assert.equal(attempts, 2, "one bounded retry for the failed amount");
+  for (const state of ["waiting", "loading", "failed"]) assert.ok(states.includes(state), state);
+  assert.equal(Core.roundTrip(rejected.rt, rejected.nav.cbETH, cfg, now, now).rows[3].quoteState, "failed");
+  assert.equal(rejected.rt.requests.wsKyber[300], "ready", "one failed amount does not block later amounts");
+
   for (const hang of ["fetch", "body"]) {
     const t = transport({ hang }), seen = [];
     await assert.rejects(Core.collect(cfg, t.fetch, { timeoutMs: 30, onProgress: (s) => seen.push(s) }), /超时/);

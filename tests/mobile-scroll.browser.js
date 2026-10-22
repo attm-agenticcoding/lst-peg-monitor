@@ -9,17 +9,25 @@ const path = require("node:path"), root = path.resolve(__dirname, "..");
     const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
     const errors = []; page.on("pageerror", e => errors.push(e.message));
     const snapshot = require("../data/latest.json").snapshot;
-    await page.addInitScript(s => { window.__snapshot = s; }, snapshot);
+    await page.addInitScript(s => { window.__snapshot = s; window.__cold = true; }, snapshot);
     await page.route("**/*", async route => {
       const u = new URL(route.request().url());
       if (u.origin !== "http://lst.test") return route.abort();
+      if (u.pathname === "/data/latest.json") return route.fulfill({ status: 404, body: "" });
       const file = path.join(root, u.pathname === "/" ? "index.html" : u.pathname.slice(1));
       if (!fs.existsSync(file)) return route.fulfill({ status: 404, body: "" });
       let body = fs.readFileSync(file);
-      if (u.pathname === "/core.js") body = body.toString() + `\nwindow.PegCore.collect = async () => {
+      if (u.pathname === "/core.js") body = body.toString() + `\nwindow.PegCore.collect = async (_, __, options) => {
         const s = structuredClone(window.__snapshot), now = Math.floor(Date.now()/1000);
         s.ts = now; s.sectionAt = {}; s.rt.quoteAt = {};
         if (window.__partial) { delete s.rt.kyber; delete s.rt.ws.kyber; }
+        if (window.__cold) {
+          const partial = structuredClone(s); partial.st = null;
+          partial.rt.kyber = Object.fromEntries(Object.entries(partial.rt.kyber).slice(0, 2));
+          partial.rt.ws.kyber = Object.fromEntries(Object.entries(partial.rt.ws.kyber).slice(0, 2));
+          options.onProgress(partial);
+          return new Promise(resolve => { window.__finish = () => { window.__cold = false; resolve(s); }; });
+        }
         return s;
       };`;
       await route.fulfill({ body, contentType: file.endsWith(".js") ? "application/javascript" : file.endsWith(".json") ? "application/json" : "text/html" });
@@ -33,6 +41,10 @@ const path = require("node:path"), root = path.resolve(__dirname, "..");
     });
     const before = await page.evaluate(() => window.__left);
     assert.ok(before > 0, "390px viewport has horizontal scroll");
+    assert.equal(await page.locator("#st-redemption").count(), 0);
+    await page.evaluate(() => window.__finish());
+    await page.locator("#st-redemption").waitFor({ state: "attached" });
+    assert.deepEqual(await page.evaluate(() => ({ same: window.__scroller === document.querySelector("#cb-redemption .tw"), left: window.__scroller.scrollLeft, open: document.querySelector("#cb-redemption").open })), { same: true, left: before, open: true }, "late stETH insertion preserves the existing cbETH panel");
     await page.clock.runFor(11000);
     assert.deepEqual(await page.evaluate(() => ({ same: window.__scroller === document.querySelector("#cb-redemption .tw"), left: window.__scroller.scrollLeft })), { same: true, left: before });
     await page.locator("#refresh").click();

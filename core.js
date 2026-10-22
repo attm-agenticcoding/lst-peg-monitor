@@ -150,11 +150,13 @@
       return num(at) && at <= now + 30 && now - at <= ((cfg.stRedeem || {}).quoteMaxAgeSeconds || 180);
     };
     const available = (row, venue, x) => row && num(row[x]) && row[x] > 0 && fresh(venue, x) ? row[x] : null;
+    const quoteState = (row, venue, x) => row && num(row[x]) && row[x] > 0 && !fresh(venue, x)
+      ? "expired" : q.requests && q.requests[venue] && q.requests[venue][x] || "unavailable";
     const rows = sizes.map((x) => {
       const k = available(q.kyber, "kyber", x), a = available(q.aero, "aero", x);
       const best = num(k) && (!num(a) || k >= a) ? { cb: k, via: "kyber_base" } : num(a) ? { cb: a, via: "aero_base" } : null;
       if (!num(k)) return { eth: x, cbeth: null, back: null, diff: null, bps: null, apr: null, via: null,
-        status: num(a) ? "single-pool" : "unavailable", singlePool: a };
+        status: num(a) ? "single-pool" : "unavailable", singlePool: a, quoteState: quoteState(q.kyber, "kyber", x) };
       const back = best.cb * rate, diff = back - x, bps = (diff / x) * 1e4;
       const apr = num(q.waitDays) && q.waitDays > 0 ? (bps / 1e4) * (365 / q.waitDays) : null;
       return { eth: x, cbeth: best.cb, back, diff, bps: r2(bps), apr, via: best.via };
@@ -164,7 +166,7 @@
       const k = available(q.ws && q.ws.kyber, "wsKyber", x), a = available(q.ws && q.ws.aero, "wsAero", x);
       const best = num(k) && (!num(a) || k >= a) ? { back: k, via: "kyber_base" } : num(a) ? { back: a, via: "aero_base" } : null;
       if (!num(k)) return { eth: x, cbeth: x / rate, back: null, diff: null, bps: null, via: null,
-        status: num(a) ? "single-pool" : "unavailable", singlePool: a };
+        status: num(a) ? "single-pool" : "unavailable", singlePool: a, quoteState: quoteState(q.ws && q.ws.kyber, "wsKyber", x) };
       const diff = best.back - x;
       return { eth: x, cbeth: x / rate, back: best.back, diff, bps: r2((diff / x) * 1e4), via: best.via };
     });
@@ -341,11 +343,13 @@
     const nav = { stETH: 1, wstETH: null, cbETH: null }, sectionAt = {};
     let wstethConversion = null, cbethConversion = null;
     const stSizes = (cfg.stRedeem && cfg.stRedeem.sizes) || [], st = { quoteMeta: {}, waits: {} };
-    const rtSizes = (cfg.roundTrip && cfg.roundTrip.sizes) || [], rt = { quoteAt: {} };
+    const rtSizes = (cfg.roundTrip && cfg.roundTrip.sizes) || [], rt = { quoteAt: {}, requests: {} };
     const rtTime = (venue, x, timestamp) => {
       (rt.quoteAt[venue] = rt.quoteAt[venue] || {})[x] = Number(timestamp) || Math.floor(Date.now() / 1000);
     };
     const wsSizes = (cfg.wrapSell && cfg.wrapSell.sizes) || [];
+    rt.requests.kyber = Object.fromEntries(rtSizes.map(x => [x, "waiting"]));
+    rt.requests.wsKyber = Object.fromEntries(wsSizes.map(x => [x, "waiting"]));
     const snapshot = () => ({ ts: Math.floor(Date.now() / 1000), nav, px, rt, st, err, wstethConversion, cbethConversion, sectionAt });
     function publish(...sections) {
       check();
@@ -549,37 +553,44 @@
         { name: "kyber stETH", url: cfg.http.kyber, tin: A.stETH, tout: A.ETH, sizes, put: (s, o) => put("stETH", "kyber", s, o / s) },
         { name: "kyber_base cbETH", url: cfg.http.kyberBase, tin: cfg.base.cbETH, tout: A.ETH, sizes, put: (s, o) => put("cbETH", "kyber_base", s, o / s) },
         { name: "kyber cbETH", url: cfg.http.kyber, tin: A.cbETH, tout: A.ETH, sizes, put: (s, o) => put("cbETH", "kyber", s, o / s) },
-        { name: "kyber 买入 stETH", url: cfg.http.kyber, tin: A.ETH, tout: A.stETH, sizes: stSizes, put: (x, o, summary) => { (st.kyber = st.kyber || {})[x] = o; quoteMeta("kyber", x, { gasUnits: Number(summary.gas), routeTimestamp: summary.timestamp || null }); } },
-        { name: "kyber_base 买入", url: cfg.http.kyberBase, tin: A.ETH, tout: cfg.base.cbETH, sizes: rtSizes, put: (x, o, summary) => { (rt.kyber = rt.kyber || {})[x] = o; rtTime("kyber", x, summary.timestamp); publish("rt"); } },
+        { section: "st", name: "kyber 买入 stETH", url: cfg.http.kyber, tin: A.ETH, tout: A.stETH, sizes: stSizes, put: (x, o, summary) => { (st.kyber = st.kyber || {})[x] = o; quoteMeta("kyber", x, { gasUnits: Number(summary.gas), routeTimestamp: summary.timestamp || null }); } },
+        { section: "rt", requestKey: "kyber", name: "kyber_base 买入", url: cfg.http.kyberBase, tin: A.ETH, tout: cfg.base.cbETH, sizes: rtSizes, put: (x, o, summary) => { (rt.kyber = rt.kyber || {})[x] = o; rtTime("kyber", x, summary.timestamp); publish("rt"); } },
       ];
       // 反方向：包装得到的 cbETH 在 Base 上的聚合卖出报价（数量 = X / 兑换率，所以排在最后、等兑换率到手）
-      if (wsSizes.length) jobs.push({ name: "kyber_base 包装后卖出", url: cfg.http.kyberBase, tin: cfg.base.cbETH, tout: A.ETH, sizes: wsSizes,
+      if (wsSizes.length) jobs.push({ section: "rt", requestKey: "wsKyber", name: "kyber_base 包装后卖出", url: cfg.http.kyberBase, tin: cfg.base.cbETH, tout: A.ETH, sizes: wsSizes,
         amount: async (x) => { const a = await wsWei(); return a[wsSizes.indexOf(x)]; },
         put: (x, o, summary) => { ((rt.ws = rt.ws || {}).kyber = rt.ws.kyber || {})[x] = o; rtTime("wsKyber", x, summary.timestamp); publish("rt"); } });
-      // Fair, still strictly serial: one size per category per pass. A slow
-      // sell venue must not put every redemption quote at the end of the queue.
-      const queue = jobs.map((j) => ({ ...j, last: null, ok: 0 }));
-      for (let i = 0; i < Math.max(0, ...queue.map((j) => j.sizes.length)); i++) {
-        for (const j of queue) {
-          if (i >= j.sizes.length) continue;
-          const s = j.sizes[i];
-          for (let k = 0; k < 2; k++) {
-            try {
-              const amt = j.amount ? await j.amount(s) : Redemption.toWei(s);
-              if (!amt) throw new Error("没有兑换率");
-              const d = await getJSON(`${j.url}?tokenIn=${j.tin}&tokenOut=${j.tout}&amountIn=${amt}`, null, 10000);
-              const out = d && d.data && d.data.routeSummary && d.data.routeSummary.amountOut;
-              if (!out) throw new Error((d && d.message) || "无报价");
-              j.put(s, Number(BigInt(out)) / 1e18, d.data.routeSummary);
-              j.ok++;
-              break;
-            } catch (e) {
-              check(); j.last = e;
-              if (k === 0) await bounded(() => new Promise((r) => setTimeout(r, 800)), 0, signal);
-            }
+      // Keep one request in flight. An opened scenario can move its remaining
+      // quotes ahead of unrelated markets, without restarting completed work.
+      const queue = jobs.map((j) => ({ ...j, last: null, ok: 0 })), pending = [];
+      for (let i = 0; i < Math.max(0, ...queue.map(j => j.sizes.length)); i++)
+        for (const j of queue) if (i < j.sizes.length) pending.push({ j, i });
+      while (pending.length) {
+        check();
+        const priority = options.quotePriority && options.quotePriority();
+        const preferred = priority ? pending.findIndex(({ j }) => j.section === priority) : -1;
+        const { j, i } = pending.splice(preferred < 0 ? 0 : preferred, 1)[0], s = j.sizes[i];
+        const state = value => { if (j.requestKey) { rt.requests[j.requestKey][s] = value; publish("rt"); } };
+        state("loading");
+        let succeeded = false;
+        for (let k = 0; k < 2; k++) {
+          try {
+            const amt = j.amount ? await j.amount(s) : Redemption.toWei(s);
+            if (!amt) throw new Error("没有兑换率");
+            const d = await getJSON(`${j.url}?tokenIn=${j.tin}&tokenOut=${j.tout}&amountIn=${amt}`, null, 10000);
+            const out = d && d.data && d.data.routeSummary && d.data.routeSummary.amountOut;
+            if (!out) throw new Error((d && d.message) || "无报价");
+            if (j.requestKey) rt.requests[j.requestKey][s] = "ready";
+            j.put(s, Number(BigInt(out)) / 1e18, d.data.routeSummary);
+            j.ok++; succeeded = true;
+            break;
+          } catch (e) {
+            check(); j.last = e;
+            if (k === 0) await bounded(() => new Promise((r) => setTimeout(r, 800)), 0, signal);
           }
-          if (i === j.sizes.length - 1 && j.name === "kyber 买入 stETH") stQuotesReady();
         }
+        if (!succeeded) state("failed");
+        if (i === j.sizes.length - 1 && j.name === "kyber 买入 stETH") stQuotesReady();
       }
       stQuotesReady();
       for (const j of queue) if (j.ok < j.sizes.length) note(`${j.name}（${j.ok}/${j.sizes.length}）`, j.last);
