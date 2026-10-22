@@ -383,3 +383,30 @@ three-per-run timeout allowance. The shared allowance now covers all five
 existing RPC roles, retaining exactly one retry per parameter key, three total,
 five-second cooldown, all budget/deadline guards and no retry for HTTP errors,
 redirects, malformed data or denied access. The old failed runs remain terminal.
+
+### October 22 finalized-request header pruning
+
+Historical event replay still checks every request ID, amount, share amount and
+contiguous finalization. Canonical timestamps are fetched for every request
+remaining in the target queue and every finalization, accounting report and
+queue pause/resume event. The application time of a request which is removed by
+a later validated finalization cannot affect the final queue or simulation.
+Those already-completed application times no longer cause separate header RPCs.
+Other log coverage, conflicting-hash checks, target balances and final canonical
+seed/target/child rereads retain their checks. Historical logs remain
+provider-attested, as before; this does not claim receipt-trie proofs.
+
+On the 44,560-event October 22 diagnostic capture, removing the 569 application
+timestamps subsequently finalized produced exactly the same replayed state.
+Required historical headers dropped from 675 to 149, giving an estimated 225
+total RPC calls instead of at least 751. These diagnostic inputs are used only
+for local equivalence checks; a new publication still requires fresh acquisition.
+Regression tests compare exhaustive and pruned collection, require canonical
+times for surviving requests and finalizations, and reject malformed frontiers.
+
+The full diagnostic bundle remains bounded at 64 MiB raw and now 16 MiB gzip.
+A separate small whitelist-only RPC summary is emitted before bundle encoding,
+so a bundle size failure cannot erase the attempted call count and final failure
+categories. Parameters, URLs and arbitrary error text are excluded from the
+summary. Full bundle failure remains explicit and does not count as verified
+audit completion.

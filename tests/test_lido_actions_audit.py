@@ -49,6 +49,26 @@ class AuditTests(unittest.TestCase):
         for path, content in files.items():
             self.assertEqual(content, (self.root / path).read_bytes())
 
+    def test_small_summary_survives_full_bundle_size_failure_and_omits_request_details(self):
+        path = self.root / 'work/rpc-audit.json'
+        path.write_text(json.dumps({'calls': 700, 'rpcCallBudget': 1024,
+            'timeoutRetries': {'one': {}, 'two': {}, 'three': {}},
+            'failures': [{'request': {'id': 700, 'method': 'eth_getBlockByNumber',
+                                     'params': ['private-parameter']},
+                          'kind': 'transport_read_timeout', 'phase': 'read',
+                          'error': 'arbitrary-private-error'}]}))
+        summary = audit.diagnostic_summary(self.root)
+        self.assertEqual(summary['timeoutRetryAllowances'], 3)
+        self.assertEqual(summary['calls'], 700)
+        self.assertEqual(summary['lastFailures'], [{'id': 700, 'method': 'eth_getBlockByNumber',
+                                                   'category': 'transport_read_timeout', 'phase': 'read'}])
+        self.assertNotIn('private', json.dumps(summary))
+        with patch.object(audit, 'MAX_GZIP', 20), self.assertRaises(audit.AuditError):
+            self.lines()
+        self.assertEqual(audit.diagnostic_summary(self.root), summary)
+        with self.assertRaises(audit.AuditError):
+            audit.diagnostic_summary(self.root, ('private-parameter',))
+
     def test_missing_duplicate_reordered_corrupt_and_truncated_chunks_are_rejected(self):
         with patch.object(audit, 'CHUNK_BYTES', 80):
             lines = self.lines()

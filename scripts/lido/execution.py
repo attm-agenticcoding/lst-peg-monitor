@@ -505,6 +505,42 @@ def _await_finality(rpc, child, *, wait_seconds, poll_seconds, sleep, monotonic)
         sleep(min(poll_seconds, remaining))
 
 
+def timestamp_header_heights(state, logs):
+    """Authenticate times that survive replay or validate an accounting report.
+
+    Requested amounts/shares/IDs are always replayed. An application timestamp
+    which is deleted by a later contiguous finalization cannot affect the final
+    queue or its simulation. Do not spend one historical header on each such
+    already-finalized application. Finalization/report/pause times and every
+    surviving request still require their canonical header.
+    """
+    frontier = integer(state['last_finalized_id'])
+    ordered = sorted(logs, key=key)
+    for log in ordered:
+        if log['address'].lower() == ADDRESSES['queue'] and log.get('topics', [None])[0] == TOPICS['WithdrawalsFinalized']:
+            if len(log['topics']) != 3:
+                raise ExecutionError('Malformed WithdrawalsFinalized topics')
+            first, last = map(integer, log['topics'][1:])
+            if first != frontier + 1 or last < first:
+                raise ExecutionError('Invalid/noncontiguous finalization frontier')
+            frontier = last
+    needed = set()
+    for log in ordered:
+        topic = log.get('topics', [None])[0]
+        source = log['address'].lower()
+        if source == ADDRESSES['queue']:
+            if topic == TOPICS['WithdrawalRequested']:
+                if len(log['topics']) != 4:
+                    raise ExecutionError('Malformed WithdrawalRequested topics')
+                if integer(log['topics'][1]) > frontier:
+                    needed.add(key(log)[0])
+            elif topic in {TOPICS[n] for n in ('WithdrawalsFinalized', 'Paused', 'Resumed')}:
+                needed.add(key(log)[0])
+        elif source == ADDRESSES['core'] and topic == TOPICS['ETHDistributed']:
+            needed.add(key(log)[0])
+    return needed
+
+
 def collect_at(state, block, block_hash, rpc, *, chunk_blocks=1000, max_calls=256, result_cap=10000,
                finality_wait_seconds=768, finality_poll_seconds=30, sleep=time.sleep, monotonic=time.monotonic):
     """Collect all EL quantities at the orchestrator's BeaconState execution block.
@@ -542,9 +578,7 @@ def collect_at(state, block, block_hash, rpc, *, chunk_blocks=1000, max_calls=25
                                 max_calls=max_calls, result_cap=result_cap)
     headers = {s["block"]: seed_header, block: target}
     observed_hashes = {}
-    timestamp_events = {TOPICS[n] for n in ("WithdrawalRequested", "WithdrawalsFinalized", "Paused", "Resumed", "ETHDistributed")}
-    needed_headers = {key(log)[0] for log in logs
-                      if log.get("topics", [None])[0] in timestamp_events} - headers.keys()
+    needed_headers = timestamp_header_heights(s, logs) - headers.keys()
     if hasattr(rpc, "fetch_headers"):
         fetched = rpc.fetch_headers(needed_headers)
         if set(fetched) != needed_headers:
@@ -559,7 +593,7 @@ def collect_at(state, block, block_hash, rpc, *, chunk_blocks=1000, max_calls=25
         # where timestamps affect queue/report state; token transfers do not need
         # hundreds of extra header calls per hour. Seed/target hash sandwiches
         # reject reorgs across the collected finalized interval.
-        needs_header = log.get("topics", [None])[0] in timestamp_events
+        needs_header = height in needed_headers
         if needs_header and height not in headers:
             headers[height] = _header(rpc, height)
         if height in headers:

@@ -58,6 +58,42 @@ class FakeRpc:
 
 
 class ReplayTests(unittest.TestCase):
+    def closed_and_pending_logs(self):
+        return [event('WithdrawalRequested', (25, 20), (2, 1, 1), source='queue', block=101),
+                event('WithdrawalRequested', (25, 20), (3, 1, 1), source='queue', block=102, timestamp=1112),
+                event('WithdrawalsFinalized', (125, 100, 1124), (1, 2), source='queue', block=103, timestamp=1124)]
+
+    def test_completed_application_times_do_not_change_final_state_or_require_headers(self):
+        from unittest.mock import patch
+        logs = self.closed_and_pending_logs()
+        rpc = FakeRpc(logs)
+        optimized = ex.collect_at(seed(), 105, h(105), rpc)
+        with patch.object(ex, 'timestamp_header_heights', return_value={101, 102, 103}):
+            exhaustive = ex.collect_at(seed(), 105, h(105), FakeRpc(logs))
+        for result in (optimized, exhaustive):
+            result['validation'].pop('header_count')
+            result['validation']['finality_wait'].pop('wait_seconds')
+        self.assertEqual(optimized, exhaustive)
+        self.assertEqual(ex.timestamp_header_heights(seed(), logs), {102, 103})
+        self.assertNotIn(('eth_getBlockByNumber', ['0x65', False]), rpc.calls)
+        self.assertEqual([r['request_id'] for r in optimized['state']['pending_requests']], [3])
+        logs[0].pop('blockTimestamp')
+        without_irrelevant_time = ex.collect_at(seed(), 105, h(105), FakeRpc(logs))
+        self.assertEqual(without_irrelevant_time['state'], optimized['state'])
+
+    def test_surviving_request_and_finalization_times_still_require_canonical_headers(self):
+        for index in (1, 2):
+            logs = self.closed_and_pending_logs()
+            logs[index]['blockTimestamp'] = hex(int(logs[index]['blockTimestamp'], 16) + 1)
+            with self.subTest(index=index), self.assertRaisesRegex(ex.ExecutionError, 'timestamp mismatches'):
+                ex.collect_at(seed(), 105, h(105), FakeRpc(logs))
+
+    def test_bad_finalization_cannot_hide_pending_request_validation(self):
+        logs = self.closed_and_pending_logs()
+        logs[-1]['topics'][2] = h(999)
+        with self.assertRaisesRegex(ex.ExecutionError, 'finalization frontier'):
+            ex.collect_at(seed(), 105, h(105), FakeRpc(logs))
+
     def test_same_block_before_after_report_groups(self):
         logs = [event("WithdrawalRequested", (25, 20), (2, 1, 1), source="queue", tx=0, index=0),
                 event("ETHDistributed", (500, 500, 0, 0, 500), (1000,), tx=1, index=1),

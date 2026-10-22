@@ -9,7 +9,7 @@ from pathlib import Path
 import re
 
 MAX_RAW = 64 * 1024 * 1024
-MAX_GZIP = 8 * 1024 * 1024
+MAX_GZIP = 16 * 1024 * 1024
 CHUNK_BYTES = 24000
 FIXED = frozenset(('result-run.json', 'result-abort.json', 'work/audit.json',
                    'work/rpc-audit.json', 'work/recovery/ledger.jsonl', 'work/recovery.seal.json'))
@@ -56,6 +56,36 @@ def read_file(root, name):
             or path.stat().st_size > MAX_RAW):
         raise AuditError('missing, unsafe or oversized diagnostic file')
     return path.read_bytes()
+
+
+def diagnostic_summary(root, forbidden=()):
+    """Small independent counters survive a full-bundle size/encoding failure.
+
+    No arbitrary error strings, parameters, paths or endpoint URLs are emitted.
+    This is diagnostic evidence only, never a publication or recovery input.
+    """
+    value = safe_json(read_file(Path(root), 'work/rpc-audit.json'), forbidden)
+    calls, budget = value.get('calls'), value.get('rpcCallBudget')
+    if type(calls) is not int or not 0 <= calls <= 1024:
+        raise AuditError('invalid diagnostic call count')
+    failures, retries = value.get('failures', []), value.get('timeoutRetries', {})
+    if not isinstance(failures, list) or not isinstance(retries, dict) or len(failures) > 1024:
+        raise AuditError('invalid diagnostic failure counters')
+    methods = {'eth_getLogs', 'eth_getBlockByNumber', 'eth_getBalance'}
+    categories = {'transport_read_timeout', 'http_error', 'cancelled', 'rpc_error',
+                  'transport_error', 'limit_exceeded', 'rpc_limit', 'invalid_response'}
+    last = []
+    for failure in failures[-8:]:
+        request = failure.get('request', {})
+        item = {'method': request.get('method') if request.get('method') in methods else 'other',
+                'category': failure.get('kind') if failure.get('kind') in categories else 'other',
+                'phase': failure.get('phase') if failure.get('phase') in ('open', 'read', 'response', 'anchor') else 'other'}
+        if type(request.get('id')) is int and 0 < request['id'] <= 1024:
+            item['id'] = request['id']
+        last.append(item)
+    return {'calls': calls, 'rpcCallBudget': budget if budget in (256, 320, 1024) else None,
+            'failedAttempts': len(failures), 'timeoutRetryAllowances': len(retries),
+            'lastFailures': last}
 
 
 def make_bundle(root, metadata, forbidden=()):

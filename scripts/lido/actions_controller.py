@@ -656,11 +656,21 @@ def finish_diagnostics(controller, directory, token):
         return False
     audit_ok = False
     try:
-        from actions_audit import emit_bundle
+        from actions_audit import diagnostic_summary
+        report({'step': 'rpc_audit_summary', **diagnostic_summary(directory, (token,))})
+    except BaseException:
+        report({'step': 'rpc_audit_summary_unavailable'})
+    try:
+        from actions_audit import AuditError, emit_bundle
         emit_bundle(directory, controller.audit, (token,), emit=lambda line: print(line, flush=True))
         audit_ok = True
-    except BaseException:
-        report({'step': 'audit_failed', 'completeDiagnosticBundle': False})
+    except BaseException as error:
+        # Only fixed size-limit strings from our own audit layer are exposed.
+        reason = str(error) if type(error) is locals().get('AuditError') else ''
+        limits = ('raw diagnostic byte limit exceeded', 'raw diagnostic archive limit exceeded',
+                  'compressed diagnostic byte limit exceeded')
+        report({'step': 'audit_failed', 'completeDiagnosticBundle': False,
+                'reason': reason if reason in limits else 'diagnostic validation or output failed'})
     try:
         shutil.rmtree(directory)
     except BaseException:
