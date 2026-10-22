@@ -47,7 +47,7 @@
   const KIND = { agg: "聚合", dex: "链上", cex: "交易所" };
   let CFG = null, hist = null, histAt = 0, busy = false, timer = null, stOverrides = {}, customAmount = null, lastSnap = null, lastCfg = null, refreshFailed = false;
   let cutoffSnapshot = null, cutoffLoadFailed = false, cutoffLoading = false;
-  const LIVE_TIMEOUT_MS = 30000, FILE_TIMEOUT_MS = 8000, CACHE_KEY = "lpm-view-v1";
+  const LIVE_TIMEOUT_MS = 120000, LIVE_IDLE_MS = 30000, FILE_TIMEOUT_MS = 8000, CACHE_KEY = "lpm-view-v1";
   const SECTIONS = ["stETH", "cbETH", "st", "rt"];
   let views = {}, generation = 0, renderTimer = null, histLoading = false, histFailed = false, liveError = "", liveErrors = [];
   const currentCfg = () => Object.assign({}, CFG, { stRedeem: Object.assign({}, CFG.stRedeem, stOverrides, customAmount == null ? {} : { sizes: [customAmount] }) });
@@ -73,13 +73,18 @@
     const result = C.roundTrip(s.rt, s.nav.cbETH, cfg, Date.now() / 1000, s.ts);
     return result && result.waitDays != null && result.apy != null && result.rows.every((r) => r.back != null) && result.ws.every((r) => r.back != null);
   }
+  function rtCoverage(snap, cfg) {
+    const r = C.roundTrip(snap.rt, snap.nav.cbETH, cfg, Date.now() / 1000, snap.ts);
+    return r ? [...r.rows, ...r.ws].filter(row => row.back != null).length : 0;
+  }
   function sectionNote(key) {
     const v = views[key];
     if (!v) return `<p class="data-status">${busy ? "读取中 · 暂无数据" : "本轮无可用数据"}</p>`;
+    const coverage = key === "rt" ? ` · 有效聚合报价 ${rtCoverage(v.snap, v.cfg)}/${v.cfg.roundTrip.sizes.length + v.cfg.wrapSell.sizes.length}` : "";
     const age = Date.now() / 1000 - v.at;
     const stale = age > (v.cfg.stRedeem.quoteMaxAgeSeconds || 180);
     const state = [v.origin, v.partial ? "部分数据" : "", stale ? "已过期" : "", v.failed ? "更新失败，保留已有数据" : "", busy ? "更新中" : ""].filter(Boolean).join(" · ");
-    return `<p class="data-status${stale || v.failed ? " stale" : ""}">${state} · 采集 ${hm(v.at)}（${ago(age)}）</p>`;
+    return `<p class="data-status${stale || v.failed ? " stale" : ""}">${state}${coverage} · 采集 ${hm(v.at)}（${ago(age)}）</p>`;
   }
   function accept(snap, cfg, origin, runId, partial = true) {
     if (!validSnap(snap)) return;
@@ -89,6 +94,10 @@
       // Published/local data may fill gaps, but never replace this run's live data
       // or a newer cached observation. Do not combine old and new venues in a card.
       if (origin !== "实时" && prev && (prev.runId === runId || prev.at >= at)) continue;
+      // Keep a whole, still-fresh cbETH observation until this refresh has at
+      // least as much coverage. Never blend old/new prices or reset source times.
+      if (key === "rt" && prev && JSON.stringify(prev.cfg) === JSON.stringify(cfg)
+          && rtCoverage(prev.snap, prev.cfg) > rtCoverage(snap, cfg)) continue;
       views[key] = { snap, cfg, origin, runId: origin === "实时" ? runId : null, at, partial: partial || !complete(snap, key, cfg), failed: false };
     }
   }
@@ -301,7 +310,7 @@
   const restoreScenarios = (opened) => { for (const id of opened) if ($(id)) $(id).open = true; };
   function redrawScenarios(res) {
     const opened = openScenarios(), focusedId = document.activeElement && document.activeElement.id;
-    patchHTML($("scenarios"), stSection(res.stETH.rt) + (res.cbETH.rt ? `<details class="card scenario-panel" id="cb-redemption"><summary><span>cbETH 买入赎回 / 质押卖出</span><span class="scenario-caption">收益测算</span></summary>${sectionNote("rt")}${rtSection(res.cbETH.rt)}</details>` : ""));
+    patchHTML($("scenarios"), stSection(res.stETH.rt) + (res.cbETH.rt ? `<details class="card scenario-panel" id="cb-redemption"><summary><span>cbETH 买入赎回 / 质押卖出</span><span class="scenario-caption">收益测算</span></summary>${sectionNote("rt")}<p class="data-status">${busy ? "正在逐档读取；网络较慢时最多等待 2 分钟。" : ""}空白表示该档尚未取得有效聚合报价，不代表没有流动性。</p>${rtSection(res.cbETH.rt)}</details>` : ""));
     restoreScenarios(opened);
     if (focusedId && $(focusedId) && $(focusedId).focus) $(focusedId).focus({ preventScroll: true });
   }
@@ -469,11 +478,28 @@
     void loadLatest(runId);
     try {
       const cfg = currentCfg();
-      const snap = await C.bounded((signal) => C.collect(cfg, undefined, { signal, onProgress: (next) => {
-        if (runId !== generation || !busy || signal.aborted) return;
-        liveErrors = next.err;
-        accept(next, cfg, "实时", runId); scheduleRender(runId);
-      } }), LIVE_TIMEOUT_MS);
+      const snap = await C.bounded(async (deadlineSignal) => {
+        const controller = new AbortController();
+        const stop = () => controller.abort(deadlineSignal.reason);
+        deadlineSignal.addEventListener("abort", stop, { once: true });
+        let idleTimer;
+        const progress = () => {
+          clearTimeout(idleTimer);
+          idleTimer = setTimeout(() => controller.abort(new Error("读取超时：连续 30 秒无新数据，已停止本轮读取")), LIVE_IDLE_MS);
+        };
+        progress();
+        try {
+          return await C.bounded(() => C.collect(cfg, undefined, { signal: controller.signal, onProgress: (next) => {
+            if (runId !== generation || !busy || controller.signal.aborted) return;
+            progress();
+            liveErrors = next.err;
+            accept(next, cfg, "实时", runId); scheduleRender(runId);
+          } }), 0, controller.signal);
+        } finally {
+          clearTimeout(idleTimer);
+          deadlineSignal.removeEventListener("abort", stop);
+        }
+      }, LIVE_TIMEOUT_MS);
       if (runId !== generation) return;
       liveErrors = snap.err;
       accept(snap, cfg, "实时", runId, snap.err.length > 0);

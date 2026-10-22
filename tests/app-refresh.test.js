@@ -145,5 +145,38 @@ function harness({ cached, collect, history, latest, brokenStorage = false } = {
   assert.match(cold.el("cards").innerHTML, /后台缓存.*已过期/);
   await cold.tick(30000);
   assert.equal(cold.el("refresh").disabled, false);
+  // Mobile-speed progress must survive the old hard 30-second cutoff.
+  const slowDone = deferred(); let slowOptions;
+  const slow = harness({ collect: (_, opts) => { slowOptions = opts; return slowDone.promise; } });
+  await flush();
+  for (let i = 0; i < 3; i++) {
+    await slow.tick(20000);
+    slowOptions.onProgress(snapshot(slow.now()));
+  }
+  assert.equal(slowOptions.signal.aborted, false, "60-second progressing collection survives");
+  assert.equal(slow.el("refresh").disabled, true);
+  slowDone.resolve(snapshot(slow.now())); await flush();
+  assert.equal(slow.el("refresh").disabled, false);
+  assert.match(slow.el("scenarios").innerHTML, /有效聚合报价 10\/10/);
+
+  let cappedOptions;
+  const capped = harness({ collect: (_, opts) => { cappedOptions = opts; return new Promise(() => {}); } });
+  await flush();
+  for (let i = 0; i < 5; i++) { await capped.tick(20000); cappedOptions.onProgress(snapshot(capped.now())); }
+  await capped.tick(20000);
+  assert.equal(cappedOptions.signal.aborted, true, "progress cannot bypass 120-second total cap");
+  assert.equal(capped.el("refresh").disabled, false);
+
+  const preserved = snapshot(1792065600 - 10); let partialOptions;
+  const partialDone = deferred();
+  const keep = harness({ cached: preserved, collect: (_, opts) => { partialOptions = opts; return partialDone.promise; } });
+  await flush();
+  const few = snapshot(keep.now()); few.rt.kyber = { 25: 25 }; few.rt.ws.kyber = { 5: 5 };
+  partialOptions.onProgress(few); await keep.tick(50);
+  assert.match(keep.el("scenarios").innerHTML, /有效聚合报价 10\/10/);
+  partialDone.resolve(few); await flush();
+  assert.equal(JSON.parse(keep.storage.get("lpm-view-v1")).views.rt.snap.ts, preserved.ts, "retained full snapshot keeps original time");
+  await keep.tick(181000); keep.intervals.find(i => i.ms === 10000).fn();
+  assert.match(keep.el("scenarios").innerHTML, /有效聚合报价 0\/10/, "retained prices still expire");
   console.log("Progressive refresh passed: cached/cold start, independent sections/history, normal/failed/hung fetch and body, timeout, abort, repeat refresh, late completion, timestamps, storage failure and expiry");
 })().catch((e) => { console.error(e); process.exitCode = 1; });
