@@ -333,7 +333,7 @@
   },
   "refresh": {
     "mode": "twice-daily",
-    "state": "error",
+    "state": "running",
     "scheduleUtc": [
       "00:00",
       "12:00"
@@ -342,10 +342,17 @@
     "maxSourceAgeSeconds": 5400,
     "maxOperationalAgeSeconds": 48600,
     "lastSuccessAt": "2026-10-14T12:09:43Z",
-    "lease": null,
-    "error": "bounded RPC budget cannot cover event headers and final checks",
-    "attemptAt": "2026-10-22T12:03:30Z",
-    "trigger": "relay-dispatch",
+    "lease": {
+      "runId": "ae682de9-fa15-4fac-87e7-1f788712fd01",
+      "acquiredAtEpoch": 1792671892,
+      "expiresAtEpoch": 1792675192,
+      "trigger": "manual",
+      "rpcCallBudget": 1024,
+      "requestKey": "manual-20261022-user-outage-recovery-01"
+    },
+    "error": null,
+    "attemptAt": "2026-10-22T12:24:52Z",
+    "trigger": "manual",
     "attemptDay": "2026-10-08",
     "finishedAt": "2026-10-22T12:09:18Z",
     "accessBlocked": false,
@@ -358,9 +365,10 @@
       "manual-20261007-catchup-6614fbc0",
       "manual-20261007-actions-catchup-01",
       "manual-20261007-actions-paced-catchup-02",
-      "manual-20261007-actions-timeout-catchup-03"
+      "manual-20261007-actions-timeout-catchup-03",
+      "manual-20261022-user-outage-recovery-01"
     ],
-    "lastManualRequestId": "manual-20261007-actions-timeout-catchup-03",
+    "lastManualRequestId": "manual-20261022-user-outage-recovery-01",
     "lastSuccessSnapshotAsOf": "2026-10-14T11:47:35Z",
     "runId": "8b7f3b07-c829-40ff-8027-de3c21f4178d",
     "attemptSlot": "2026-10-22T12:00:00Z"
