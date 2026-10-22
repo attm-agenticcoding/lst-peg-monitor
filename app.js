@@ -5,6 +5,39 @@
   const C = window.PegCore, Cutoff = window.LidoCutoff;
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  // Patch existing nodes so periodic age updates never destroy a scroller or
+  // interrupt iOS momentum. Details/focus remain on the same DOM objects.
+  function patchNode(current, next) {
+    if (current.nodeType !== next.nodeType || current.nodeName !== next.nodeName) {
+      current.replaceWith(next.cloneNode(true)); return;
+    }
+    if (current.nodeType !== 1) {
+      if (current.nodeValue !== next.nodeValue) current.nodeValue = next.nodeValue;
+      return;
+    }
+    for (const attr of [...current.attributes]) {
+      if (current.tagName === "DETAILS" && attr.name === "open") continue;
+      if (!next.hasAttribute(attr.name)) current.removeAttribute(attr.name);
+    }
+    for (const attr of [...next.attributes]) if (current.getAttribute(attr.name) !== attr.value) current.setAttribute(attr.name, attr.value);
+    const old = [...current.childNodes], incoming = [...next.childNodes];
+    for (let i = 0; i < Math.max(old.length, incoming.length); i++) {
+      if (!incoming[i]) old[i].remove();
+      else if (!old[i]) current.appendChild(incoming[i].cloneNode(true));
+      else patchNode(old[i], incoming[i]);
+    }
+  }
+  function patchHTML(el, html, outer = false) {
+    if (!document.createElement) { el[outer ? "outerHTML" : "innerHTML"] = html; return; }
+    const next = document.createElement(outer ? "template" : el.tagName);
+    next.innerHTML = html;
+    if (outer) patchNode(el, next.content.firstElementChild);
+    else {
+      // Match the container's own attributes; only its children are rendered.
+      for (const a of [...el.attributes]) next.setAttribute(a.name, a.value);
+      patchNode(el, next);
+    }
+  }
   const fmt = C.fmt;
   const ago = (s) => (!isFinite(s) ? "—" : s < 90 ? `${Math.max(0, Math.round(s))} 秒前`
     : s < 5400 ? `${Math.round(s / 60)} 分钟前` : `${(s / 3600).toFixed(1)} 小时前`);
@@ -37,7 +70,7 @@
       const result = C.stRedeem(s.st, cfg, Date.now() / 1000);
       return result && result.apr != null && !!s.st.queue && result.rows.every((r) => r.expected && r.totalDays != null);
     }
-    const result = C.roundTrip(s.rt, s.nav.cbETH, cfg);
+    const result = C.roundTrip(s.rt, s.nav.cbETH, cfg, Date.now() / 1000, s.ts);
     return result && result.waitDays != null && result.apy != null && result.rows.every((r) => r.back != null) && result.ws.every((r) => r.back != null);
   }
   function sectionNote(key) {
@@ -185,13 +218,13 @@
       <td class="r num">${n(r.back, 4)}</td>
       <td class="r num">${r.diff == null ? "—" : `${r.diff >= 0 ? "+" : "−"}${n(Math.abs(r.diff), 4)}`}<span class="vmeta">${fmt(r.bps, 1)} bps</span></td>
       <td class="r num">${r.apr == null ? "—" : `${r.apr >= 0 ? "" : "−"}${Math.abs(r.apr * 100).toFixed(2)}%`}</td>
-      <td class="dim" style="padding-left:16px">${RT_VIA[r.via] || "—"}</td></tr>`).join("");
+      <td class="dim" style="padding-left:16px">${RT_VIA[r.via] || (r.status === "single-pool" ? "仅单池 · 等待聚合报价" : "聚合报价缺失或过期")}</td></tr>`).join("");
     return `<div class="sect"><h3>Base 买入 → Coinbase 赎回 <span class="cnt">兑换率 ${rt.rate.toFixed(6)}${rt.src === "coinbase" ? "（Coinbase 公布）" : "（取不到 Coinbase 的，用链上 exchangeRate）"} · 赎回排队约 ${days} 天</span></h3>
       <div class="tw"><table class="src"><thead><tr><th>投入 ETH</th><th class="r">买到 cbETH</th><th class="r">赎回得 ETH</th>
         <th class="r">差额 ETH</th><th class="r">折合年化</th><th style="padding-left:16px">买入路由</th></tr></thead><tbody>${rows}</tbody></table></div>
       <p class="empty" style="margin-top:8px">unwrap 不收费。赎回得到的是 Coinbase 上的质押 ETH，要排以太坊退出队列才变成可用 ETH（Coinbase 当前估计 ${days} 天），这段时间钱是锁住的；
-      折合年化 = 差额 ÷ 排队天数 × 365，可以和质押年化（现在 ${rt.apy != null ? (rt.apy * 100).toFixed(2) + "%" : "—"}）对比。
-      cbETH 可以直接走 Base 网络充值到 Coinbase；Base 上的 gas 不到 1 美分，没有计入。</p></div>${wsSection(rt, n)}`;
+      简单年化 =（差额 ÷ 投入 ETH）÷ 排队天数 × 365，质押 APY（现在 ${rt.apy != null ? (rt.apy * 100).toFixed(2) + "%" : "—"}）仅供参考，APY 与简单 APR 口径不同。
+      cbETH 可以直接走 Base 网络充值到 Coinbase；gas、转账/提币费用未计入；这是扣这些成本前的报价价差。聚合报价缺失时不把单池结果当成 Base 最优收益。</p></div>${wsSection(rt, n)}`;
   }
 
   /* ---------- 主网买 stETH → Lido 提现赎回 ---------- */
@@ -268,7 +301,7 @@
   const restoreScenarios = (opened) => { for (const id of opened) if ($(id)) $(id).open = true; };
   function redrawScenarios(res) {
     const opened = openScenarios(), focusedId = document.activeElement && document.activeElement.id;
-    $("scenarios").innerHTML = stSection(res.stETH.rt) + (res.cbETH.rt ? `<details class="card scenario-panel" id="cb-redemption"><summary><span>cbETH 买入赎回 / 质押卖出</span><span class="scenario-caption">收益测算</span></summary>${sectionNote("rt")}${rtSection(res.cbETH.rt)}</details>` : "");
+    patchHTML($("scenarios"), stSection(res.stETH.rt) + (res.cbETH.rt ? `<details class="card scenario-panel" id="cb-redemption"><summary><span>cbETH 买入赎回 / 质押卖出</span><span class="scenario-caption">收益测算</span></summary>${sectionNote("rt")}${rtSection(res.cbETH.rt)}</details>` : ""));
     restoreScenarios(opened);
     if (focusedId && $(focusedId) && $(focusedId).focus) $(focusedId).focus({ preventScroll: true });
   }
@@ -279,8 +312,8 @@
     const rows = rt.ws.map((r) => `<tr><td class="num">${r.eth}</td><td class="r num">${n(r.cbeth, 4)}</td>
       <td class="r num">${n(r.back, 4)}</td>
       <td class="r num">${r.diff == null ? "—" : `${r.diff >= 0 ? "+" : "−"}${n(Math.abs(r.diff), 4)}`}<span class="vmeta">${fmt(r.bps, 1)} bps</span></td>
-      <td class="dim" style="padding-left:16px">${RT_VIA[r.via] || "—"}</td></tr>`).join("");
-    return `<div class="sect"><h3>Coinbase 质押包装 → Base 卖出 <span class="cnt">按兑换率 ${rt.rate.toFixed(6)} 包装，不用排队</span></h3>
+      <td class="dim" style="padding-left:16px">${RT_VIA[r.via] || (r.status === "single-pool" ? "仅单池 · 等待聚合报价" : "聚合报价缺失或过期")}</td></tr>`).join("");
+    return `<div class="sect"><h3>Coinbase 质押包装 → Base 卖出 <span class="cnt">按兑换率 ${rt.rate.toFixed(6)} 包装；可用性与到账时间依 Coinbase</span></h3>
       <div class="tw"><table class="src"><thead><tr><th>投入 ETH</th><th class="r">包装得 cbETH</th><th class="r">Base 卖出得 ETH</th>
         <th class="r">差额 ETH</th><th style="padding-left:16px">卖出路由</th></tr></thead><tbody>${rows}</tbody></table></div>
       <p class="empty" style="margin-top:8px">cbETH 在 Base 上有溢价时看这张：Coinbase 上质押 ETH 后包装成 cbETH 不收费，按兑换率换算；包装好的 cbETH 可以直接走 Base 网络提到钱包，再在 Base 上卖掉。
@@ -390,7 +423,7 @@
     if (!el || !lastSnap || !lastCfg) return;
     const q = Object.assign({}, lastSnap.st, { refreshFailed });
     const opened = openScenarios(), focusedId = document.activeElement && document.activeElement.id;
-    el.outerHTML = stSection(C.stRedeem(q, lastCfg, Math.floor(Date.now() / 1000)));
+    patchHTML(el, stSection(C.stRedeem(q, lastCfg, Math.floor(Date.now() / 1000))), true);
     restoreScenarios(opened);
     if (focusedId && $(focusedId) && $(focusedId).focus) $(focusedId).focus({ preventScroll: true });
   }
@@ -408,7 +441,7 @@
     lastSnap = stView ? stView.snap : null; lastCfg = stView ? stView.cfg : null;
     refreshFailed = !!(stView && (stView.failed || stView.origin !== "实时" || stView.partial));
     res.stETH.rt = stView ? C.stRedeem(Object.assign({}, stView.snap.st, { refreshFailed }), stView.cfg, now) : null;
-    res.cbETH.rt = rtView ? C.roundTrip(rtView.snap.rt, rtView.snap.nav.cbETH, rtView.cfg) : null;
+    res.cbETH.rt = rtView ? C.roundTrip(rtView.snap.rt, rtView.snap.nav.cbETH, rtView.cfg, now, rtView.snap.ts) : null;
     $("cards").innerHTML = C.ASSETS.map((s) => card(s, res[s], views[s] ? Object.assign({}, views[s].snap, { ts: views[s].at }) : empty)).join("");
     redrawScenarios(res);
     for (const s of C.ASSETS) drawSpark(s, res[s], views[s] ? views[s].at : now);

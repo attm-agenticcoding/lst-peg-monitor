@@ -111,10 +111,10 @@ console.log(`1 wstETH = ${rate.amount} stETH`); // 后续计算请用 decimal / 
 
 在 Base 上用 25 / 50 / 75 / 100 ETH 买 cbETH，再到 Coinbase 按兑换率 unwrap，能拿回多少 ETH。
 
-- 买入：KyberSwap 在 Base 上的聚合报价（ETH → cbETH）和 Aerodrome 单池报价，取买到 cbETH 更多的那个。Aerodrome 单池在买入方向很浅（实测 50 ETH 就吃穿），大额基本都靠聚合器走做市商和多个池子。
+- 买入：KyberSwap 在 Base 上的聚合报价（ETH → cbETH）和 Aerodrome 单池报价，聚合报价有效时，再与单池比较取买到 cbETH 更多的那个；仅单池返回时显示“等待聚合报价”，不计算整笔收益。Aerodrome 单池在买入方向很浅（实测 50 ETH 就吃穿），大额基本都靠聚合器走做市商和多个池子。
 - 赎回：Coinbase 公开接口 `wrapped-assets/CBETH` 的 `conversion_rate`（与主网合约 `exchangeRate()` 一致；取不到时退回链上值）。unwrap 不收费。
-- 同一个接口还给 `redeem_time_estimate_days`（赎回排队天数估计）和 `apy`。赎回得到的是 Coinbase 上的质押 ETH，要排以太坊退出队列才变成可用 ETH；表里的「折合年化」= 差额 ÷ 排队天数 × 365，用来和质押年化对比。
-- cbETH 可以直接走 Base 网络充值到 Coinbase（2026-08-17 起 Coinbase 只保留 Ethereum 和 Base 两条网络）。Base 上的 gas 不到 1 美分，没有计入。
+- 同一个接口还给 `redeem_time_estimate_days`（赎回排队天数估计）和 `apy`。赎回得到的是 Coinbase 上的质押 ETH，要排以太坊退出队列才变成可用 ETH；表里的「折合年化」=（差额 ÷ 投入 ETH）÷ 排队天数 × 365，用来和质押年化对比。
+- cbETH 可以直接走 Base 网络充值到 Coinbase（2026-08-17 起 Coinbase 只保留 Ethereum 和 Base 两条网络）。gas 和转账/提币费用没有计入，不承诺固定费用。
 
 ## Lido 六档批次情景（每日 00:00／12:00 UTC 重算）
 
@@ -138,7 +138,7 @@ console.log(`1 wstETH = ${rate.amount} stETH`); // 后续计算请用 decimal / 
 
 在 Coinbase 上用 5 / 10 / 25 / 50 / 100 / 300 ETH 质押并包装成 cbETH（不收费，得到 X ÷ 兑换率 枚），直接走 Base 网络提出来，在 Base 上卖掉，能拿回多少 ETH。
 
-- 卖出：KyberSwap 在 Base 上的聚合报价和 Aerodrome 单池报价，取拿回 ETH 更多的那个。卖出数量要先知道兑换率，所以这组报价排在兑换率拿到之后。
+- 卖出：KyberSwap 在 Base 上的聚合报价和 Aerodrome 单池报价，聚合报价有效时取拿回 ETH 更多的那个；聚合报价缺失/过期时不展示单池收益。卖出数量要先知道兑换率，所以这组报价排在兑换率拿到之后。
 - 不用排队，不折年化。提币网络费（Base 上几美分）没有计入。
 - Coinbase 的帮助文档没写明刚质押的 ETH 是否马上能包装，包装功能按地区开放，文档还提到「交易偶尔会因为网络或流动性情况失败」。
 
@@ -180,3 +180,11 @@ cbETH 的链上流动性主要在 Base（Coinbase 自家 L2）：Base 上卖 100
 ---
 
 *阈值由我自己设定，这不是投资建议。*
+
+## 2026-10-22 报价与移动端修复
+
+cbETH 买入和包装卖出请求按档位轮询，与卖出监控及 stETH 买入交错，仍保持 Kyber 请求严格串行。网页 30 秒上限不变，缺失档位留空，不用旧报价拼接。每个 cbETH 路由/金额记录自己的来源时间，网页按 180 秒门槛失效；旧缓存按原快照时间失效。聚合报价齐备后仍与 Aerodrome 单池比较取较优结果。
+
+展开的情景表使用 DOM 内容更新，保留滚动容器、展开状态与焦点，不再每 10 秒替换表格节点。可选浏览器回归：`node tests/mobile-scroll.browser.js`（需要 Playwright/Chromium；可通过 PLAYWRIGHT_MODULE、CHROMIUM_PATH 指定已安装路径）。
+
+实时报价核查与限制见 [修复记录](docs/2026-10-22-quote-audit.md)。

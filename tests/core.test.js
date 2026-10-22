@@ -176,7 +176,9 @@ t("Base 买入 → Coinbase 赎回：取买到更多 cbETH 的路由，按 Coinb
   assert.ok(Math.abs(r.rows[0].apr - (r.rows[0].diff / 25) * 365 / 10.61) < 1e-6);
   const fb = C.roundTrip({ aero: { 25: 21.72 } }, 1.14, Object.assign({}, CFG, { roundTrip: { sizes: [25] } }));
   assert.strictEqual(fb.src, "onchain"); // 取不到 Coinbase 兑换率时退回链上 exchangeRate
-  assert.strictEqual(fb.rows[0].via, "aero_base");
+  assert.strictEqual(fb.rows[0].via, null);
+  assert.strictEqual(fb.rows[0].status, "single-pool");
+  assert.strictEqual(fb.rows[0].bps, null);
   assert.strictEqual(fb.rows[0].apr, null);
 });
 
@@ -212,3 +214,24 @@ t("toRecord 字段齐全", () => {
 });
 
 console.log(`\n${n} passed`);
+
+// Screenshot regression: thin single-pool quotes must not imply a Base-wide loss.
+t("cbETH screenshot, both directions, per-quote expiry and missing tiers", () => {
+  const cfg = { ...CFG, roundTrip: { sizes: [25, 100] }, wrapSell: { sizes: [300] } };
+  const q = { rate: 1.1421381467180507, waitDays: 13.72,
+    aero: { 25: 17.301028044000915, 100: 17.728264678162535 },
+    ws: { aero: { 300: 146.36239670693075 } } };
+  const partial = C.roundTrip(q, q.rate, cfg);
+  assert.ok(partial.rows.every(r => r.bps === null && r.apr === null));
+  assert.equal(partial.ws[0].bps, null);
+  q.kyber = { 25: 21.88691324701153, 100: 87.54569725788414 };
+  q.ws.kyber = { 300: 299.91449366052535 };
+  q.quoteAt = { kyber: { 25: 1000, 100: 1200 }, wsKyber: { 300: 1200 } };
+  const good = C.roundTrip(q, q.rate, cfg, 1201, 1200);
+  assert.equal(good.rows[0].bps, null, "new size cannot freshen old size");
+  assert.ok(Math.abs(good.rows[1].bps + 1.072) < 0.02);
+  assert.ok(Math.abs(good.ws[0].bps + 2.85) < 0.02);
+  assert.equal(C.roundTrip(q, q.rate, cfg, 1400, 1400).rows[1].bps, null);
+  q.kyber[100] = 0;
+  assert.equal(C.roundTrip(q, q.rate, cfg).rows[1].bps, null);
+});

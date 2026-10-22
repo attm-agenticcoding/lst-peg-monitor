@@ -139,24 +139,32 @@
    * 赎回：Coinbase 公布的兑换率（取不到就用主网合约的 exchangeRate），unwrap 不收费；
    * 差额 = 赎回得到的 ETH − 投入的 ETH。赎回得到的是 Coinbase 上的质押 ETH，要变成可用 ETH
    * 还得排以太坊退出队列，所以另外按 Coinbase 的排队天数估计折成年化，方便和质押收益比。 */
-  function roundTrip(q, navOnchain, cfg) {
+  function roundTrip(q, navOnchain, cfg, now, sourceAt) {
     const sizes = (cfg.roundTrip && cfg.roundTrip.sizes) || [];
     if (!q) return null;
     const rate = num(q.rate) && q.rate > 0 ? q.rate : navOnchain, src = num(q.rate) && q.rate > 0 ? "coinbase" : "onchain";
     if (!(rate > 0)) return null;
+    const fresh = (venue, x) => {
+      if (now == null) return true;
+      const at = q.quoteAt && q.quoteAt[venue] && q.quoteAt[venue][x] || sourceAt;
+      return num(at) && at <= now + 30 && now - at <= ((cfg.stRedeem || {}).quoteMaxAgeSeconds || 180);
+    };
+    const available = (row, venue, x) => row && num(row[x]) && row[x] > 0 && fresh(venue, x) ? row[x] : null;
     const rows = sizes.map((x) => {
-      const k = q.kyber && q.kyber[x], a = q.aero && q.aero[x];
+      const k = available(q.kyber, "kyber", x), a = available(q.aero, "aero", x);
       const best = num(k) && (!num(a) || k >= a) ? { cb: k, via: "kyber_base" } : num(a) ? { cb: a, via: "aero_base" } : null;
-      if (!best) return { eth: x, cbeth: null, back: null, diff: null, bps: null, apr: null, via: null };
+      if (!num(k)) return { eth: x, cbeth: null, back: null, diff: null, bps: null, apr: null, via: null,
+        status: num(a) ? "single-pool" : "unavailable", singlePool: a };
       const back = best.cb * rate, diff = back - x, bps = (diff / x) * 1e4;
       const apr = num(q.waitDays) && q.waitDays > 0 ? (bps / 1e4) * (365 / q.waitDays) : null;
       return { eth: x, cbeth: best.cb, back, diff, bps: r2(bps), apr, via: best.via };
     });
     // 反方向：Coinbase 上把 X ETH 质押并包装成 X / 兑换率 枚 cbETH（不收费），提到 Base 上卖掉
     const ws = ((cfg.wrapSell && cfg.wrapSell.sizes) || []).map((x) => {
-      const k = q.ws && q.ws.kyber && q.ws.kyber[x], a = q.ws && q.ws.aero && q.ws.aero[x];
+      const k = available(q.ws && q.ws.kyber, "wsKyber", x), a = available(q.ws && q.ws.aero, "wsAero", x);
       const best = num(k) && (!num(a) || k >= a) ? { back: k, via: "kyber_base" } : num(a) ? { back: a, via: "aero_base" } : null;
-      if (!best) return { eth: x, cbeth: x / rate, back: null, diff: null, bps: null, via: null };
+      if (!num(k)) return { eth: x, cbeth: x / rate, back: null, diff: null, bps: null, via: null,
+        status: num(a) ? "single-pool" : "unavailable", singlePool: a };
       const diff = best.back - x;
       return { eth: x, cbeth: x / rate, back: best.back, diff, bps: r2((diff / x) * 1e4), via: best.via };
     });
@@ -333,7 +341,10 @@
     const nav = { stETH: 1, wstETH: null, cbETH: null }, sectionAt = {};
     let wstethConversion = null, cbethConversion = null;
     const stSizes = (cfg.stRedeem && cfg.stRedeem.sizes) || [], st = { quoteMeta: {}, waits: {} };
-    const rtSizes = (cfg.roundTrip && cfg.roundTrip.sizes) || [], rt = {};
+    const rtSizes = (cfg.roundTrip && cfg.roundTrip.sizes) || [], rt = { quoteAt: {} };
+    const rtTime = (venue, x, timestamp) => {
+      (rt.quoteAt[venue] = rt.quoteAt[venue] || {})[x] = Number(timestamp) || Math.floor(Date.now() / 1000);
+    };
     const wsSizes = (cfg.wrapSell && cfg.wrapSell.sizes) || [];
     const snapshot = () => ({ ts: Math.floor(Date.now() / 1000), nav, px, rt, st, err, wstethConversion, cbethConversion, sectionAt });
     function publish(...sections) {
@@ -518,13 +529,13 @@
       // 买入方向（Base 上用 ETH 买 cbETH），给「Base 买入 → Coinbase 赎回」算账
       const rb = await ethCalls(rtSizes.map((x) => [B.aeroQuoter, "0x9e7defe6" + pad(B.WETH) + pad(B.cbETH)
         + U(BigInt(x) * E18) + U(B.aeroTickSpacing) + U(0)]), "base");
-      rb.forEach((h, i) => { const w = word0(h); if (w != null) (rt.aero = rt.aero || {})[rtSizes[i]] = Number(w) / 1e18; });
+      rb.forEach((h, i) => { const w = word0(h); if (w != null) { (rt.aero = rt.aero || {})[rtSizes[i]] = Number(w) / 1e18; rtTime("aero", rtSizes[i]); } });
       publish("rt");
       // 反方向：Coinbase 上质押包装出来的 cbETH 拿到 Base 上卖（Aerodrome 单池）
       const amts = await wsWei();
       if (amts.length) {
         const rs = await ethCalls(amts.map((w) => [B.aeroQuoter, "0x9e7defe6" + pad(B.cbETH) + pad(B.WETH) + U(w) + U(B.aeroTickSpacing) + U(0)]), "base");
-        rs.forEach((h, i) => { const w = word0(h); if (w != null) ((rt.ws = rt.ws || {}).aero = rt.ws.aero || {})[wsSizes[i]] = Number(w) / 1e18; });
+        rs.forEach((h, i) => { const w = word0(h); if (w != null) { ((rt.ws = rt.ws || {}).aero = rt.ws.aero || {})[wsSizes[i]] = Number(w) / 1e18; rtTime("wsAero", wsSizes[i]); } });
         publish("rt");
       }
     })();
@@ -539,15 +550,19 @@
         { name: "kyber_base cbETH", url: cfg.http.kyberBase, tin: cfg.base.cbETH, tout: A.ETH, sizes, put: (s, o) => put("cbETH", "kyber_base", s, o / s) },
         { name: "kyber cbETH", url: cfg.http.kyber, tin: A.cbETH, tout: A.ETH, sizes, put: (s, o) => put("cbETH", "kyber", s, o / s) },
         { name: "kyber 买入 stETH", url: cfg.http.kyber, tin: A.ETH, tout: A.stETH, sizes: stSizes, put: (x, o, summary) => { (st.kyber = st.kyber || {})[x] = o; quoteMeta("kyber", x, { gasUnits: Number(summary.gas), routeTimestamp: summary.timestamp || null }); } },
-        { name: "kyber_base 买入", url: cfg.http.kyberBase, tin: A.ETH, tout: cfg.base.cbETH, sizes: rtSizes, put: (x, o) => { (rt.kyber = rt.kyber || {})[x] = o; publish("rt"); } },
+        { name: "kyber_base 买入", url: cfg.http.kyberBase, tin: A.ETH, tout: cfg.base.cbETH, sizes: rtSizes, put: (x, o, summary) => { (rt.kyber = rt.kyber || {})[x] = o; rtTime("kyber", x, summary.timestamp); publish("rt"); } },
       ];
       // 反方向：包装得到的 cbETH 在 Base 上的聚合卖出报价（数量 = X / 兑换率，所以排在最后、等兑换率到手）
       if (wsSizes.length) jobs.push({ name: "kyber_base 包装后卖出", url: cfg.http.kyberBase, tin: cfg.base.cbETH, tout: A.ETH, sizes: wsSizes,
         amount: async (x) => { const a = await wsWei(); return a[wsSizes.indexOf(x)]; },
-        put: (x, o) => { ((rt.ws = rt.ws || {}).kyber = rt.ws.kyber || {})[x] = o; publish("rt"); } });
-      for (const j of jobs) {
-        let last = null, ok = 0;
-        for (const s of j.sizes) {
+        put: (x, o, summary) => { ((rt.ws = rt.ws || {}).kyber = rt.ws.kyber || {})[x] = o; rtTime("wsKyber", x, summary.timestamp); publish("rt"); } });
+      // Fair, still strictly serial: one size per category per pass. A slow
+      // sell venue must not put every redemption quote at the end of the queue.
+      const queue = jobs.map((j) => ({ ...j, last: null, ok: 0 }));
+      for (let i = 0; i < Math.max(0, ...queue.map((j) => j.sizes.length)); i++) {
+        for (const j of queue) {
+          if (i >= j.sizes.length) continue;
+          const s = j.sizes[i];
           for (let k = 0; k < 2; k++) {
             try {
               const amt = j.amount ? await j.amount(s) : Redemption.toWei(s);
@@ -556,17 +571,18 @@
               const out = d && d.data && d.data.routeSummary && d.data.routeSummary.amountOut;
               if (!out) throw new Error((d && d.message) || "无报价");
               j.put(s, Number(BigInt(out)) / 1e18, d.data.routeSummary);
-              ok++;
+              j.ok++;
               break;
             } catch (e) {
-              check(); last = e;
+              check(); j.last = e;
               if (k === 0) await bounded(() => new Promise((r) => setTimeout(r, 800)), 0, signal);
             }
           }
+          if (i === j.sizes.length - 1 && j.name === "kyber 买入 stETH") stQuotesReady();
         }
-        if (ok < j.sizes.length) note(`${j.name}（${ok}/${j.sizes.length}）`, last);
-        if (j.name === "kyber 买入 stETH") stQuotesReady();
       }
+      stQuotesReady();
+      for (const j of queue) if (j.ok < j.sizes.length) note(`${j.name}（${j.ok}/${j.sizes.length}）`, j.last);
     }
     // Coinbase 自己公布的 cbETH 兑换率、赎回排队天数估计、质押年化
     async function cbInfo() {

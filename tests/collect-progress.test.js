@@ -47,6 +47,11 @@ function transport({ hang, fail = false } = {}) {
   const normal = transport(), progress = [];
   const snap = await Core.collect(cfg, normal.fetch, { timeoutMs: 2000, onProgress: (s) => progress.push(s) });
   assert.equal(normal.max(), 1, "Kyber stays serial");
+  const routeCalls = normal.calls.filter(url => url.includes("routes?"));
+  const firstBuy = routeCalls.findIndex(url => url.includes("tokenIn=" + cfg.addresses.ETH) && url.includes("tokenOut=" + cfg.base.cbETH));
+  assert.ok(firstBuy < 6, "Base buys no longer wait behind all sell sizes");
+  assert.equal(snap.rt.quoteAt.kyber[100], now - 30);
+  assert.equal(snap.rt.quoteAt.wsKyber[300], now - 30);
   assert.equal(snap.err.length, 0);
   assert.ok(progress.some((s) => s.px.stETH.okx && !s.st.waits[50]), "sell data arrives before ETA");
   assert.ok(progress.some((s) => s.st.waits[50] && !(s.rt.ws && s.rt.ws.kyber && s.rt.ws.kyber[300])), "stETH ETA is independent of later cbETH Kyber jobs");
