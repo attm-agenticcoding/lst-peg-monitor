@@ -76,6 +76,40 @@ console.log(`1 wstETH = ${rate.amount} stETH`); // 后续计算请用 decimal / 
 - cbETH 与 wstETH 各自验证来源；一方失败不会丢弃另一方的有效来源。不用 Coinbase 详情接口、市场报价、未固定区块的备用值或旧缓存填充失败的公开结果。看板原来的兑换与回退计算不变。
 - 消费者按上述示例将 URL、`base`、`quote` 改为 cbETH 对应值，并检查 `status === "ok"` 和当前时间早于 `valid_until`。仍由原有采样、提交与 Pages 部署更新，受相同的部署及缓存延迟影响。
 
+## 固定数量 swap 报价 JSON（cbETH / wstETH → ETH）
+
+- **10 cbETH → ETH，Base**：[data/cbeth-10-swap-rate.json](https://attm-agenticcoding.github.io/lst-peg-monitor/data/cbeth-10-swap-rate.json)
+- **100 wstETH → ETH，以太坊主网**：[data/wsteth-100-swap-rate.json](https://attm-agenticcoding.github.io/lst-peg-monitor/data/wsteth-100-swap-rate.json)
+
+这是固定输入数量的 DEX 聚合 swap 报价。`amount` 是整笔 10 cbETH / 100 wstETH 预计换到的 ETH；`unit_rate` 是每一枚对应的 ETH（向下保留 18 位小数）。`amount_in_wei`、`amount_out_wei` 和金额都使用字符串，完整保留整数精度。wstETH 直接以 100 枚 wstETH 作为输入，不用 100 stETH 或兑换率乘市价替代。
+
+每次比较 [KyberSwap](https://api-docs.kyberswap.com/aggregator-api.html) 与 [Velora / ParaSwap Market API](https://developers.velora.xyz/api/velora-api/velora-market-api/get-rate-for-a-token-pair) 的同链、同数量、卖出方向报价。按**扣聚合器费用后、扣 gas 前的 ETH 输出**取最大值；Velora 有 `destAmountAfterFee` 时使用该金额，不拿费前 `destAmount` 冒充到手数量。池费和数量引起的价格影响已包含在来源的报价中；gas、授权、跨链、充值/提币成本未扣除。这里的“最好”是这两家可用来源返回的报价中最好，不代表遍历了全部聚合器或所有链。
+
+`source` 给出获选来源、网络、代币地址、API 请求、路由涉及的 DEX 和响应摘要；`quotes` 同时保留两家的结果。`coverage.available / expected` 表示可比较来源数；只有一家成功时 `partial: true`，两家都失败时 `status: unavailable` 且 `amount: null`。不使用兑换率、旧文件或单池报价填充失败。
+
+时间与更新：
+
+- `observed_at`：Kyber 的报价时间；Velora 则是报价声明的源区块时间，由该链 RPC 读取并核对区块号、哈希。`source.source_time_basis` 明确这两种依据。
+- `fetched_at`：报价响应的接收时间；`generated_at`：JSON 生成时间，不会冒充源时间。
+- 生成时只接受源年龄不超过 180 秒的报价，比较窗口为 120 秒。文件的 `valid_until` 为获选源时间加 900 秒；`status` 是生成时状态，静态文件无法自行在到期后变更它。
+- 沿用现有约 2 分钟采样、约 10 分钟提交及 Pages 部署流程，存在提交、部署和 HTTP 缓存延迟。消费者必须同时验证 `status === "ok"` 和当前时间早于 `valid_until`，并可设置更严格的年龄限制。
+- `indicative: true`、`executable: false`：这是报价快照，实际交易前需要重新询价并设置滑点和最低到账数量。
+
+```js
+const q = await fetch("https://attm-agenticcoding.github.io/lst-peg-monitor/data/cbeth-10-swap-rate.json", {
+  cache: "no-store"
+}).then(r => {
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+});
+if (q.status !== "ok" || q.base !== "cbETH" || q.base_amount !== "10" || q.quote !== "ETH"
+    || q.chain_id !== 8453 || !Number.isFinite(Date.parse(q.valid_until))
+    || Date.now() >= Date.parse(q.valid_until)) throw new Error("swap quote unavailable or expired");
+console.log(q.amount); // 整笔 10 cbETH 对应的 ETH，保留字符串精度
+```
+
+维护命令：`node scripts/swap-rate.js --dry-run` 只取数并打印；去掉 `--dry-run` 原子更新这两个文件。生产采样先完成这两家各自串行的请求，再运行原有 Core 采集，避免与原有 Kyber 队列并发。新报价导出独立于兑换率和 Lido 参考时间，不新增推送规则。
+
 ## 推送（ntfy）
 
 预警要在采样的那台机器上当场发出，才能做到偏离出现后约 2 分钟内到手机；Claude 的定时任务最短一小时一次，只用来发现后台本身停了。

@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "status": "ok",
+  "kind": "fixed_input_swap_quote",
+  "base": "wstETH",
+  "quote": "ETH",
+  "base_amount": "100",
+  "amount": "124.674722261956150714",
+  "amount_in_wei": "100000000000000000000",
+  "amount_out_wei": "124674722261956150714",
+  "unit_rate": "1.246747222619561507",
+  "chain": "ethereum",
+  "chain_id": 1,
+  "observed_at": "2026-10-22T17:41:28.000Z",
+  "fetched_at": "2026-10-22T17:41:28.000Z",
+  "generated_at": "2026-10-22T17:41:29.000Z",
+  "valid_until": "2026-10-22T17:56:28.000Z",
+  "max_age_seconds": 900,
+  "max_source_age_at_generation_seconds": 180,
+  "comparison_window_seconds": 120,
+  "selection": "highest_eth_output_after_aggregator_fee_before_gas",
+  "indicative": true,
+  "executable": false,
+  "gas_included": false,
+  "source": {
+    "type": "dex_aggregator",
+    "provider": "kyberswap",
+    "chain_id": 1,
+    "endpoint": "https://aggregator-api.kyberswap.com/ethereum/api/v1/routes?tokenIn=0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0&tokenOut=0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee&amountIn=100000000000000000000&gasInclude=false",
+    "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
+    "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "source_time_basis": "provider_quote_timestamp",
+    "block_number": null,
+    "block_hash": null,
+    "rpc_url": null,
+    "exchanges": [
+      "curve-stable-plain",
+      "generic-arm",
+      "lido"
+    ],
+    "response_sha256": "6e76d639a2c54bf19b123bdc612bd55a5a95cd1f8ceeff53e5946f0c4201d113"
+  },
+  "coverage": {
+    "available": 2,
+    "expected": 2,
+    "partial": false
+  },
+  "quotes": [
+    {
+      "provider": "kyberswap",
+      "status": "ok",
+      "amount_in_wei": "100000000000000000000",
+      "amount_out_wei": "124674722261956150714",
+      "amount": "124.674722261956150714",
+      "amount_before_aggregator_fee": "124.674722261956150714",
+      "aggregator_fee_amount_wei": "0",
+      "observed_at": "2026-10-22T17:41:28.000Z",
+      "fetched_at": "2026-10-22T17:41:28.000Z",
+      "source": {
+        "type": "dex_aggregator",
+        "provider": "kyberswap",
+        "chain_id": 1,
+        "endpoint": "https://aggregator-api.kyberswap.com/ethereum/api/v1/routes?tokenIn=0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0&tokenOut=0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee&amountIn=100000000000000000000&gasInclude=false",
+        "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
+        "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "source_time_basis": "provider_quote_timestamp",
+        "block_number": null,
+        "block_hash": null,
+        "rpc_url": null,
+        "exchanges": [
+          "curve-stable-plain",
+          "generic-arm",
+          "lido"
+        ],
+        "response_sha256": "6e76d639a2c54bf19b123bdc612bd55a5a95cd1f8ceeff53e5946f0c4201d113"
+      }
+    },
+    {
+      "provider": "velora",
+      "status": "ok",
+      "amount_in_wei": "100000000000000000000",
+      "amount_out_wei": "124657973938752054031",
+      "amount": "124.657973938752054031",
+      "amount_before_aggregator_fee": "124.670440982850339065",
+      "aggregator_fee_amount_wei": "12467044098285034",
+      "observed_at": "2026-10-22T17:41:23.000Z",
+      "fetched_at": "2026-10-22T17:41:28.000Z",
+      "source": {
+        "type": "dex_aggregator",
+        "provider": "velora",
+        "chain_id": 1,
+        "endpoint": "https://api.velora.xyz/prices?srcToken=0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0&destToken=0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee&amount=100000000000000000000&srcDecimals=18&destDecimals=18&side=SELL&network=1&version=6.2",
+        "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
+        "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "source_time_basis": "source_block_timestamp",
+        "block_number": "26249716",
+        "block_hash": "0x191031bc171ae121365ce6d8e7482881764fa1343b96c0708a0b98f684fdee18",
+        "rpc_url": "https://ethereum-rpc.publicnode.com",
+        "exchanges": [
+          "CurveV1Factory",
+          "wsteth"
+        ],
+        "response_sha256": "0048d674ab5ad3de4cebc767e443ed7d125b07205d401023caa6ec27c177b674"
+      }
+    }
+  ]
+}

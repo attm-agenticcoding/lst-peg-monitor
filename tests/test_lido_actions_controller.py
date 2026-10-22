@@ -190,7 +190,8 @@ class ControllerTests(ControllerFixture, unittest.TestCase):
 
     def test_all_sampler_exports_are_independent_price_races(self):
         updates = {p: b'new public sampler bytes' for p in (
-            'data/latest.json', 'data/wsteth-conversion-rate.json', 'data/cbeth-conversion-rate.json')}
+            'data/latest.json', 'data/wsteth-conversion-rate.json', 'data/cbeth-conversion-rate.json',
+            'data/cbeth-10-swap-rate.json', 'data/wsteth-100-swap-rate.json')}
         self.api.race = lambda api: api.change(updates)
         self.controller.execute(self.request)
         self.assertEqual(self.child.call_count, 1)

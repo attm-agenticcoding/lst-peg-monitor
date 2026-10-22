@@ -10,6 +10,7 @@ const path = require("path");
 const zlib = require("zlib");
 const Core = require("../core.js");
 const { buildConversionRate, writeConversionRate, buildCbethConversionRate, writeCbethConversionRate } = require("./conversion-rate.js");
+const { collectSwapRates, writeSwapRates } = require("./swap-rate.js");
 
 const ROOT = path.join(__dirname, "..");
 const CFG = JSON.parse(fs.readFileSync(path.join(ROOT, "config.json"), "utf8"));
@@ -95,6 +96,13 @@ function step(prev, G, rec, res) {
 }
 
 (async () => {
+  // Complete these serial-per-provider requests before Core's own Kyber queue.
+  // The public fixed-size quotes do not depend on NAV, alerts or redemption ETA.
+  try {
+    const swapRates = await collectSwapRates(CFG, fetch);
+    if (dry) console.log(JSON.stringify(swapRates, null, 2));
+    else writeSwapRates(DATA, swapRates);
+  } catch (e) { console.error("swap rate publication failed:", e.message); }
   const snap = await Core.collect(CFG, fetch, { conversionSource: true });
   if (!dry) writeConversionRate(CONVERSION, snap, CFG);
   if (!dry) writeCbethConversionRate(CBETH_CONVERSION, snap, CFG);

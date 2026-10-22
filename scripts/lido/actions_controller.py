@@ -212,7 +212,8 @@ def is_code(path):
 
 def is_price(path):
     return (path in ('data/history.json', 'data/legacy/history-v1.json', 'data/latest.json',
-                     'data/wsteth-conversion-rate.json', 'data/cbeth-conversion-rate.json')
+                     'data/wsteth-conversion-rate.json', 'data/cbeth-conversion-rate.json',
+                     'data/cbeth-10-swap-rate.json', 'data/wsteth-100-swap-rate.json')
             or re.fullmatch(r'data/archive/\d{4}-\d{2}-\d{2}\.jsonl(?:\.gz)?', path) is not None)
 
 

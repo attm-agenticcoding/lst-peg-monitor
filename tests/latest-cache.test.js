@@ -6,7 +6,7 @@ const snap = { ts: 1792065600, sectionAt: { stETH: 1792065590 }, nav: { stETH: 1
   wstethConversion: { observedAt: 1792065580, fetchedAt: 1792065585, raw: "1200000000000000000" },
   cbethConversion: { observedAt: 1792065580, fetchedAt: 1792065585, raw: "1141640441769055706" } };
 async function run(dry, failRename, failCollect = false) {
-  const files = new Map([["latest.json", "previous cache"]]), conversion = [], writes = [];
+  const files = new Map([["latest.json", "previous cache"]]), conversion = [], swaps = [], writes = [];
   const fakeFs = {
     readFileSync(file) { return path.basename(file) === "config.json" ? JSON.stringify(config) : JSON.stringify({ schema: 2, records: [] }); },
     mkdirSync() {}, readdirSync() { return []; },
@@ -22,11 +22,13 @@ async function run(dry, failRename, failCollect = false) {
       if (name === "../core.js") return { ...Core, collect: async () => { if (failCollect) throw Error("collection failed"); return snap; } };
       if (name === "./conversion-rate.js") return { buildConversionRate: () => ({}), writeConversionRate: (...args) => conversion.push(args),
         buildCbethConversionRate: () => ({}), writeCbethConversionRate: (...args) => conversion.push(args) };
+      if (name === "./swap-rate.js") return { collectSwapRates: async () => ({ cbeth10: { status: "ok" }, wsteth100: { status: "ok" } }),
+        writeSwapRates: (...args) => swaps.push(args) };
       return require(name);
     },
   };
   await vm.runInNewContext(script, ctx);
-  return { files, writes, conversion, exitCode: ctx.process.exitCode };
+  return { files, writes, conversion, swaps, exitCode: ctx.process.exitCode };
 }
 (async () => {
   const result = await run(false, false), cache = JSON.parse(result.files.get("latest.json"));
@@ -38,6 +40,7 @@ async function run(dry, failRename, failCollect = false) {
   assert.equal(result.conversion.length, 2);
   assert.deepEqual(result.conversion.map((args) => path.basename(args[0])), ["wsteth-conversion-rate.json", "cbeth-conversion-rate.json"]);
   assert.ok(result.conversion.every((args) => args[1] === snap), "both exports use the same collection");
+  assert.equal(result.swaps.length, 1, "fixed-size swap exports run with the existing sampler");
   const failed = await run(false, true);
   assert.equal(failed.files.get("latest.json"), "previous cache");
   assert.ok(!failed.files.has("latest.json.tmp"));
@@ -47,8 +50,10 @@ async function run(dry, failRename, failCollect = false) {
   assert.equal(collectionFailure.exitCode, 1);
   assert.equal(collectionFailure.conversion.length, 2);
   assert.ok(collectionFailure.conversion.every((args) => args[1] === null), "failed collection invalidates both public rates");
+  assert.equal(collectionFailure.swaps.length, 1, "unrelated Core failure does not erase independent successful swap quotes");
   const dry = await run(true, false);
   assert.equal(dry.writes.length, 0); assert.equal(dry.conversion.length, 0);
+  assert.equal(dry.swaps.length, 0);
   const dryFailure = await run(true, false, true);
   assert.equal(dryFailure.writes.length, 0); assert.equal(dryFailure.conversion.length, 0);
   console.log("Latest cache publication passed: atomic update, original timestamps, failed replacement, independent archival/export and dry-run");

@@ -128,4 +128,4 @@ function writeCbethConversionRate(file, snap, cfg, nowSeconds = Math.floor(Date.
   return writeJson(file, buildCbethConversionRate(snap, cfg, nowSeconds));
 }
 
-module.exports = { buildConversionRate, writeConversionRate, buildCbethConversionRate, writeCbethConversionRate };
+module.exports = { buildConversionRate, writeConversionRate, buildCbethConversionRate, writeCbethConversionRate, writeJson };
