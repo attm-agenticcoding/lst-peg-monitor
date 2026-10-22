@@ -410,3 +410,28 @@ so a bundle size failure cannot erase the attempted call count and final failure
 categories. Parameters, URLs and arbitrary error text are excluded from the
 summary. Full bundle failure remains explicit and does not count as verified
 audit completion.
+
+### Verified production catch-up acceptance
+
+Run [39790000638](https://github.com/attm-agenticcoding/lst-peg-monitor/actions/runs/39790000638)
+completed successfully and published commit
+`ee19b9b804c1a616cc5dcfe69b550a4dfbe57eeb`. The freshly authenticated source is
+2026-10-22 13:29:59 UTC (09:29:59 EDT), execution block 26,248,462. The last
+successful computation finished at 13:56:06 UTC (09:56:06 EDT).
+
+The run replayed 45,077 events over 58 contiguous log ranges and made 186 RPC
+attempts: 5 anchor, 5 terminal, 58 historical-log, 115 event-header and 3 balance
+reads. There were zero failed attempts or timeout retry allowances. All six
+100/200/300/500/1000/1500 stETH tiers were published together with the aligned
+checkpoint. Exact public byte readback and scenario validation passed. The full
+191-file diagnostic bundle decoded and matched its digests (43,552,273 raw
+bytes; 6,907,940 gzip bytes).
+
+Public SHA-256 digests:
+- snapshot: `efdd88a8ebfb649e76f27e261a8f5c73f1e5a5495dbd0370fa71d45e84322d26`
+- checkpoint: `50ea8a4beab6a82bb60a8c6b3292c061a71aea127a1c01bf810152b08cdc360b`
+
+The scenario is still a conditional known-state batch model, not a live or
+calibrated arrival-time promise. Its source timestamp, computation timestamp,
+00:00/12:00 UTC cadence and five-minute economic compatibility guard retain
+their distinct meanings. The next ordinary run returns to the 256-call budget.
