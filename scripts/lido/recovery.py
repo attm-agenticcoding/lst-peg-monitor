@@ -24,10 +24,10 @@ import time
 from urllib.parse import urlsplit
 from acquisition_errors import (safe_exception, sanitized_text, transport_read_timeout,
                                 TIMEOUT_RETRY_POLICY)
-from rpc_budget import DEFAULT_RPC_CALLS, MANUAL_CATCHUP_RPC_CALLS, lease_rpc_budget
+from rpc_budget import DEFAULT_RPC_CALLS, MANUAL_CATCHUP_RPC_CALLS, OUTAGE_CATCHUP_RPC_CALLS, lease_rpc_budget, run_seconds, lease_seconds
 
 MAX_CALLS = DEFAULT_RPC_CALLS
-MAX_STORED_CALLS = MANUAL_CATCHUP_RPC_CALLS
+MAX_STORED_CALLS = OUTAGE_CATCHUP_RPC_CALLS
 MAX_SECONDS = 1500
 LEASE_SECONDS = 2100
 MAX_SOURCE_AGE = 5400
@@ -305,8 +305,8 @@ class RunJournal:
                        'rpc_call_budget': lease_rpc_budget(json_value(base_blobs[SNAPSHOT_PATH])),
                        'timeout_retry_policy': deepcopy(TIMEOUT_RETRY_POLICY),
                        'start_wall': now['wall'], 'start_monotonic': now['monotonic'],
-                       'deadline_wall': now['wall'] + MAX_SECONDS,
-                       'deadline_monotonic': now['monotonic'] + MAX_SECONDS,
+                       'deadline_wall': now['wall'] + run_seconds(lease_rpc_budget(json_value(base_blobs[SNAPSHOT_PATH]))),
+                       'deadline_monotonic': now['monotonic'] + run_seconds(lease_rpc_budget(json_value(base_blobs[SNAPSHOT_PATH]))),
                        'clock_identity': now['identity'],
                        'seed': {'number': seed['block'], 'hash': seed['hash'], 'timestamp': seed['timestamp']},
                        'log_addresses': [ADDRESSES[k] for k in MONITORED],
@@ -468,8 +468,8 @@ class RunJournal:
                     or endpoint.scheme != 'https' or not endpoint.hostname
                     or endpoint.username or endpoint.password or endpoint.fragment
                     or (c['head'] is not None and not re.fullmatch('[0-9a-f]{40}', c['head']))
-                    or c['deadline_wall'] != c['start_wall'] + MAX_SECONDS
-                    or c['deadline_monotonic'] != c['start_monotonic'] + MAX_SECONDS
+                    or c['deadline_wall'] != c['start_wall'] + run_seconds(self.max_calls)
+                    or c['deadline_monotonic'] != c['start_monotonic'] + run_seconds(self.max_calls)
                     or not isinstance(c['clock_identity'], str) or not c['clock_identity']
                     or set(c['base_blobs']) != {SNAPSHOT_PATH, STATE_PATH}
                     or c.get('timeout_retry_policy') != TIMEOUT_RETRY_POLICY
@@ -481,10 +481,10 @@ class RunJournal:
             if (not isinstance(lease, dict) or lease.get('runId') != c['run_id']
                     or type(lease.get('acquiredAtEpoch')) is not int
                     or type(lease.get('expiresAtEpoch')) is not int
-                    or lease['expiresAtEpoch'] != lease['acquiredAtEpoch'] + LEASE_SECONDS
+                    or lease['expiresAtEpoch'] != lease['acquiredAtEpoch'] + lease_seconds(self.max_calls)
                     or lease['acquiredAtEpoch'] > c['start_wall']
                     or lease != json_value(_unblob(c['base_blobs'][SNAPSHOT_PATH])).get('refresh', {}).get('lease')):
-                raise Corrupt('original durable 35-minute lease is missing or changed')
+                raise Corrupt('original durable budget-bound lease is missing or changed')
             if (type(self.max_calls) is not int
                     or self.max_calls != lease_rpc_budget(json_value(_unblob(c['base_blobs'][SNAPSHOT_PATH])))):
                 raise Corrupt('original durable RPC call budget is missing or changed')

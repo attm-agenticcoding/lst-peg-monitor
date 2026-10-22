@@ -28,7 +28,7 @@ import uuid
 from scenarios import build_scenarios, report_references, utc, eth
 from acquisition_errors import (MAX_EXCEPTION_NODES, exception_nodes, safe_exception,
                                 sanitized_text, transport_read_timeout)
-from rpc_budget import DEFAULT_RPC_CALLS, lease_rpc_budget, validate_budget
+from rpc_budget import DEFAULT_RPC_CALLS, lease_rpc_budget, validate_budget, lease_seconds
 
 ROOT = Path(__file__).resolve().parents[2]
 SNAPSHOT_PATH = 'data/lido-cutoff-snapshot.json'
@@ -140,7 +140,7 @@ def propose_lease(snapshot, now, run_id, *, trigger='scheduled', manual_request_
         'maxSourceAgeSeconds': MAX_SOURCE_AGE, 'maxOperationalAgeSeconds': MAX_OPERATIONAL_AGE,
         'attemptAt': utc(now), 'trigger': trigger, 'error': None,
         'lease': {'runId': run_id, 'acquiredAtEpoch': now,
-                  'expiresAtEpoch': now + LEASE_SECONDS, 'trigger': trigger,
+                  'expiresAtEpoch': now + lease_seconds(rpc_call_budget), 'trigger': trigger,
                   'rpcCallBudget': rpc_call_budget,
                   'requestKey': slot_key(now) if trigger != 'manual' else manual_request_id},
     }
@@ -889,8 +889,8 @@ def main():
                         help='prepare-lease only: manual requires a current explicit user request')
     parser.add_argument('--manual-request-id', default=None,
                         help='prepare-lease only: stable idempotency key for the authorized manual request')
-    parser.add_argument('--rpc-call-budget', type=int, choices=[256, 320], default=None,
-                        help='prepare-lease only: 320 requires an explicitly approved manual catch-up run')
+    parser.add_argument('--rpc-call-budget', type=int, choices=[256, 320, 1024], default=None,
+                        help='prepare-lease only: expanded budget requires an explicit manual catch-up run')
     parser.add_argument('--keep-source', action='store_true',
                         help='retain large raw SSZ for an explicitly requested local audit')
     args = parser.parse_args()
@@ -898,8 +898,8 @@ def main():
         parser.error('trigger and manual request ID belong to prepare-lease; run uses its durable lease')
     if args.stage != 'prepare-lease' and args.rpc_call_budget is not None:
         parser.error('RPC budget belongs to prepare-lease; run/resume inherit the immutable original lease')
-    if args.rpc_call_budget == 320 and args.trigger != 'manual':
-        parser.error('320 calls require an explicitly approved manual catch-up lease')
+    if args.rpc_call_budget not in (None, 256) and args.trigger != 'manual':
+        parser.error('expanded calls require an explicitly approved manual catch-up lease')
     if args.stage in ('resume', 'abort'):
         if not (args.run_id and args.workdir and args.current_root and args.head and args.attest_current_main):
             parser.error('resume/abort require --run-id, --workdir, --current-root, --head and --attest-current-main')
@@ -938,7 +938,7 @@ def main():
         interrupted = False
 
         def expired(_signum, _frame):
-            raise TimeoutError('collector exceeded the original 25-minute deadline')
+            raise TimeoutError('collector exceeded the original lease-bound calculation deadline')
 
         def controller_interrupted(_signum, _frame):
             nonlocal interrupted
@@ -968,22 +968,22 @@ def main():
                     raise RuntimeError(args.abort_reason[:500])
             remaining = hard_deadline - time.monotonic()
             if remaining <= 0:
-                raise TimeoutError('collector exceeded the original 25-minute deadline')
+                raise TimeoutError('collector exceeded the original lease-bound calculation deadline')
             signal.alarm(max(1, int(remaining)))
             snapshot, state = collect(args.root, old, run_id, workdir, journal=journal)
             if time.monotonic() >= hard_deadline:
-                raise TimeoutError('collector exceeded the original 25-minute deadline')
+                raise TimeoutError('collector exceeded the original lease-bound calculation deadline')
             if args.stage != 'once':
                 validate_lease(old, int(time.time()), run_id)
                 journal.check()
             result = manifest('complete', run_id, base, {SNAPSHOT_PATH: snapshot, STATE_PATH: state},
                               result={'asOf': snapshot['asOf'], 'blockNumber': snapshot['blockNumber']})
             if time.monotonic() >= hard_deadline:
-                raise TimeoutError('collector exceeded the original 25-minute deadline')
+                raise TimeoutError('collector exceeded the original lease-bound calculation deadline')
             if journal is not None:
                 journal.complete()
             if time.monotonic() >= hard_deadline:
-                raise TimeoutError('collector exceeded the original 25-minute deadline while sealing completion')
+                raise TimeoutError('collector exceeded the original lease-bound calculation deadline while sealing completion')
             code = 0
         except BaseException as error:
             if getattr(error, 'busy', False):

@@ -85,7 +85,7 @@
     const error = v.refreshFailed ? `<p class="redemption-warning">最近尝试 ${s.refresh.attemptAt ? T.formatTimestamp(s.refresh.attemptAt) : "未知时间"}；${esc(s.refresh.error || "数据来源或完整性校验未通过")}。原快照时点和批次保持不变。</p>` : "";
     const lastSuccess = v.scheduled && s.refresh.lastSuccessAt ? `<p class="empty">最近成功重算 ${T.formatTimestamp(s.refresh.lastSuccessAt)}；快照来源时点见下方</p>` : "";
     const economics = v.rows.map((r) => `<tr><td class="num">${n(r.steth, 0)}</td>${[r.mainEconomics, r.stressEconomics].map((e, i) => `<td class="num">${signed(e && e.profit)}<span class="vmeta">简单 APR ${e ? n(e.apr * 100, 2) + "%" : "—"}<br>较同周期质押 ${signed(e && e.excessProfit)} ETH<br>资金周期 ${n(r.totalDays[i ? "stress" : "main"], 3)} 天</span></td>`).join("")}<td class="dim">${esc(r.reasons.join("；") || "条件情景，未经预测校准")}</td></tr>`).join("");
-    return `<div class="cutoff-head"><h2>Lido 六档赎回批次情景</h2><span class="cutoff-status ${v.sourceStale || v.refreshFailed || v.loadFailed ? "stale" : ""}">${status}${v.loadFailed ? " · 文件读取失败" : ""}</span></div>${error}${lastSuccess}
+    return `<div class="cutoff-head"><h2>Lido 六档赎回批次情景</h2><span class="cutoff-status ${v.sourceStale || v.refreshFailed || v.loadFailed ? "stale" : ""}">${status}${v.loadFailed ? " · 文件读取失败" : ""}</span></div>${error}${lastSuccess}${v.sourceStale ? `<p class="redemption-warning">当前情景已过期，不能用于今天的赎回时间判断。下方仅保留历史记录。</p><details id="cutoff-historical"><summary>查看过期历史情景（${T.formatDate(s.asOf)}）</summary>` : ""}
       <p class="empty">快照来源时点 ${T.formatTimestamp(s.asOf)}；假设此时加入队尾；${n(s.pendingRequests, 0)} 笔 / ${n(s.pendingSteth)} stETH 待处理，同区块现有现金 ${n(s.physicalCashEth)} ETH${s.scenarioAvailableCashEth != null ? "，扣除储备及未入账余额后情景起始现金 " + n(s.scenarioAvailableCashEth) + " ETH" : ""}</p>
       <div class="cutoff-summary"><div><span>已知状态主情景 · 100 stETH</span><strong>${date(main)} <small>${main ? "第 " + main.eligible_report_index + " 个参考报告" : ""}</small></strong></div><div><span>每块预留 8 个部分提款槽位的压力情景 · 100 stETH</span><strong>${date(stress)} <small>${stress ? "第 " + stress.eligible_report_index + " 个参考报告" : ""}</small></strong></div></div>
       <p class="redemption-warning">各批次参考时间见下表；实际报告发布后才可能完成定案，再等待领取。不是到账承诺、概率区间或最坏上限；日期不会随网页时钟滑动。快照距今 ${n(v.ageSeconds / 3600, 1)} 小时。${v.scheduled ? (v.twiceDaily ? "每天 00:00 / 12:00 UTC 尝试重算；额外单次更新按请求执行。" : v.daily ? "每天 00:00 UTC 尝试重算；额外单次更新按请求执行。" : "每小时尝试重算。") + "重算覆盖队列、共识现金流和六档完整完成批次；来源延迟或失败保留原时点。日内仍是上述时点的历史情景，非实时 ETA。" : "尚未完成自动重算；当前仍为固定历史快照。"}${s.horizonEnd ? "模拟截止 " + T.formatTimestamp(s.horizonEnd) + "。" : ""}</p>
@@ -101,7 +101,7 @@
         <p class="empty">只合算金额与时点一致的报价；固定快照超过 5 分钟、队列块不一致或报价/gas 缺失即留空。ETH 投入不能当作同数值 stETH。全资金周期从固定申请时点起算，另加报告发布/申请/领取延迟假设 ${n(v.options.extraHours, 2)} 小时（可展开“买入 stETH → Lido 赎回”修改参数），不随当前时钟缩短。</p>
         <div class="tw"><table class="src cutoff-economics"><thead><tr><th>stETH</th><th>主情景净利润 ETH</th><th>压力净利润 ETH</th><th>数据限制</th></tr></thead><tbody>${economics}</tbody></table></div>
         <p class="empty">含按实际数量预算的 swap、授权、申请、领取 gas 与其他成本；压力沿用页面的 gas 倍数、滑点、兑付折损。净回报分母为全部投入，质押对照使用同一资金周期。两种场景均不发出可执行交易提示。当前实时买入测算可展开“买入 stETH → Lido 赎回”查看，使用官方参考或手动等待，不冒充本模型已更新。</p>
-      </details>`;
+      </details>${v.sourceStale ? "</details>" : ""}`;
   }
   return { validate, evaluate, render };
 });

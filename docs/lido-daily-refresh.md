@@ -355,3 +355,15 @@ external audit fixture; it is not required for routine fresh collection.
 Concurrency tests additionally cover out-of-order responses, request-ID races,
 global budget admission, cancellation/denial, late responses, redirects and
 equivalence with sequential event replay.
+
+## 2026-10-22 outage recovery
+
+The independent sampler now publishes `data/latest.json`, `data/wsteth-conversion-rate.json`, and `data/cbeth-conversion-rate.json`. Those exact files are price-only races alongside history/archive. They are not Lido computation inputs, and concurrent updates preserve their bytes. Model sources, workflow/request files, snapshot/checkpoint, unknown data files and frontend changes remain protected by the existing gate.
+
+The October 22 audit of run 39775259200 contained 44,560 logs and 675 distinct timestamp-bearing event blocks. Including the 70 source calls already performed and six finishing reads, catch-up required at least 751 calls. Ordinary 256 and legacy manual 320 budgets cannot cover this backlog.
+
+For this explicitly requested outage recovery, a manual lease may select **1024** calls, a fixed **45-minute** calculation deadline and **55-minute** lease; the workflow ceiling is 60 minutes. These values are bound into the original durable lease/journal, cannot be enlarged on resume, and are rejected for scheduled/relay invocations. Existing 256/320 runs retain their 25-minute calculation and 35-minute lease. Ordinary scheduled attempts still use 256. Same source, 0.5 requests/second admission pace, four-worker maximum, all event/header checks, 90-minute source freshness, five-minute economics gate and atomic two-file success publication remain unchanged. This is a bounded one-off recovery, not increased scheduled traffic.
+
+The completed failed run's original diagnostic manifest can release its still-owned lease only after fresh input-blob validation and verification that the GitHub job has terminated. This publishes only failure metadata and retains the October 14 source, scenario and checkpoint; it does not relabel diagnostic data as a fresh result. A new manual request must then acquire its own lease and collect all sources anew.
+
+Expired scenario dates are collapsed under a dated historical disclosure; the visible panel says no current scenario is available. The summary now correctly lists both 00:00 and 12:00 UTC attempts.

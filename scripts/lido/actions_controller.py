@@ -25,7 +25,7 @@ import uuid
 from publication import validate_result
 from refresh import (SNAPSHOT_PATH, STATE_PATH, blob_sha, canonical, slot_key, second,
                      failure_snapshot, manifest, propose_lease, validate_lease)
-from rpc_budget import DEFAULT_RPC_CALLS
+from rpc_budget import DEFAULT_RPC_CALLS, lease_rpc_budget, run_seconds
 
 REPOSITORY = 'attm-agenticcoding/lst-peg-monitor'
 REQUEST_PATH = '.github/lido-manual-request.json'
@@ -89,8 +89,8 @@ def read_request(raw):
         raise Stopped('manual request must contain only schema, requestId and rpcCallBudget')
     if type(value['schema']) is not int or value['schema'] != 1:
         raise Stopped('unknown manual request schema')
-    if type(value['rpcCallBudget']) is not int or value['rpcCallBudget'] not in (256, 320):
-        raise Stopped('manual request budget must be 256 or explicitly approved 320')
+    if type(value['rpcCallBudget']) is not int or value['rpcCallBudget'] not in (256, 320, 1024):
+        raise Stopped('manual request budget must be 256, 320 or explicit outage catch-up 1024')
     request_id = value['requestId']
     if request_id is None:
         if value['rpcCallBudget'] != 256:
@@ -211,7 +211,8 @@ def is_code(path):
 
 
 def is_price(path):
-    return (path in ('data/history.json', 'data/legacy/history-v1.json')
+    return (path in ('data/history.json', 'data/legacy/history-v1.json', 'data/latest.json',
+                     'data/wsteth-conversion-rate.json', 'data/cbeth-conversion-rate.json')
             or re.fullmatch(r'data/archive/\d{4}-\d{2}-\d{2}\.jsonl(?:\.gz)?', path) is not None)
 
 
@@ -574,7 +575,7 @@ class Controller:
             validate_schedule_slot(self.schedule, int(self.now()))
         self.child_stopped = False
         try:
-            self.child(command, timeout=1530 if stage == 'run' else 60, environment=self.environment)
+            self.child(command, timeout=run_seconds(lease_rpc_budget(json.loads(current.files[SNAPSHOT_PATH]))) + 30 if stage == 'run' else 60, environment=self.environment)
         except ChildStillRunning:
             raise
         except BaseException:

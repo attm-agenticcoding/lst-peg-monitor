@@ -4,13 +4,21 @@ import re
 
 DEFAULT_RPC_CALLS = 256
 MANUAL_CATCHUP_RPC_CALLS = 320
+OUTAGE_CATCHUP_RPC_CALLS = 1024
+
+def run_seconds(budget):
+    return 2700 if budget == OUTAGE_CATCHUP_RPC_CALLS else 1500
+
+def lease_seconds(budget):
+    return run_seconds(budget) + 600
+
 
 
 def validate_budget(value, trigger):
-    if type(value) is not int or value not in (DEFAULT_RPC_CALLS, MANUAL_CATCHUP_RPC_CALLS):
-        raise ValueError('RPC call budget must be exactly 256 or 320')
+    if type(value) is not int or value not in (DEFAULT_RPC_CALLS, MANUAL_CATCHUP_RPC_CALLS, OUTAGE_CATCHUP_RPC_CALLS):
+        raise ValueError('RPC call budget must be exactly 256, 320 or 1024')
     if value != DEFAULT_RPC_CALLS and trigger != 'manual':
-        raise ValueError('320 calls require an explicitly chosen manual catch-up lease')
+        raise ValueError('expanded calls require an explicitly chosen manual catch-up lease')
     return value
 
 
@@ -24,7 +32,7 @@ def lease_rpc_budget(snapshot):
     refresh = snapshot.get('refresh', {})
     lease = refresh.get('lease') or {}
     budget = validate_budget(lease.get('rpcCallBudget', DEFAULT_RPC_CALLS), lease.get('trigger'))
-    if budget == MANUAL_CATCHUP_RPC_CALLS:
+    if budget != DEFAULT_RPC_CALLS:
         key = lease.get('requestKey')
         attempts = refresh.get('manualAttemptIds')
         if (refresh.get('trigger') != 'manual'
@@ -32,5 +40,5 @@ def lease_rpc_budget(snapshot):
                 or not isinstance(key, str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._:-]{0,159}', key)
                 or key != refresh.get('lastManualRequestId')
                 or not isinstance(attempts, list) or key not in attempts):
-            raise ValueError('320-call lease is not bound to its original manual request and run')
+            raise ValueError('expanded lease is not bound to its original manual request and run')
     return budget

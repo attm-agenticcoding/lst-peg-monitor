@@ -131,10 +131,10 @@
   function redrawCutoff() {
     const panel = $("lido-cutoff");
     if (!panel || !Cutoff || !CFG) return;
-    const opened = ["cutoff-details", "cutoff-economics"].filter((id) => $(id) && $(id).open);
-    panel.innerHTML = Cutoff.render(Cutoff.evaluate(cutoffSnapshot,
+    const opened = ["cutoff-details", "cutoff-economics", "cutoff-historical"].filter((id) => $(id) && $(id).open);
+    patchHTML(panel, Cutoff.render(Cutoff.evaluate(cutoffSnapshot,
       lastSnap ? Object.assign({}, lastSnap.st, { refreshFailed }) : null,
-      lastCfg || currentCfg(), Date.now() / 1000, cutoffLoadFailed));
+      lastCfg || currentCfg(), Date.now() / 1000, cutoffLoadFailed)));
     for (const id of opened) if ($(id)) $(id).open = true;
   }
   async function loadCutoff() {

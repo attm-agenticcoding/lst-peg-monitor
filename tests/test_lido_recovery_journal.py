@@ -74,6 +74,19 @@ class DurableJournalTests(unittest.TestCase):
                     base_blobs=self.base, endpoint='https://fixture.invalid/rpc',
                     route_id='original-controller-route', seal_path=self.seal, clock=self.clock)
 
+    def test_outage_journal_pins_budget_and_both_deadlines(self):
+        snapshot = json.loads(self.base[SNAPSHOT_PATH])
+        snapshot['refresh'].update(trigger='manual', manualAttemptIds=['outage-request'], lastManualRequestId='outage-request')
+        snapshot['refresh']['lease'].update(trigger='manual', requestKey='outage-request', rpcCallBudget=1024, expiresAtEpoch=13300)
+        self.base[SNAPSHOT_PATH] = encoded(snapshot)
+        (self.root / SNAPSHOT_PATH).write_bytes(self.base[SNAPSHOT_PATH])
+        journal = self.create()
+        self.assertEqual(journal.max_calls, 1024)
+        self.assertEqual(journal.deadline, self.clock.monotonic + 2700)
+        journal.close()
+        journal = self.reopen()
+        self.assertEqual(journal.deadline, self.clock.monotonic + 2700)
+
     def create(self, *, source=True):
         journal = RunJournal.create(self.directory, **self.options())
         self.journals.append(journal)

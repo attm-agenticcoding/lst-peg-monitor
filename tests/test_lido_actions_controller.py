@@ -168,7 +168,7 @@ class ControllerTests(ControllerFixture, unittest.TestCase):
         self.assertEqual(self.api.commits, [])
 
     def test_manual_320_is_lease_bound_and_next_default_is_256(self):
-        for budget in (256, 320):
+        for budget in (256, 320, 1024):
             with self.subTest(budget=budget):
                 request = {'schema': 1, 'requestId': 'budget-' + str(budget), 'rpcCallBudget': budget}
                 base = revision({**self.api.current.files, ac.REQUEST_PATH: raw(request)})
@@ -187,6 +187,15 @@ class ControllerTests(ControllerFixture, unittest.TestCase):
         self.controller.execute(self.request)
         self.assertEqual(self.child.call_count, 1)
         self.assertEqual(self.api.current.files['data/history.json'], b'new independent price bytes')
+
+    def test_all_sampler_exports_are_independent_price_races(self):
+        updates = {p: b'new public sampler bytes' for p in (
+            'data/latest.json', 'data/wsteth-conversion-rate.json', 'data/cbeth-conversion-rate.json')}
+        self.api.race = lambda api: api.change(updates)
+        self.controller.execute(self.request)
+        self.assertEqual(self.child.call_count, 1)
+        for p, data in updates.items():
+            self.assertEqual(self.api.current.files[p], data)
 
     def test_lease_checkpoint_code_workflow_request_and_unrelated_races_stop(self):
         for path in (ac.SNAPSHOT_PATH, ac.STATE_PATH, 'scripts/lido/refresh.py', ac.WORKFLOW_PATH,

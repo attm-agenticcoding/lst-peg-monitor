@@ -22,6 +22,23 @@ class RefreshTests(unittest.TestCase):
         self.inputs = json.loads((ROOT / 'tests/fixtures/lido-scenario-inputs-20261004.json').read_text())
         self.now = 1791135600  # 2026-10-04 17:40 UTC
 
+    def test_outage_budget_is_manual_only_and_has_fixed_longer_lease(self):
+        from rpc_budget import lease_rpc_budget, run_seconds
+        for trigger in ('scheduled', 'relay-dispatch'):
+            with self.assertRaises(ValueError):
+                propose_lease(self.old, self.now, 'bad', trigger=trigger, rpc_call_budget=1024)
+        result, reason = propose_lease(self.old, self.now, 'outage', trigger='manual',
+                                      manual_request_id='explicit-outage', rpc_call_budget=1024)
+        self.assertIsNone(reason)
+        self.assertEqual(lease_rpc_budget(result), 1024)
+        self.assertEqual(run_seconds(1024), 2700)
+        self.assertEqual(result['refresh']['lease']['expiresAtEpoch'], self.now + 3300)
+        failed = failure_snapshot(result, self.now + 100, 'test')
+        ordinary, reason = propose_lease(failed, self.now + 101, 'normal', trigger='manual',
+                                        manual_request_id='normal-next')
+        self.assertEqual(lease_rpc_budget(ordinary), 256)
+        self.assertEqual(ordinary['refresh']['lease']['expiresAtEpoch'], self.now + 101 + 2100)
+
     def test_existing_results_reproduce_exactly(self):
         i = self.inputs
         refs = report_references(i['state']['timestamp'], i['timing'], 5)
