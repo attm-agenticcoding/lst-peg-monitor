@@ -11,10 +11,10 @@
   "unit_rate": "1.246795720801758029",
   "chain": "ethereum",
   "chain_id": 1,
-  "observed_at": "2026-10-23T22:36:27.000Z",
-  "fetched_at": "2026-10-23T22:36:28.000Z",
-  "generated_at": "2026-10-23T22:36:28.000Z",
-  "valid_until": "2026-10-23T22:51:27.000Z",
+  "observed_at": "2026-10-23T22:44:28.000Z",
+  "fetched_at": "2026-10-23T22:44:28.000Z",
+  "generated_at": "2026-10-23T22:44:28.000Z",
+  "valid_until": "2026-10-23T22:59:28.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -37,7 +37,7 @@
       "generic-arm",
       "lido"
     ],
-    "response_sha256": "e3b9f55f4d7af6b988d65af54bb14d8b44737235e93dbf2b9a341241d210051e"
+    "response_sha256": "442f048e63bd70a89adb7fce5ea6cebaac945327857963f31cda4730d362ecfb"
   },
   "coverage": {
     "available": 2,
@@ -53,8 +53,8 @@
       "amount": "124.679572080175802997",
       "amount_before_aggregator_fee": "124.679572080175802997",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-10-23T22:36:27.000Z",
-      "fetched_at": "2026-10-23T22:36:28.000Z",
+      "observed_at": "2026-10-23T22:44:28.000Z",
+      "fetched_at": "2026-10-23T22:44:28.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -70,19 +70,19 @@
           "generic-arm",
           "lido"
         ],
-        "response_sha256": "e3b9f55f4d7af6b988d65af54bb14d8b44737235e93dbf2b9a341241d210051e"
+        "response_sha256": "442f048e63bd70a89adb7fce5ea6cebaac945327857963f31cda4730d362ecfb"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124661953982890281029",
-      "amount": "124.661953982890281029",
-      "amount_before_aggregator_fee": "124.674421425032784307",
-      "aggregator_fee_amount_wei": "12467442142503278",
-      "observed_at": "2026-10-23T22:36:23.000Z",
-      "fetched_at": "2026-10-23T22:36:28.000Z",
+      "amount_out_wei": "124661977454346529849",
+      "amount": "124.661977454346529849",
+      "amount_before_aggregator_fee": "124.674444898836413490",
+      "aggregator_fee_amount_wei": "12467444489883641",
+      "observed_at": "2026-10-23T22:44:23.000Z",
+      "fetched_at": "2026-10-23T22:44:27.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -91,16 +91,17 @@
         "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "26258358",
-        "block_hash": "0x31ea12792e9869a32a95279132f628d8d5f18a84568a0f18eeec285645d49ea3",
+        "block_number": "26258397",
+        "block_hash": "0x22b349d9f034ed69904621eb56e47aabac8641363f28c454629268ffd634745a",
         "rpc_url": "https://ethereum-rpc.publicnode.com",
         "exchanges": [
           "CurveV1",
+          "CurveV1Factory",
           "fluiddex",
           "uniswapv3",
           "wsteth"
         ],
-        "response_sha256": "fdd7c872d83c7d67e2f67e383ac6118ae3a004a86fc844b44eb64d9347b4e490"
+        "response_sha256": "1c23ceff98af19735d0eaec6d345a4946604965135fbb226cce499e8d262d4ed"
       }
     }
   ]
