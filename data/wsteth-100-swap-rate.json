@@ -5,16 +5,16 @@
   "base": "wstETH",
   "quote": "ETH",
   "base_amount": "100",
-  "amount": "124.682410756917816186",
+  "amount": "124.682439446302515908",
   "amount_in_wei": "100000000000000000000",
-  "amount_out_wei": "124682410756917816186",
-  "unit_rate": "1.246824107569178161",
+  "amount_out_wei": "124682439446302515908",
+  "unit_rate": "1.246824394463025159",
   "chain": "ethereum",
   "chain_id": 1,
-  "observed_at": "2026-10-25T09:12:13.000Z",
-  "fetched_at": "2026-10-25T09:12:13.000Z",
-  "generated_at": "2026-10-25T09:12:14.000Z",
-  "valid_until": "2026-10-25T09:27:13.000Z",
+  "observed_at": "2026-10-25T09:20:14.000Z",
+  "fetched_at": "2026-10-25T09:20:14.000Z",
+  "generated_at": "2026-10-25T09:20:14.000Z",
+  "valid_until": "2026-10-25T09:35:14.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -34,10 +34,12 @@
     "block_hash": null,
     "rpc_url": null,
     "exchanges": [
+      "curve-stable-ng",
       "curve-stable-plain",
-      "lido"
+      "lido",
+      "uniswap-v4"
     ],
-    "response_sha256": "b9310280f97681882d7242807b2623cd14ae9cd9b58417da0441b8bf6b5cd4b4"
+    "response_sha256": "6b7f23b2ee11a82e0be934f46a33594d50dc9efeacc73eeb9ee5fbe028748274"
   },
   "coverage": {
     "available": 2,
@@ -49,12 +51,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124682410756917816186",
-      "amount": "124.682410756917816186",
-      "amount_before_aggregator_fee": "124.682410756917816186",
+      "amount_out_wei": "124682439446302515908",
+      "amount": "124.682439446302515908",
+      "amount_before_aggregator_fee": "124.682439446302515908",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-10-25T09:12:13.000Z",
-      "fetched_at": "2026-10-25T09:12:13.000Z",
+      "observed_at": "2026-10-25T09:20:14.000Z",
+      "fetched_at": "2026-10-25T09:20:14.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -67,10 +69,12 @@
         "block_hash": null,
         "rpc_url": null,
         "exchanges": [
+          "curve-stable-ng",
           "curve-stable-plain",
-          "lido"
+          "lido",
+          "uniswap-v4"
         ],
-        "response_sha256": "b9310280f97681882d7242807b2623cd14ae9cd9b58417da0441b8bf6b5cd4b4"
+        "response_sha256": "6b7f23b2ee11a82e0be934f46a33594d50dc9efeacc73eeb9ee5fbe028748274"
       }
     },
     {
@@ -81,8 +85,8 @@
       "amount": "124.669942515842124457",
       "amount_before_aggregator_fee": "124.682410756917816239",
       "aggregator_fee_amount_wei": "12468241075691782",
-      "observed_at": "2026-10-25T09:12:11.000Z",
-      "fetched_at": "2026-10-25T09:12:14.000Z",
+      "observed_at": "2026-10-25T09:20:11.000Z",
+      "fetched_at": "2026-10-25T09:20:13.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -91,14 +95,14 @@
         "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "26268714",
-        "block_hash": "0x0b5ace7e7807631761928ef1028e3d623404a926974817b747d7a92124a4a297",
+        "block_number": "26268754",
+        "block_hash": "0x6d302a473c7becab30abff49a85238b9462cf4e51ab871fa4c754cd2e00a5212",
         "rpc_url": "https://ethereum-rpc.publicnode.com",
         "exchanges": [
           "CurveV1Factory",
           "wsteth"
         ],
-        "response_sha256": "e03158f168eef76c340dea833bd28fb69eb8c76baa515e494df56f781003381e"
+        "response_sha256": "f34ce2641cc8c812a6925649b478e2047d460d20eaa48c647b6fe407d0eea2bc"
       }
     }
   ]
