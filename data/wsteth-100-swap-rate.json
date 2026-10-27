@@ -5,16 +5,16 @@
   "base": "wstETH",
   "quote": "ETH",
   "base_amount": "100",
-  "amount": "124.715646245725049548",
+  "amount": "124.715574731157348629",
   "amount_in_wei": "100000000000000000000",
-  "amount_out_wei": "124715646245725049548",
-  "unit_rate": "1.247156462457250495",
+  "amount_out_wei": "124715574731157348629",
+  "unit_rate": "1.247155747311573486",
   "chain": "ethereum",
   "chain_id": 1,
-  "observed_at": "2026-10-27T17:10:57.000Z",
-  "fetched_at": "2026-10-27T17:10:57.000Z",
-  "generated_at": "2026-10-27T17:10:57.000Z",
-  "valid_until": "2026-10-27T17:25:57.000Z",
+  "observed_at": "2026-10-27T17:18:56.000Z",
+  "fetched_at": "2026-10-27T17:18:56.000Z",
+  "generated_at": "2026-10-27T17:18:57.000Z",
+  "valid_until": "2026-10-27T17:33:56.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -34,10 +34,12 @@
     "block_hash": null,
     "rpc_url": null,
     "exchanges": [
+      "etherfi-weeth",
       "generic-arm",
-      "lido"
+      "lido",
+      "uniswap-v4"
     ],
-    "response_sha256": "36d41e89f8fc76d65216ef24e63bba65a9a73c0eda79035bd931cd9bb8eaeb49"
+    "response_sha256": "14f5d89dad3127074512ba7e920162e328991b4bf46934729ed76b184e2b9088"
   },
   "coverage": {
     "available": 2,
@@ -49,12 +51,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124715646245725049548",
-      "amount": "124.715646245725049548",
-      "amount_before_aggregator_fee": "124.715646245725049548",
+      "amount_out_wei": "124715574731157348629",
+      "amount": "124.715574731157348629",
+      "amount_before_aggregator_fee": "124.715574731157348629",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-10-27T17:10:57.000Z",
-      "fetched_at": "2026-10-27T17:10:57.000Z",
+      "observed_at": "2026-10-27T17:18:56.000Z",
+      "fetched_at": "2026-10-27T17:18:56.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -67,22 +69,24 @@
         "block_hash": null,
         "rpc_url": null,
         "exchanges": [
+          "etherfi-weeth",
           "generic-arm",
-          "lido"
+          "lido",
+          "uniswap-v4"
         ],
-        "response_sha256": "36d41e89f8fc76d65216ef24e63bba65a9a73c0eda79035bd931cd9bb8eaeb49"
+        "response_sha256": "14f5d89dad3127074512ba7e920162e328991b4bf46934729ed76b184e2b9088"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124703174681100477077",
-      "amount": "124.703174681100477077",
-      "amount_before_aggregator_fee": "124.715646245725049582",
-      "aggregator_fee_amount_wei": "12471564624572505",
-      "observed_at": "2026-10-27T17:10:47.000Z",
-      "fetched_at": "2026-10-27T17:10:57.000Z",
+      "amount_out_wei": "124702956862635305638",
+      "amount": "124.702956862635305638",
+      "amount_before_aggregator_fee": "124.715428405475853223",
+      "aggregator_fee_amount_wei": "12471542840547585",
+      "observed_at": "2026-10-27T17:18:47.000Z",
+      "fetched_at": "2026-10-27T17:18:56.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -91,14 +95,15 @@
         "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "26285456",
-        "block_hash": "0x32c423dd1c9d55ffb23c72d6da7effd467d9f38634d6e12c912c379c0a825c9d",
+        "block_number": "26285496",
+        "block_hash": "0x26bef89cbf75fb85b717a9e1018003dcb3c68585ac38692448e4adf85c21a31a",
         "rpc_url": "https://ethereum-rpc.publicnode.com",
         "exchanges": [
+          "CurveV1Factory",
           "oswap",
           "wsteth"
         ],
-        "response_sha256": "670c70be9522358ee8787afcd87786183407db2c548b36064d152f767f091880"
+        "response_sha256": "05060f583322efff1882a834531e8be8a2b1f57bf6b7751d1c977c76124a9c7f"
       }
     }
   ]
