@@ -5,16 +5,16 @@
   "base": "wstETH",
   "quote": "ETH",
   "base_amount": "100",
-  "amount": "124.714343233818139538",
+  "amount": "124.714704272635243877",
   "amount_in_wei": "100000000000000000000",
-  "amount_out_wei": "124714343233818139538",
-  "unit_rate": "1.247143432338181395",
+  "amount_out_wei": "124714704272635243877",
+  "unit_rate": "1.247147042726352438",
   "chain": "ethereum",
   "chain_id": 1,
-  "observed_at": "2026-10-28T01:03:29.000Z",
-  "fetched_at": "2026-10-28T01:03:29.000Z",
-  "generated_at": "2026-10-28T01:03:29.000Z",
-  "valid_until": "2026-10-28T01:18:29.000Z",
+  "observed_at": "2026-10-28T01:11:29.000Z",
+  "fetched_at": "2026-10-28T01:11:29.000Z",
+  "generated_at": "2026-10-28T01:11:29.000Z",
+  "valid_until": "2026-10-28T01:26:29.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -37,9 +37,10 @@
       "etherfi-weeth",
       "generic-arm",
       "lido",
+      "titan-prop",
       "uniswap-v4"
     ],
-    "response_sha256": "ee8d73b3a6fa16c8877d4b646aaf59adefb6c1be57db29ff753106b2039d5af1"
+    "response_sha256": "11c104c545e258872328bd8d5464da45dd3a7d5888cf14bef06c080a03499f05"
   },
   "coverage": {
     "available": 2,
@@ -51,12 +52,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124714343233818139538",
-      "amount": "124.714343233818139538",
-      "amount_before_aggregator_fee": "124.714343233818139538",
+      "amount_out_wei": "124714704272635243877",
+      "amount": "124.714704272635243877",
+      "amount_before_aggregator_fee": "124.714704272635243877",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-10-28T01:03:29.000Z",
-      "fetched_at": "2026-10-28T01:03:29.000Z",
+      "observed_at": "2026-10-28T01:11:29.000Z",
+      "fetched_at": "2026-10-28T01:11:29.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -72,21 +73,22 @@
           "etherfi-weeth",
           "generic-arm",
           "lido",
+          "titan-prop",
           "uniswap-v4"
         ],
-        "response_sha256": "ee8d73b3a6fa16c8877d4b646aaf59adefb6c1be57db29ff753106b2039d5af1"
+        "response_sha256": "11c104c545e258872328bd8d5464da45dd3a7d5888cf14bef06c080a03499f05"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124700548552761382588",
-      "amount": "124.700548552761382588",
-      "amount_before_aggregator_fee": "124.713019854746857274",
-      "aggregator_fee_amount_wei": "12471301985474686",
-      "observed_at": "2026-10-28T01:03:23.000Z",
-      "fetched_at": "2026-10-28T01:03:29.000Z",
+      "amount_out_wei": "124700785274488256164",
+      "amount": "124.700785274488256164",
+      "amount_before_aggregator_fee": "124.713256600148270991",
+      "aggregator_fee_amount_wei": "12471325660014827",
+      "observed_at": "2026-10-28T01:11:23.000Z",
+      "fetched_at": "2026-10-28T01:11:29.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -95,15 +97,16 @@
         "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "26287812",
-        "block_hash": "0x301a62b392b4e3620dba8ee1835f2a8e3bd5b09892d0b73d361b97dbcadaaa02",
+        "block_number": "26287852",
+        "block_hash": "0xdcd8ac42bbdf164fb6af56b8703d945cd53d7a79049dffb862bc3a85228ba72a",
         "rpc_url": "https://ethereum-rpc.publicnode.com",
         "exchanges": [
           "CurveV1Factory",
+          "metric-v1",
           "oswap",
           "wsteth"
         ],
-        "response_sha256": "6d197983e92f57834e81498def08aebb64746a05dc6842f115967216856037cd"
+        "response_sha256": "b3f539fb9dbb9c80fc7fd59a58616df7d77b7737c764d0c3960f67a2525652a6"
       }
     }
   ]
