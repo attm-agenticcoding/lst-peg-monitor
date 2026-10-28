@@ -333,7 +333,7 @@
   },
   "refresh": {
     "mode": "twice-daily",
-    "state": "ok",
+    "state": "running",
     "scheduleUtc": [
       "00:00",
       "12:00"
@@ -342,9 +342,16 @@
     "maxSourceAgeSeconds": 5400,
     "maxOperationalAgeSeconds": 48600,
     "lastSuccessAt": "2026-10-27T12:09:46Z",
-    "lease": null,
+    "lease": {
+      "runId": "06a4e4ab-e35a-4aef-9146-5c0867ffca93",
+      "acquiredAtEpoch": 1793145745,
+      "expiresAtEpoch": 1793147845,
+      "trigger": "relay-dispatch",
+      "rpcCallBudget": 256,
+      "requestKey": "2026-10-28T00:00:00Z"
+    },
     "error": null,
-    "attemptAt": "2026-10-27T12:00:40Z",
+    "attemptAt": "2026-10-28T00:02:25Z",
     "trigger": "relay-dispatch",
     "attemptDay": "2026-10-08",
     "finishedAt": "2026-10-27T12:09:46Z",
@@ -367,6 +374,6 @@
     "lastManualRequestId": "manual-20261022-pruned-catchup-04",
     "lastSuccessSnapshotAsOf": "2026-10-27T11:47:35Z",
     "runId": "8cd2d970-a899-4d46-a5b0-8d11fd099a4c",
-    "attemptSlot": "2026-10-27T12:00:00Z"
+    "attemptSlot": "2026-10-28T00:00:00Z"
   }
 }
