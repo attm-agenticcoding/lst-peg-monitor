@@ -5,16 +5,16 @@
   "base": "cbETH",
   "quote": "ETH",
   "base_amount": "10",
-  "amount": "11.427004067352862976",
+  "amount": "11.426629016780057728",
   "amount_in_wei": "10000000000000000000",
-  "amount_out_wei": "11427004067352862976",
-  "unit_rate": "1.142700406735286297",
+  "amount_out_wei": "11426629016780057728",
+  "unit_rate": "1.142662901678005772",
   "chain": "base",
   "chain_id": 8453,
-  "observed_at": "2026-10-29T13:31:09.000Z",
-  "fetched_at": "2026-10-29T13:31:09.000Z",
-  "generated_at": "2026-10-29T13:31:10.000Z",
-  "valid_until": "2026-10-29T13:46:09.000Z",
+  "observed_at": "2026-10-29T13:39:10.000Z",
+  "fetched_at": "2026-10-29T13:39:10.000Z",
+  "generated_at": "2026-10-29T13:39:12.000Z",
+  "valid_until": "2026-10-29T13:54:10.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -35,10 +35,14 @@
     "rpc_url": null,
     "exchanges": [
       "aero-cl",
+      "aerodrome-cl-2",
+      "fermi",
       "hydrex-v4",
-      "maverick-v2"
+      "kipseli-prop",
+      "maverick-v2",
+      "solidly-v3"
     ],
-    "response_sha256": "034ba3d3580d6cb4c8df8c7624fbe4bd6e6c8115d267993c8e7f2121a5b316bf"
+    "response_sha256": "9220fbb2e4a9c757c2e253dd676ab0755a3c973d2bd9b7de3b931ba7b0b0017b"
   },
   "coverage": {
     "available": 2,
@@ -50,12 +54,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11427004067352862976",
-      "amount": "11.427004067352862976",
-      "amount_before_aggregator_fee": "11.427004067352862976",
+      "amount_out_wei": "11426629016780057728",
+      "amount": "11.426629016780057728",
+      "amount_before_aggregator_fee": "11.426629016780057728",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-10-29T13:31:09.000Z",
-      "fetched_at": "2026-10-29T13:31:09.000Z",
+      "observed_at": "2026-10-29T13:39:10.000Z",
+      "fetched_at": "2026-10-29T13:39:10.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -69,22 +73,26 @@
         "rpc_url": null,
         "exchanges": [
           "aero-cl",
+          "aerodrome-cl-2",
+          "fermi",
           "hydrex-v4",
-          "maverick-v2"
+          "kipseli-prop",
+          "maverick-v2",
+          "solidly-v3"
         ],
-        "response_sha256": "034ba3d3580d6cb4c8df8c7624fbe4bd6e6c8115d267993c8e7f2121a5b316bf"
+        "response_sha256": "9220fbb2e4a9c757c2e253dd676ab0755a3c973d2bd9b7de3b931ba7b0b0017b"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11425746449995344880",
-      "amount": "11.425746449995344880",
-      "amount_before_aggregator_fee": "11.426889138909235804",
-      "aggregator_fee_amount_wei": "1142688913890924",
-      "observed_at": "2026-10-29T13:31:09.000Z",
-      "fetched_at": "2026-10-29T13:31:09.000Z",
+      "amount_out_wei": "11426075072003440296",
+      "amount": "11.426075072003440296",
+      "amount_before_aggregator_fee": "11.427217793782818578",
+      "aggregator_fee_amount_wei": "1142721779378282",
+      "observed_at": "2026-10-29T13:39:09.000Z",
+      "fetched_at": "2026-10-29T13:39:09.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -93,14 +101,16 @@
         "token_in": "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "53245661",
-        "block_hash": "0x67d09b2474e6c18f19ce6652fc6a2dd8820babd73ef95e5f57513f321f4aa5b6",
+        "block_number": "53245901",
+        "block_hash": "0xe72a230cfb24265f25aaf890ef945f08835e43bcac9fc731c75ff21f63d0323d",
         "rpc_url": "https://base-rpc.publicnode.com",
         "exchanges": [
+          "WooFiV2",
           "aerocl",
+          "aerodromeslipstreamnewfactory",
           "maverickv2"
         ],
-        "response_sha256": "684e0c0a0bc05e95f960731584a66be7fc2509c035bdc18f6333b8178bb986d9"
+        "response_sha256": "8095e19201de11d9505f964b9f086ca2cc084ffbe6762210331b88942e60627a"
       }
     }
   ]
