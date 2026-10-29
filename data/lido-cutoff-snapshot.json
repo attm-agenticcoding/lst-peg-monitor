@@ -333,7 +333,7 @@
   },
   "refresh": {
     "mode": "twice-daily",
-    "state": "error",
+    "state": "running",
     "scheduleUtc": [
       "00:00",
       "12:00"
@@ -342,9 +342,16 @@
     "maxSourceAgeSeconds": 5400,
     "maxOperationalAgeSeconds": 48600,
     "lastSuccessAt": "2026-10-28T12:04:13Z",
-    "lease": null,
-    "error": "eth_getBalance: source access failed",
-    "attemptAt": "2026-10-29T00:01:56Z",
+    "lease": {
+      "runId": "3440f6cb-2a1c-4466-bda9-0b8987e988b5",
+      "acquiredAtEpoch": 1793275267,
+      "expiresAtEpoch": 1793277367,
+      "trigger": "relay-dispatch",
+      "rpcCallBudget": 256,
+      "requestKey": "2026-10-29T12:00:00Z"
+    },
+    "error": null,
+    "attemptAt": "2026-10-29T12:01:07Z",
     "trigger": "relay-dispatch",
     "attemptDay": "2026-10-08",
     "finishedAt": "2026-10-29T00:05:46Z",
@@ -367,6 +374,6 @@
     "lastManualRequestId": "manual-20261022-pruned-catchup-04",
     "lastSuccessSnapshotAsOf": "2026-10-28T11:41:11Z",
     "runId": "6dc6da7e-563d-461e-9782-cc7d8d50515c",
-    "attemptSlot": "2026-10-29T00:00:00Z"
+    "attemptSlot": "2026-10-29T12:00:00Z"
   }
 }
