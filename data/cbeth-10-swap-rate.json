@@ -5,16 +5,16 @@
   "base": "cbETH",
   "quote": "ETH",
   "base_amount": "10",
-  "amount": "11.402531454645466112",
+  "amount": "11.402156486836551488",
   "amount_in_wei": "10000000000000000000",
-  "amount_out_wei": "11402531454645466112",
-  "unit_rate": "1.140253145464546611",
+  "amount_out_wei": "11402156486836551488",
+  "unit_rate": "1.140215648683655148",
   "chain": "base",
   "chain_id": 8453,
-  "observed_at": "2026-10-30T21:58:26.000Z",
-  "fetched_at": "2026-10-30T21:58:26.000Z",
-  "generated_at": "2026-10-30T21:58:27.000Z",
-  "valid_until": "2026-10-30T22:13:26.000Z",
+  "observed_at": "2026-10-30T22:06:26.000Z",
+  "fetched_at": "2026-10-30T22:06:26.000Z",
+  "generated_at": "2026-10-30T22:06:26.000Z",
+  "valid_until": "2026-10-30T22:21:26.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -35,9 +35,10 @@
     "rpc_url": null,
     "exchanges": [
       "aero-cl",
-      "curve"
+      "hydrex-v4",
+      "uniswap-v4"
     ],
-    "response_sha256": "5519b9480e3ecaa181d36f60d1c420939cd1f5bab83c9db4489cd5261311afeb"
+    "response_sha256": "706b0e76f2fb46da923542ab410bbc1842a3483f5ba8c748abce1eef5e24210a"
   },
   "coverage": {
     "available": 2,
@@ -49,12 +50,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11402531454645466112",
-      "amount": "11.402531454645466112",
-      "amount_before_aggregator_fee": "11.402531454645466112",
+      "amount_out_wei": "11402156486836551488",
+      "amount": "11.402156486836551488",
+      "amount_before_aggregator_fee": "11.402156486836551488",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-10-30T21:58:26.000Z",
-      "fetched_at": "2026-10-30T21:58:26.000Z",
+      "observed_at": "2026-10-30T22:06:26.000Z",
+      "fetched_at": "2026-10-30T22:06:26.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -68,21 +69,22 @@
         "rpc_url": null,
         "exchanges": [
           "aero-cl",
-          "curve"
+          "hydrex-v4",
+          "uniswap-v4"
         ],
-        "response_sha256": "5519b9480e3ecaa181d36f60d1c420939cd1f5bab83c9db4489cd5261311afeb"
+        "response_sha256": "706b0e76f2fb46da923542ab410bbc1842a3483f5ba8c748abce1eef5e24210a"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11401258592334755655",
-      "amount": "11.401258592334755655",
-      "amount_before_aggregator_fee": "11.402398832217977453",
-      "aggregator_fee_amount_wei": "1140239883221798",
-      "observed_at": "2026-10-30T21:58:25.000Z",
-      "fetched_at": "2026-10-30T21:58:26.000Z",
+      "amount_out_wei": "11400877480917616163",
+      "amount": "11.400877480917616163",
+      "amount_before_aggregator_fee": "11.402017682685884751",
+      "aggregator_fee_amount_wei": "1140201768268588",
+      "observed_at": "2026-10-30T22:06:25.000Z",
+      "fetched_at": "2026-10-30T22:06:26.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -91,14 +93,16 @@
         "token_in": "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "53304079",
-        "block_hash": "0x419b00f69eef476023dfdea8b1b483f3bc91716aeb2db78de449d136e5408d3c",
+        "block_number": "53304319",
+        "block_hash": "0x282754139ae59ce1ec964abcf4e2480fd36d43ef644bd56be1106d55ad8865bf",
         "rpc_url": "https://base-rpc.publicnode.com",
         "exchanges": [
           "aerocl",
-          "curvetwocrypto"
+          "aerodromeslipstreamnewfactory",
+          "metric-v1",
+          "uniswapv4"
         ],
-        "response_sha256": "12cddacf38870b9e18f23aeed30af05542fb5ecb2bc76f93b7e00eb41351feea"
+        "response_sha256": "4f1cbc5295d70d953150535b9559d9b830e59e0930651a35a04272ff790b0fb1"
       }
     }
   ]
