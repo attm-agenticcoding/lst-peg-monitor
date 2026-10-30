@@ -5,16 +5,16 @@
   "base": "cbETH",
   "quote": "ETH",
   "base_amount": "10",
-  "amount": "11.411178237950875648",
+  "amount": "11.411201456715999168",
   "amount_in_wei": "10000000000000000000",
-  "amount_out_wei": "11411178237950875648",
-  "unit_rate": "1.141117823795087564",
+  "amount_out_wei": "11411201456715999168",
+  "unit_rate": "1.141120145671599916",
   "chain": "base",
   "chain_id": 8453,
-  "observed_at": "2026-10-30T13:19:20.000Z",
-  "fetched_at": "2026-10-30T13:19:20.000Z",
-  "generated_at": "2026-10-30T13:19:20.000Z",
-  "valid_until": "2026-10-30T13:34:20.000Z",
+  "observed_at": "2026-10-30T13:27:21.000Z",
+  "fetched_at": "2026-10-30T13:27:21.000Z",
+  "generated_at": "2026-10-30T13:27:21.000Z",
+  "valid_until": "2026-10-30T13:42:21.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -34,9 +34,11 @@
     "block_hash": null,
     "rpc_url": null,
     "exchanges": [
-      "maverick-v2"
+      "aero-cl",
+      "maverick-v2",
+      "prism-prop"
     ],
-    "response_sha256": "f1faca714eb024fc003e712115bb22a795d2ecf2a56c5b827fe3d788cef045be"
+    "response_sha256": "341c93b1558f789d4891a65eb0a958cc11596e2d93c1c3bb0e536e23ba166882"
   },
   "coverage": {
     "available": 2,
@@ -48,12 +50,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11411178237950875648",
-      "amount": "11.411178237950875648",
-      "amount_before_aggregator_fee": "11.411178237950875648",
+      "amount_out_wei": "11411201456715999168",
+      "amount": "11.411201456715999168",
+      "amount_before_aggregator_fee": "11.411201456715999168",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-10-30T13:19:20.000Z",
-      "fetched_at": "2026-10-30T13:19:20.000Z",
+      "observed_at": "2026-10-30T13:27:21.000Z",
+      "fetched_at": "2026-10-30T13:27:21.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -66,21 +68,23 @@
         "block_hash": null,
         "rpc_url": null,
         "exchanges": [
-          "maverick-v2"
+          "aero-cl",
+          "maverick-v2",
+          "prism-prop"
         ],
-        "response_sha256": "f1faca714eb024fc003e712115bb22a795d2ecf2a56c5b827fe3d788cef045be"
+        "response_sha256": "341c93b1558f789d4891a65eb0a958cc11596e2d93c1c3bb0e536e23ba166882"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11409920550782226358",
-      "amount": "11.409920550782226358",
-      "amount_before_aggregator_fee": "11.411061656947921150",
-      "aggregator_fee_amount_wei": "1141106165694792",
-      "observed_at": "2026-10-30T13:19:19.000Z",
-      "fetched_at": "2026-10-30T13:19:20.000Z",
+      "amount_out_wei": "11409904973233771697",
+      "amount": "11.409904973233771697",
+      "amount_before_aggregator_fee": "11.411046077841555853",
+      "aggregator_fee_amount_wei": "1141104607784156",
+      "observed_at": "2026-10-30T13:27:21.000Z",
+      "fetched_at": "2026-10-30T13:27:21.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -89,13 +93,15 @@
         "token_in": "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "53288506",
-        "block_hash": "0x03875f12cebded6e38b20cece9a6c7fadb4ecd59491a8296508f64f1032f4a99",
+        "block_number": "53288747",
+        "block_hash": "0xe94c49cba7fe83cc867d38e534b059ef4efd394988853462ab90d937490b2cdd",
         "rpc_url": "https://base-rpc.publicnode.com",
         "exchanges": [
-          "maverickv2"
+          "aerocl",
+          "maverickv2",
+          "metric-v1"
         ],
-        "response_sha256": "55e1cca72622de072e2515839668e973b74731b0c7093702d17ed15eae3fe813"
+        "response_sha256": "0ad5a3a89c7e294f6bbb4efae0d4cc2f25f260abf08850b58c92c9f8005e7590"
       }
     }
   ]
