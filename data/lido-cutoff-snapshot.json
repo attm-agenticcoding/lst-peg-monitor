@@ -1,15 +1,15 @@
 {
   "schema": 1,
-  "id": "lido-26305370-known-state-v2",
-  "asOf": "2026-10-30T11:47:35Z",
-  "blockNumber": 26305370,
-  "blockHash": "0x6e3fcd9853d8fa8205e777aad667c286c08ad871d788095acadea4ea12dd861c",
-  "beaconSlot": 15544736,
-  "beaconStateRoot": "0x21ef95214f82d4f5dd1badcc40d825006b878d111e258735ddadea33fdfb7f64",
-  "pendingRequests": 152,
-  "pendingSteth": "32423.788890592711281669",
-  "physicalCashEth": "9174.892006477643252270",
-  "scenarioAvailableCashEth": "9174.892006477643252270",
+  "id": "lido-26308942-known-state-v2",
+  "asOf": "2026-10-30T23:44:23Z",
+  "blockNumber": 26308942,
+  "blockHash": "0x1e981eaa2761a1cfda71c8ae143e6cfce937c5299add07e5aa2d8440e7fff99b",
+  "beaconSlot": 15548320,
+  "beaconStateRoot": "0x74605fa2a0a4fe7a47d7f460e33782072dd1f91ab8cd73ccd4fe6296141ce67e",
+  "pendingRequests": 146,
+  "pendingSteth": "31427.495274411583876703",
+  "physicalCashEth": "1007.461222696425515877",
+  "scenarioAvailableCashEth": "1007.461222696425515877",
   "maxEconomicAgeSeconds": 300,
   "live": false,
   "calibrated": false,
@@ -66,11 +66,6 @@
   ],
   "dailyCutoffs": [
     {
-      "referenceTime": "2026-10-30T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
-    },
-    {
       "referenceTime": "2026-10-31T12:00:11Z",
       "mainSteth": "0.000000000000000000",
       "stressSteth": "0.000000000000000000"
@@ -102,41 +97,46 @@
     },
     {
       "referenceTime": "2026-11-06T12:00:11Z",
-      "mainSteth": "51.796446255931970601",
+      "mainSteth": "0.000000000000000000",
       "stressSteth": "0.000000000000000000"
     },
     {
       "referenceTime": "2026-11-07T12:00:11Z",
-      "mainSteth": "51.796446255931970601",
+      "mainSteth": "0.000000000000000000",
       "stressSteth": "0.000000000000000000"
     },
     {
       "referenceTime": "2026-11-08T12:00:11Z",
-      "mainSteth": "51.796446255931970601",
+      "mainSteth": "0.000000000000000000",
       "stressSteth": "0.000000000000000000"
     },
     {
       "referenceTime": "2026-11-09T12:00:11Z",
-      "mainSteth": "51.796446255931970601",
+      "mainSteth": "0.000000000000000000",
       "stressSteth": "0.000000000000000000"
     },
     {
       "referenceTime": "2026-11-10T12:00:11Z",
-      "mainSteth": "51.796446255931970601",
+      "mainSteth": "0.000000000000000000",
       "stressSteth": "0.000000000000000000"
     },
     {
       "referenceTime": "2026-11-11T12:00:11Z",
-      "mainSteth": "51.796446255931970601",
+      "mainSteth": "0.000000000000000000",
       "stressSteth": "0.000000000000000000"
     },
     {
       "referenceTime": "2026-11-12T12:00:11Z",
-      "mainSteth": "51.796446255931970601",
-      "stressSteth": "48.209252438931970601"
+      "mainSteth": "0.000000000000000000",
+      "stressSteth": "0.000000000000000000"
+    },
+    {
+      "referenceTime": "2026-11-13T12:00:11Z",
+      "mainSteth": "0.000000000000000000",
+      "stressSteth": "0.000000000000000000"
     }
   ],
-  "horizonEnd": "2026-11-12T12:00:11Z",
+  "horizonEnd": "2026-11-13T12:00:11Z",
   "assumptions": [
     "Known-state, nominal no-haircut scenarios; future cash is assumed fully report-admissible.",
     "No unknown future deposits, exits, rewards, losses, missed blocks or report interruptions.",
@@ -217,33 +217,33 @@
       "core_buffer_reconciles": true,
       "configuration_quality": "conditional_unpinned_seed",
       "conditional": true,
-      "event_count": 4844,
-      "header_count": 72,
+      "event_count": 5093,
+      "header_count": 70,
       "finality_wait": {
-        "polls": 9,
-        "wait_seconds": 244.37026580199998
+        "polls": 5,
+        "wait_seconds": 123.20581957199997
       },
       "log_integrity": "provider-attested logs with seed/target/child header rechecks; no receipt-trie proof",
       "coverage": [
         {
-          "from_block": 26301767,
-          "to_block": 26302766,
-          "count": 1894
+          "from_block": 26305371,
+          "to_block": 26306370,
+          "count": 1397
         },
         {
-          "from_block": 26302767,
-          "to_block": 26303766,
-          "count": 1281
+          "from_block": 26306371,
+          "to_block": 26307370,
+          "count": 1458
         },
         {
-          "from_block": 26303767,
-          "to_block": 26304766,
-          "count": 997
+          "from_block": 26307371,
+          "to_block": 26308370,
+          "count": 1327
         },
         {
-          "from_block": 26304767,
-          "to_block": 26305370,
-          "count": 672
+          "from_block": 26308371,
+          "to_block": 26308942,
+          "count": 911
         }
       ],
       "blockers": []
@@ -260,9 +260,9 @@
         "child_timestamp_after_state": true,
         "finalized_head_covers_child": true
       },
-      "child_execution_block_number": 26305371,
-      "child_execution_block_hash": "0x79052920fec214da5d6a8a2b2c45d12769031e5c568ce2708d98050f270d6cd0",
-      "finalized_execution_block_number": 26305402,
+      "child_execution_block_number": 26308943,
+      "child_execution_block_hash": "0xc95bff7c8e7df6a2b13f9d04c8a4b1e707e39fa6f294eac1fbe5e7972fabd822",
+      "finalized_execution_block_number": 26308974,
       "method": "Recomputed SSZ state and same-slot BeaconBlockHeader anchored in immediate EL child EIP-4788 parentBeaconBlockRoot.",
       "limitations": "Provider-attested canonical/finalized EL headers; no local BLS finality or full chain-ancestry verification. Child header is integrity-only, never a future cash predictor.",
       "model_checks": {
@@ -278,14 +278,14 @@
     "historicalRegressionFixture": "2026-10-04T16:16:23Z"
   },
   "sourceDigests": {
-    "executionState": "f6b18aee3a18235b079fc66cddaa6636dc92646a334f1a173a66043891612f45",
-    "beaconStateSsz": "9af98780bd6cbe1f54db730430d122592efc1996275e7f3bbfe34eebc0d965a9",
-    "scenarioAudit": "91be92b5d1febe214ee144924d48793379c743248e4070bddd9225db3eab0587",
-    "acquisition": "ac23a1e4286f8f02e22186d16d917b715ab5138fff17f8849f25f995f56ec317"
+    "executionState": "8a8242e13381108060d87c13e74bb296e74b9a943167e03fc6066d85b651cf4a",
+    "beaconStateSsz": "27669b80cdc9558877692e1808f7e15b051a99c7558e2a6f8c76f032778c0476",
+    "scenarioAudit": "77026e8a16aeec404249623c009907d9b5643264f3fe886b15145062e2ebcb90",
+    "acquisition": "bcd0c62a8297f71ba891e9d07cbb60034e7167282d9406d42f4193185cc2ce2c"
   },
   "refresh": {
     "mode": "twice-daily",
-    "state": "running",
+    "state": "ok",
     "scheduleUtc": [
       "00:00",
       "12:00"
@@ -293,20 +293,13 @@
     "expectedIntervalSeconds": 43200,
     "maxSourceAgeSeconds": 5400,
     "maxOperationalAgeSeconds": 48600,
-    "lastSuccessAt": "2026-10-30T12:10:04Z",
-    "lease": {
-      "runId": "c99d6843-d019-49df-8b77-f95d89ad3939",
-      "acquiredAtEpoch": 1793404860,
-      "expiresAtEpoch": 1793406960,
-      "trigger": "relay-dispatch",
-      "rpcCallBudget": 256,
-      "requestKey": "2026-10-31T00:00:00Z"
-    },
+    "lastSuccessAt": "2026-10-31T00:07:02Z",
+    "lease": null,
     "error": null,
     "attemptAt": "2026-10-31T00:01:00Z",
     "trigger": "relay-dispatch",
     "attemptDay": "2026-10-08",
-    "finishedAt": "2026-10-30T12:10:04Z",
+    "finishedAt": "2026-10-31T00:07:02Z",
     "accessBlocked": false,
     "manualAttemptIds": [
       "manual-20261007-diagnostic-fb355c4d",
@@ -324,8 +317,8 @@
       "manual-20261022-pruned-catchup-04"
     ],
     "lastManualRequestId": "manual-20261022-pruned-catchup-04",
-    "lastSuccessSnapshotAsOf": "2026-10-30T11:47:35Z",
-    "runId": "a83a6776-3885-482d-8910-a0d926e28287",
+    "lastSuccessSnapshotAsOf": "2026-10-30T23:44:23Z",
+    "runId": "c99d6843-d019-49df-8b77-f95d89ad3939",
     "attemptSlot": "2026-10-31T00:00:00Z"
   }
 }
