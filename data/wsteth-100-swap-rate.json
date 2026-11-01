@@ -5,16 +5,16 @@
   "base": "wstETH",
   "quote": "ETH",
   "base_amount": "100",
-  "amount": "124.767887716003435122",
+  "amount": "124.767866149026594164",
   "amount_in_wei": "100000000000000000000",
-  "amount_out_wei": "124767887716003435122",
-  "unit_rate": "1.247678877160034351",
+  "amount_out_wei": "124767866149026594164",
+  "unit_rate": "1.247678661490265941",
   "chain": "ethereum",
   "chain_id": 1,
-  "observed_at": "2026-11-01T12:01:43.000Z",
-  "fetched_at": "2026-11-01T12:01:43.000Z",
-  "generated_at": "2026-11-01T12:01:43.000Z",
-  "valid_until": "2026-11-01T12:16:43.000Z",
+  "observed_at": "2026-11-01T12:09:44.000Z",
+  "fetched_at": "2026-11-01T12:09:45.000Z",
+  "generated_at": "2026-11-01T12:09:45.000Z",
+  "valid_until": "2026-11-01T12:24:44.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -36,9 +36,10 @@
     "exchanges": [
       "curve-stable-plain",
       "fluid-dex-t1",
-      "lido"
+      "lido",
+      "uniswapv3"
     ],
-    "response_sha256": "2ea9ee0455d8727c3203f779d5ac5ae12df76250e1bebd805972a72d7efa31d5"
+    "response_sha256": "0631c3bca8c79ad227b52db91175242f413bf1d9e6d5039b66a584ae671b32a8"
   },
   "coverage": {
     "available": 2,
@@ -50,12 +51,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124767887716003435122",
-      "amount": "124.767887716003435122",
-      "amount_before_aggregator_fee": "124.767887716003435122",
+      "amount_out_wei": "124767866149026594164",
+      "amount": "124.767866149026594164",
+      "amount_before_aggregator_fee": "124.767866149026594164",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-01T12:01:43.000Z",
-      "fetched_at": "2026-11-01T12:01:43.000Z",
+      "observed_at": "2026-11-01T12:09:44.000Z",
+      "fetched_at": "2026-11-01T12:09:45.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -70,21 +71,22 @@
         "exchanges": [
           "curve-stable-plain",
           "fluid-dex-t1",
-          "lido"
+          "lido",
+          "uniswapv3"
         ],
-        "response_sha256": "2ea9ee0455d8727c3203f779d5ac5ae12df76250e1bebd805972a72d7efa31d5"
+        "response_sha256": "0631c3bca8c79ad227b52db91175242f413bf1d9e6d5039b66a584ae671b32a8"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124755410679307122214",
-      "amount": "124.755410679307122214",
-      "amount_before_aggregator_fee": "124.767887468053927607",
-      "aggregator_fee_amount_wei": "12476788746805393",
-      "observed_at": "2026-11-01T12:01:35.000Z",
-      "fetched_at": "2026-11-01T12:01:43.000Z",
+      "amount_out_wei": "124755389123578702002",
+      "amount": "124.755389123578702002",
+      "amount_before_aggregator_fee": "124.767865910169718974",
+      "aggregator_fee_amount_wei": "12476786591016972",
+      "observed_at": "2026-11-01T12:09:35.000Z",
+      "fetched_at": "2026-11-01T12:09:43.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -93,15 +95,15 @@
         "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "26319788",
-        "block_hash": "0xf3a3bc497d415f999224546f5ad6d8d974d103c857a0bddbbb2560fa840fd59b",
+        "block_number": "26319828",
+        "block_hash": "0x689a2e8e4b9e7980b804ea6c3e2509b14154f27ff43e26d27c8e9d619683885e",
         "rpc_url": "https://ethereum-rpc.publicnode.com",
         "exchanges": [
           "CurveV1Factory",
-          "fluiddex",
+          "uniswapv3",
           "wsteth"
         ],
-        "response_sha256": "c94e0e386a921ce5ab6106fa51e3c0a1d374b2c985b6c6337996de8d2ca6e14f"
+        "response_sha256": "3ecf0dc2dff8ab3e27958744f0cd6383f7725080ac4ead4c7939c4a850628172"
       }
     }
   ]
