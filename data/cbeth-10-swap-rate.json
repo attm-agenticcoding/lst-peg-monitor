@@ -5,16 +5,16 @@
   "base": "cbETH",
   "quote": "ETH",
   "base_amount": "10",
-  "amount": "11.427341014966976064",
+  "amount": "11.427376960273941888",
   "amount_in_wei": "10000000000000000000",
-  "amount_out_wei": "11427341014966976064",
-  "unit_rate": "1.142734101496697606",
+  "amount_out_wei": "11427376960273941888",
+  "unit_rate": "1.142737696027394188",
   "chain": "base",
   "chain_id": 8453,
-  "observed_at": "2026-11-03T01:59:00.000Z",
-  "fetched_at": "2026-11-03T01:59:00.000Z",
-  "generated_at": "2026-11-03T01:59:00.000Z",
-  "valid_until": "2026-11-03T02:14:00.000Z",
+  "observed_at": "2026-11-03T02:06:59.000Z",
+  "fetched_at": "2026-11-03T02:06:59.000Z",
+  "generated_at": "2026-11-03T02:06:59.000Z",
+  "valid_until": "2026-11-03T02:21:59.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -36,12 +36,12 @@
     "exchanges": [
       "aero-cl",
       "hydrex-v4",
+      "lunarbase",
       "maverick-v2",
       "pancake-v3",
-      "quickswap-v4",
-      "uniswapv3"
+      "quickswap-v4"
     ],
-    "response_sha256": "6205a633fc3562e6a3879be713f270d6d1ecd10e5dd459740c16b866631fb747"
+    "response_sha256": "d6b925bf2614f4fd4eab152ab2c3b89dd05d8fad178efddab57650f143a96c52"
   },
   "coverage": {
     "available": 2,
@@ -53,12 +53,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11427341014966976064",
-      "amount": "11.427341014966976064",
-      "amount_before_aggregator_fee": "11.427341014966976064",
+      "amount_out_wei": "11427376960273941888",
+      "amount": "11.427376960273941888",
+      "amount_before_aggregator_fee": "11.427376960273941888",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-03T01:59:00.000Z",
-      "fetched_at": "2026-11-03T01:59:00.000Z",
+      "observed_at": "2026-11-03T02:06:59.000Z",
+      "fetched_at": "2026-11-03T02:06:59.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -73,24 +73,24 @@
         "exchanges": [
           "aero-cl",
           "hydrex-v4",
+          "lunarbase",
           "maverick-v2",
           "pancake-v3",
-          "quickswap-v4",
-          "uniswapv3"
+          "quickswap-v4"
         ],
-        "response_sha256": "6205a633fc3562e6a3879be713f270d6d1ecd10e5dd459740c16b866631fb747"
+        "response_sha256": "d6b925bf2614f4fd4eab152ab2c3b89dd05d8fad178efddab57650f143a96c52"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11426032569350024102",
-      "amount": "11.426032569350024102",
-      "amount_before_aggregator_fee": "11.427175286878711973",
-      "aggregator_fee_amount_wei": "1142717528687871",
-      "observed_at": "2026-11-03T01:58:57.000Z",
-      "fetched_at": "2026-11-03T01:58:58.000Z",
+      "amount_out_wei": "11426157224787605687",
+      "amount": "11.426157224787605687",
+      "amount_before_aggregator_fee": "11.427299954783083995",
+      "aggregator_fee_amount_wei": "1142729995478308",
+      "observed_at": "2026-11-03T02:06:59.000Z",
+      "fetched_at": "2026-11-03T02:06:59.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -99,18 +99,20 @@
         "token_in": "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "53440895",
-        "block_hash": "0x2eadf6216dba3aee1a9d1dcead0b77a37d70ab7a9781e95c2d270e743163ee80",
+        "block_number": "53441136",
+        "block_hash": "0x369d92db7c868d1a38d8b1cf5657bf88324b7522c3786cec599b749088113610",
         "rpc_url": "https://base-rpc.publicnode.com",
         "exchanges": [
           "QuickSwapV4",
+          "WooFiV2",
           "aerocl",
+          "aerodromeslipstreamnewfactory",
           "maverickv2",
           "pancakeswapv3",
           "uniswapv3",
           "uniswapv4"
         ],
-        "response_sha256": "f1c6f0cad8043d0372010002931c3cac60c660d2b7ef43c3f535b594efafe921"
+        "response_sha256": "1406029a2091f7fdda4eb6f67c0c92ce49d7abb4666bf0b51855a54ea196dcbc"
       }
     }
   ]
