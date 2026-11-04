@@ -1,15 +1,15 @@
 {
   "schema": 1,
-  "id": "lido-26337644-known-state-v2",
-  "asOf": "2026-11-03T23:44:23Z",
-  "blockNumber": 26337644,
-  "blockHash": "0x84c7ad0f21b70d32ed50629f7ebb9dc8a7fd3b85dc0a009117ee0ca2065c8663",
-  "beaconSlot": 15577120,
-  "beaconStateRoot": "0xe88e8eb68261bb7ce8e26e8a5b531a71f241638aa741e3a5eb49e4c769a6be40",
-  "pendingRequests": 100,
-  "pendingSteth": "11301.120788962479607561",
-  "physicalCashEth": "4113.186727202469413095",
-  "scenarioAvailableCashEth": "4113.186727202469413095",
+  "id": "lido-26341247-known-state-v2",
+  "asOf": "2026-11-04T11:47:35Z",
+  "blockNumber": 26341247,
+  "blockHash": "0x7b6d6d7bd7cb1f66574462415d0ebc9e583fd60e27f628fe3ac8843359c48e2e",
+  "beaconSlot": 15580736,
+  "beaconStateRoot": "0xdea8825994e3e6bd7038547e88cd9adcdfa2bd3458cabe8bec4446f5a7b8f786",
+  "pendingRequests": 134,
+  "pendingSteth": "12894.642677475810231318",
+  "physicalCashEth": "7034.137086939900513416",
+  "scenarioAvailableCashEth": "7034.137086939900513416",
   "maxEconomicAgeSeconds": 300,
   "live": false,
   "calibrated": false,
@@ -19,16 +19,32 @@
       "split": [
         100
       ],
-      "main": null,
-      "stress": null
+      "main": {
+        "eligible_report_index": 7,
+        "reference_time_utc": "2026-11-10T12:00:11Z",
+        "elapsed_to_reference_seconds": 519156
+      },
+      "stress": {
+        "eligible_report_index": 13,
+        "reference_time_utc": "2026-11-16T12:00:11Z",
+        "elapsed_to_reference_seconds": 1037556
+      }
     },
     {
       "steth": 200,
       "split": [
         200
       ],
-      "main": null,
-      "stress": null
+      "main": {
+        "eligible_report_index": 8,
+        "reference_time_utc": "2026-11-11T12:00:11Z",
+        "elapsed_to_reference_seconds": 605556
+      },
+      "stress": {
+        "eligible_report_index": 14,
+        "reference_time_utc": "2026-11-17T12:00:11Z",
+        "elapsed_to_reference_seconds": 1123956
+      }
     },
     {
       "steth": 300,
@@ -97,43 +113,43 @@
     },
     {
       "referenceTime": "2026-11-10T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
+      "mainSteth": "190.617304343090282098",
       "stressSteth": "0.000000000000000000"
     },
     {
       "referenceTime": "2026-11-11T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
+      "mainSteth": "213.737709534090282098",
       "stressSteth": "0.000000000000000000"
     },
     {
       "referenceTime": "2026-11-12T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
+      "mainSteth": "213.737709534090282098",
       "stressSteth": "0.000000000000000000"
     },
     {
       "referenceTime": "2026-11-13T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
+      "mainSteth": "213.737709534090282098",
       "stressSteth": "0.000000000000000000"
     },
     {
       "referenceTime": "2026-11-14T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
+      "mainSteth": "213.737709534090282098",
       "stressSteth": "0.000000000000000000"
     },
     {
       "referenceTime": "2026-11-15T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
+      "mainSteth": "213.737709534090282098",
       "stressSteth": "0.000000000000000000"
     },
     {
       "referenceTime": "2026-11-16T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "213.737709534090282098",
+      "stressSteth": "190.329108456090282098"
     },
     {
       "referenceTime": "2026-11-17T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "213.737709534090282098",
+      "stressSteth": "208.668869207090282098"
     }
   ],
   "horizonEnd": "2026-11-17T12:00:11Z",
@@ -217,33 +233,33 @@
       "core_buffer_reconciles": true,
       "configuration_quality": "conditional_unpinned_seed",
       "conditional": true,
-      "event_count": 4050,
-      "header_count": 82,
+      "event_count": 4571,
+      "header_count": 52,
       "finality_wait": {
-        "polls": 2,
-        "wait_seconds": 32.74162180400002
+        "polls": 10,
+        "wait_seconds": 275.82426398999996
       },
       "log_integrity": "provider-attested logs with seed/target/child header rechecks; no receipt-trie proof",
       "coverage": [
         {
-          "from_block": 26334073,
-          "to_block": 26335072,
-          "count": 1445
+          "from_block": 26337645,
+          "to_block": 26338644,
+          "count": 1154
         },
         {
-          "from_block": 26335073,
-          "to_block": 26336072,
-          "count": 1135
+          "from_block": 26338645,
+          "to_block": 26339644,
+          "count": 1334
         },
         {
-          "from_block": 26336073,
-          "to_block": 26337072,
-          "count": 1051
+          "from_block": 26339645,
+          "to_block": 26340644,
+          "count": 1612
         },
         {
-          "from_block": 26337073,
-          "to_block": 26337644,
-          "count": 419
+          "from_block": 26340645,
+          "to_block": 26341247,
+          "count": 471
         }
       ],
       "blockers": []
@@ -260,9 +276,9 @@
         "child_timestamp_after_state": true,
         "finalized_head_covers_child": true
       },
-      "child_execution_block_number": 26337645,
-      "child_execution_block_hash": "0xc72bfeaf9baecd9e7f4fbb03aad52f4e02147af12495cde51ed859b639651a59",
-      "finalized_execution_block_number": 26337676,
+      "child_execution_block_number": 26341248,
+      "child_execution_block_hash": "0xe6a2870e687524c9db36b646627e84208ce789b300c6b0b27549b287e6266c5f",
+      "finalized_execution_block_number": 26341279,
       "method": "Recomputed SSZ state and same-slot BeaconBlockHeader anchored in immediate EL child EIP-4788 parentBeaconBlockRoot.",
       "limitations": "Provider-attested canonical/finalized EL headers; no local BLS finality or full chain-ancestry verification. Child header is integrity-only, never a future cash predictor.",
       "model_checks": {
@@ -278,14 +294,14 @@
     "historicalRegressionFixture": "2026-10-04T16:16:23Z"
   },
   "sourceDigests": {
-    "executionState": "a2a96fa1414ce8cf06def28a3de3491410afad6fb70d32cfa17ea9441aec8e16",
-    "beaconStateSsz": "705da9eff573511ea11fec0524fb4e6c2dc5c6e3397549e9bbf200f09fd8690d",
-    "scenarioAudit": "8b447d61ccbc95ed7c4ef59d128055f02af0b4518b404cde3ea2126512ef2c6e",
-    "acquisition": "55c175e6d185e5a91b63dae0222fb48935d6466e715c98d23e50211a97000ae6"
+    "executionState": "bbe1cddfc3d33911ecd38deb26eda36a1f0fe3220b6fc02e4b2f53135ca94161",
+    "beaconStateSsz": "ad74651c01bfb2f379dbb2edd02d27a9b9b5191d8aabc023cb7178250b146062",
+    "scenarioAudit": "20f8d1c5e05cbe2f535dbe304f5b85b51bda2b0f277053c6c974e54cbde3c89a",
+    "acquisition": "2ea66fd381fe6dd7bc66c9ba57c9af7142e21bc74a29c0d3aeea0cc83107cabb"
   },
   "refresh": {
     "mode": "twice-daily",
-    "state": "running",
+    "state": "ok",
     "scheduleUtc": [
       "00:00",
       "12:00"
@@ -293,20 +309,13 @@
     "expectedIntervalSeconds": 43200,
     "maxSourceAgeSeconds": 5400,
     "maxOperationalAgeSeconds": 48600,
-    "lastSuccessAt": "2026-11-04T00:07:14Z",
-    "lease": {
-      "runId": "ca421689-2ba4-4da0-a7d4-6c09a41a5558",
-      "acquiredAtEpoch": 1793793693,
-      "expiresAtEpoch": 1793795793,
-      "trigger": "relay-dispatch",
-      "rpcCallBudget": 256,
-      "requestKey": "2026-11-04T12:00:00Z"
-    },
+    "lastSuccessAt": "2026-11-04T12:09:07Z",
+    "lease": null,
     "error": null,
     "attemptAt": "2026-11-04T12:01:33Z",
     "trigger": "relay-dispatch",
     "attemptDay": "2026-10-08",
-    "finishedAt": "2026-11-04T00:07:14Z",
+    "finishedAt": "2026-11-04T12:09:07Z",
     "accessBlocked": false,
     "manualAttemptIds": [
       "manual-20261007-diagnostic-fb355c4d",
@@ -324,8 +333,8 @@
       "manual-20261022-pruned-catchup-04"
     ],
     "lastManualRequestId": "manual-20261022-pruned-catchup-04",
-    "lastSuccessSnapshotAsOf": "2026-11-03T23:44:23Z",
-    "runId": "b1533593-6ff5-4f18-a9f1-1067968c638a",
+    "lastSuccessSnapshotAsOf": "2026-11-04T11:47:35Z",
+    "runId": "ca421689-2ba4-4da0-a7d4-6c09a41a5558",
     "attemptSlot": "2026-11-04T12:00:00Z"
   }
 }
