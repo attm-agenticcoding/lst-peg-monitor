@@ -1,15 +1,15 @@
 {
   "schema": 1,
-  "id": "lido-26373525-known-state-v2",
-  "asOf": "2026-11-08T23:44:23Z",
-  "blockNumber": 26373525,
-  "blockHash": "0xaf432d38cfc04f5e7c904cbc8a2236036036776852547afc04d3d82e7775c93d",
-  "beaconSlot": 15613120,
-  "beaconStateRoot": "0x89c14afa4949e7b6cd6931ba1f0826eedc4a7c9c8eb2932c1202c638d9c0791a",
-  "pendingRequests": 72,
-  "pendingSteth": "14740.012258275021342955",
-  "physicalCashEth": "4313.567894780061194350",
-  "scenarioAvailableCashEth": "4313.567894780061194350",
+  "id": "lido-26377100-known-state-v2",
+  "asOf": "2026-11-09T11:41:11Z",
+  "blockNumber": 26377100,
+  "blockHash": "0x61c331c25cc2b8122022aad6036ed440e66746a4afbf2c8751a1e6d62fa52038",
+  "beaconSlot": 15616704,
+  "beaconStateRoot": "0x511f6afd30d8145266aee404beabd637be855a44bca4e25edfda50f955e7d57a",
+  "pendingRequests": 114,
+  "pendingSteth": "18523.251663967727787001",
+  "physicalCashEth": "18712.761646313410000028",
+  "scenarioAvailableCashEth": "18712.761646313410000028",
   "maxEconomicAgeSeconds": 300,
   "live": false,
   "calibrated": false,
@@ -19,40 +19,80 @@
       "split": [
         100
       ],
-      "main": null,
-      "stress": null
+      "main": {
+        "eligible_report_index": 2,
+        "reference_time_utc": "2026-11-10T12:00:11Z",
+        "elapsed_to_reference_seconds": 87540
+      },
+      "stress": {
+        "eligible_report_index": 2,
+        "reference_time_utc": "2026-11-10T12:00:11Z",
+        "elapsed_to_reference_seconds": 87540
+      }
     },
     {
       "steth": 200,
       "split": [
         200
       ],
-      "main": null,
-      "stress": null
+      "main": {
+        "eligible_report_index": 2,
+        "reference_time_utc": "2026-11-10T12:00:11Z",
+        "elapsed_to_reference_seconds": 87540
+      },
+      "stress": {
+        "eligible_report_index": 2,
+        "reference_time_utc": "2026-11-10T12:00:11Z",
+        "elapsed_to_reference_seconds": 87540
+      }
     },
     {
       "steth": 300,
       "split": [
         300
       ],
-      "main": null,
-      "stress": null
+      "main": {
+        "eligible_report_index": 2,
+        "reference_time_utc": "2026-11-10T12:00:11Z",
+        "elapsed_to_reference_seconds": 87540
+      },
+      "stress": {
+        "eligible_report_index": 2,
+        "reference_time_utc": "2026-11-10T12:00:11Z",
+        "elapsed_to_reference_seconds": 87540
+      }
     },
     {
       "steth": 500,
       "split": [
         500
       ],
-      "main": null,
-      "stress": null
+      "main": {
+        "eligible_report_index": 2,
+        "reference_time_utc": "2026-11-10T12:00:11Z",
+        "elapsed_to_reference_seconds": 87540
+      },
+      "stress": {
+        "eligible_report_index": 3,
+        "reference_time_utc": "2026-11-11T12:00:11Z",
+        "elapsed_to_reference_seconds": 173940
+      }
     },
     {
       "steth": 1000,
       "split": [
         1000
       ],
-      "main": null,
-      "stress": null
+      "main": {
+        "eligible_report_index": 2,
+        "reference_time_utc": "2026-11-10T12:00:11Z",
+        "elapsed_to_reference_seconds": 87540
+      },
+      "stress": {
+        "eligible_report_index": 3,
+        "reference_time_utc": "2026-11-11T12:00:11Z",
+        "elapsed_to_reference_seconds": 173940
+      }
     },
     {
       "steth": 1500,
@@ -60,8 +100,16 @@
         1000,
         500
       ],
-      "main": null,
-      "stress": null
+      "main": {
+        "eligible_report_index": 2,
+        "reference_time_utc": "2026-11-10T12:00:11Z",
+        "elapsed_to_reference_seconds": 87540
+      },
+      "stress": {
+        "eligible_report_index": 3,
+        "reference_time_utc": "2026-11-11T12:00:11Z",
+        "elapsed_to_reference_seconds": 173940
+      }
     }
   ],
   "dailyCutoffs": [
@@ -72,68 +120,68 @@
     },
     {
       "referenceTime": "2026-11-10T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "4847.730171633682213027",
+      "stressSteth": "360.173553930682213027"
     },
     {
       "referenceTime": "2026-11-11T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "5487.563560496682213027",
+      "stressSteth": "4846.857257507682213027"
     },
     {
       "referenceTime": "2026-11-12T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "9297.907289959682213027",
+      "stressSteth": "5190.324531281682213027"
     },
     {
       "referenceTime": "2026-11-13T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "9520.679863408682213027",
+      "stressSteth": "5480.863103385682213027"
     },
     {
       "referenceTime": "2026-11-14T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "9953.873801692682213027",
+      "stressSteth": "5814.571060443682213027"
     },
     {
       "referenceTime": "2026-11-15T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "9969.629367164682213027",
+      "stressSteth": "9295.794064051682213027"
     },
     {
       "referenceTime": "2026-11-16T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "9982.237109768682213027",
+      "stressSteth": "9438.359427472682213027"
     },
     {
       "referenceTime": "2026-11-17T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "9982.237109768682213027",
+      "stressSteth": "9520.679863408682213027"
     },
     {
       "referenceTime": "2026-11-18T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "9982.237109768682213027",
+      "stressSteth": "9934.786379964682213027"
     },
     {
       "referenceTime": "2026-11-19T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "9982.237109768682213027",
+      "stressSteth": "9953.873801692682213027"
     },
     {
       "referenceTime": "2026-11-20T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "9982.237109768682213027",
+      "stressSteth": "9966.180297507682213027"
     },
     {
       "referenceTime": "2026-11-21T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "9982.237109768682213027",
+      "stressSteth": "9969.629367164682213027"
     },
     {
       "referenceTime": "2026-11-22T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "9982.237109768682213027",
+      "stressSteth": "9977.639880686682213027"
     }
   ],
   "horizonEnd": "2026-11-22T12:00:11Z",
@@ -217,33 +265,33 @@
       "core_buffer_reconciles": true,
       "configuration_quality": "conditional_unpinned_seed",
       "conditional": true,
-      "event_count": 4039,
-      "header_count": 64,
+      "event_count": 4226,
+      "header_count": 48,
       "finality_wait": {
-        "polls": 6,
-        "wait_seconds": 153.31971459700003
+        "polls": 1,
+        "wait_seconds": 2.000377913999955
       },
       "log_integrity": "provider-attested logs with seed/target/child header rechecks; no receipt-trie proof",
       "coverage": [
         {
-          "from_block": 26370270,
-          "to_block": 26371269,
-          "count": 1247
+          "from_block": 26373526,
+          "to_block": 26374525,
+          "count": 1146
         },
         {
-          "from_block": 26371270,
-          "to_block": 26372269,
-          "count": 1107
+          "from_block": 26374526,
+          "to_block": 26375525,
+          "count": 923
         },
         {
-          "from_block": 26372270,
-          "to_block": 26373269,
-          "count": 1337
+          "from_block": 26375526,
+          "to_block": 26376525,
+          "count": 1420
         },
         {
-          "from_block": 26373270,
-          "to_block": 26373525,
-          "count": 348
+          "from_block": 26376526,
+          "to_block": 26377100,
+          "count": 737
         }
       ],
       "blockers": []
@@ -260,9 +308,9 @@
         "child_timestamp_after_state": true,
         "finalized_head_covers_child": true
       },
-      "child_execution_block_number": 26373526,
-      "child_execution_block_hash": "0x1f39a18fa28fcffc0596e1a2929ccc86462ecf65c74ea980f61490d06f951de1",
-      "finalized_execution_block_number": 26373556,
+      "child_execution_block_number": 26377101,
+      "child_execution_block_hash": "0xb9c8b5f96eee2857843e723ae36476c6f2c1e252d1974fc4631da65adef18c83",
+      "finalized_execution_block_number": 26377132,
       "method": "Recomputed SSZ state and same-slot BeaconBlockHeader anchored in immediate EL child EIP-4788 parentBeaconBlockRoot.",
       "limitations": "Provider-attested canonical/finalized EL headers; no local BLS finality or full chain-ancestry verification. Child header is integrity-only, never a future cash predictor.",
       "model_checks": {
@@ -278,14 +326,14 @@
     "historicalRegressionFixture": "2026-10-04T16:16:23Z"
   },
   "sourceDigests": {
-    "executionState": "4d6bf179ada82042a2678395db86c7f40cfc431142eb7e579408b6970f0f63c7",
-    "beaconStateSsz": "68f6015477f7d1313175a0ad52549123375f37eb88b2f0c20e7fbe92977d334c",
-    "scenarioAudit": "d2d7f2d0f309615ff9863a526f1d01cd77b5c12ae125031373b8741f17e9a696",
-    "acquisition": "294f1d245842648b5d48207c68e02233032438b3bb3bceef22d955e6170f01f2"
+    "executionState": "d29c2e1fba6f2f246a4e3e1eef7669910e0efa81453e27c0046ef3a2f0d27f5f",
+    "beaconStateSsz": "56a37785611dd10e89d1885ce5a9a4752a49155c0d022258aee9609776226d2f",
+    "scenarioAudit": "e024548b3ff70707b67bebc5f85aae7b47177f335e14994cb9befd901d5b0ad7",
+    "acquisition": "b6e9d7825d0701e8581299bb11b19647d2540b6d66a1a86d0a0ecaaee3ff6e4b"
   },
   "refresh": {
     "mode": "twice-daily",
-    "state": "running",
+    "state": "ok",
     "scheduleUtc": [
       "00:00",
       "12:00"
@@ -293,20 +341,13 @@
     "expectedIntervalSeconds": 43200,
     "maxSourceAgeSeconds": 5400,
     "maxOperationalAgeSeconds": 48600,
-    "lastSuccessAt": "2026-11-09T00:06:17Z",
-    "lease": {
-      "runId": "9bd7e19e-6fee-4c6a-bcaf-539a85614f04",
-      "acquiredAtEpoch": 1794225622,
-      "expiresAtEpoch": 1794227722,
-      "trigger": "relay-dispatch",
-      "rpcCallBudget": 256,
-      "requestKey": "2026-11-09T12:00:00Z"
-    },
+    "lastSuccessAt": "2026-11-09T12:03:34Z",
+    "lease": null,
     "error": null,
     "attemptAt": "2026-11-09T12:00:22Z",
     "trigger": "relay-dispatch",
     "attemptDay": "2026-10-08",
-    "finishedAt": "2026-11-09T00:06:17Z",
+    "finishedAt": "2026-11-09T12:03:34Z",
     "accessBlocked": false,
     "manualAttemptIds": [
       "manual-20261007-diagnostic-fb355c4d",
@@ -324,8 +365,8 @@
       "manual-20261022-pruned-catchup-04"
     ],
     "lastManualRequestId": "manual-20261022-pruned-catchup-04",
-    "lastSuccessSnapshotAsOf": "2026-11-08T23:44:23Z",
-    "runId": "b8021d21-bd9e-4f86-b886-a697a708ecde",
+    "lastSuccessSnapshotAsOf": "2026-11-09T11:41:11Z",
+    "runId": "9bd7e19e-6fee-4c6a-bcaf-539a85614f04",
     "attemptSlot": "2026-11-09T12:00:00Z"
   }
 }
