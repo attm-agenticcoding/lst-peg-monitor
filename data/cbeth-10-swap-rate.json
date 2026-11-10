@@ -5,16 +5,16 @@
   "base": "cbETH",
   "quote": "ETH",
   "base_amount": "10",
-  "amount": "11.433696339343081152",
+  "amount": "11.433718424523437056",
   "amount_in_wei": "10000000000000000000",
-  "amount_out_wei": "11433696339343081152",
-  "unit_rate": "1.143369633934308115",
+  "amount_out_wei": "11433718424523437056",
+  "unit_rate": "1.143371842452343705",
   "chain": "base",
   "chain_id": 8453,
-  "observed_at": "2026-11-10T01:11:26.000Z",
-  "fetched_at": "2026-11-10T01:11:26.000Z",
-  "generated_at": "2026-11-10T01:11:27.000Z",
-  "valid_until": "2026-11-10T01:26:26.000Z",
+  "observed_at": "2026-11-10T01:17:27.000Z",
+  "fetched_at": "2026-11-10T01:17:27.000Z",
+  "generated_at": "2026-11-10T01:17:27.000Z",
+  "valid_until": "2026-11-10T01:32:27.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -37,9 +37,11 @@
       "aero-cl",
       "hydrex-v4",
       "maverick-v2",
-      "solidly-v3"
+      "prism-prop",
+      "solidly-v3",
+      "tidefi-prop"
     ],
-    "response_sha256": "ea8e42d7c1527970214270b102d89f2d40171617def91f0657b66c075c93edd4"
+    "response_sha256": "406b01e41f7f5bb8e7def14149c51d7d1c6427134844fcf6309402ac05ea21f4"
   },
   "coverage": {
     "available": 2,
@@ -51,12 +53,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11433696339343081152",
-      "amount": "11.433696339343081152",
-      "amount_before_aggregator_fee": "11.433696339343081152",
+      "amount_out_wei": "11433718424523437056",
+      "amount": "11.433718424523437056",
+      "amount_before_aggregator_fee": "11.433718424523437056",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-10T01:11:26.000Z",
-      "fetched_at": "2026-11-10T01:11:26.000Z",
+      "observed_at": "2026-11-10T01:17:27.000Z",
+      "fetched_at": "2026-11-10T01:17:27.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -72,21 +74,23 @@
           "aero-cl",
           "hydrex-v4",
           "maverick-v2",
-          "solidly-v3"
+          "prism-prop",
+          "solidly-v3",
+          "tidefi-prop"
         ],
-        "response_sha256": "ea8e42d7c1527970214270b102d89f2d40171617def91f0657b66c075c93edd4"
+        "response_sha256": "406b01e41f7f5bb8e7def14149c51d7d1c6427134844fcf6309402ac05ea21f4"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11432442352356076976",
-      "amount": "11.432442352356076976",
-      "amount_before_aggregator_fee": "11.433585710927169693",
-      "aggregator_fee_amount_wei": "1143358571092717",
-      "observed_at": "2026-11-10T01:11:27.000Z",
-      "fetched_at": "2026-11-10T01:11:27.000Z",
+      "amount_out_wei": "11432446924065211256",
+      "amount": "11.432446924065211256",
+      "amount_before_aggregator_fee": "11.433590283093520608",
+      "aggregator_fee_amount_wei": "1143359028309352",
+      "observed_at": "2026-11-10T01:17:27.000Z",
+      "fetched_at": "2026-11-10T01:17:27.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -95,14 +99,15 @@
         "token_in": "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "55413557",
-        "block_hash": "0x3e3034d5eb9694b467e9f36a138657b478ee82acd8b9a7752ace96130fd65281",
+        "block_number": "55415359",
+        "block_hash": "0x08b144211b347c1e8fef4db2285d95ec1d9ab49c34dfffb525f555fca2f4cffb",
         "rpc_url": "https://base-rpc.publicnode.com",
         "exchanges": [
           "aerocl",
+          "aerodromeslipstream",
           "maverickv2"
         ],
-        "response_sha256": "f4d0436c36093e31e290c1113612ef442d044ca8bd041a5d46a8e35292d354f9"
+        "response_sha256": "25d03f07f93da9faf078c0df3c4f1b5cff6769da8b0916132a68add0edce94e1"
       }
     }
   ]
