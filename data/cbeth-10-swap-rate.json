@@ -5,16 +5,16 @@
   "base": "cbETH",
   "quote": "ETH",
   "base_amount": "10",
-  "amount": "11.436289641404014976",
+  "amount": "11.436453965917935872",
   "amount_in_wei": "10000000000000000000",
-  "amount_out_wei": "11436289641404014976",
-  "unit_rate": "1.143628964140401497",
+  "amount_out_wei": "11436453965917935872",
+  "unit_rate": "1.143645396591793587",
   "chain": "base",
   "chain_id": 8453,
-  "observed_at": "2026-11-13T14:59:32.000Z",
-  "fetched_at": "2026-11-13T14:59:32.000Z",
-  "generated_at": "2026-11-13T14:59:33.000Z",
-  "valid_until": "2026-11-13T15:14:32.000Z",
+  "observed_at": "2026-11-13T15:07:32.000Z",
+  "fetched_at": "2026-11-13T15:07:32.000Z",
+  "generated_at": "2026-11-13T15:07:32.000Z",
+  "valid_until": "2026-11-13T15:22:32.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -35,10 +35,9 @@
     "rpc_url": null,
     "exchanges": [
       "hydrex-v4",
-      "solidly-v3",
-      "uniswapv3"
+      "solidly-v3"
     ],
-    "response_sha256": "f7835d4c8d488f31e7a6f31dbdb2704dd4a713a5fe33aecfacb3af56bf712dab"
+    "response_sha256": "d33c311eb422beec4df2a35cca457e93471209f5bd4f123fa0fe0468b232fd91"
   },
   "coverage": {
     "available": 2,
@@ -50,12 +49,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11436289641404014976",
-      "amount": "11.436289641404014976",
-      "amount_before_aggregator_fee": "11.436289641404014976",
+      "amount_out_wei": "11436453965917935872",
+      "amount": "11.436453965917935872",
+      "amount_before_aggregator_fee": "11.436453965917935872",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-13T14:59:32.000Z",
-      "fetched_at": "2026-11-13T14:59:32.000Z",
+      "observed_at": "2026-11-13T15:07:32.000Z",
+      "fetched_at": "2026-11-13T15:07:32.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -69,22 +68,21 @@
         "rpc_url": null,
         "exchanges": [
           "hydrex-v4",
-          "solidly-v3",
-          "uniswapv3"
+          "solidly-v3"
         ],
-        "response_sha256": "f7835d4c8d488f31e7a6f31dbdb2704dd4a713a5fe33aecfacb3af56bf712dab"
+        "response_sha256": "d33c311eb422beec4df2a35cca457e93471209f5bd4f123fa0fe0468b232fd91"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11434751286028363556",
-      "amount": "11.434751286028363556",
-      "amount_before_aggregator_fee": "11.435894875515915148",
-      "aggregator_fee_amount_wei": "1143589487551592",
-      "observed_at": "2026-11-13T14:59:32.000Z",
-      "fetched_at": "2026-11-13T14:59:32.000Z",
+      "amount_out_wei": "11434800011842818037",
+      "amount": "11.434800011842818037",
+      "amount_before_aggregator_fee": "11.435943606203438381",
+      "aggregator_fee_amount_wei": "1143594360620344",
+      "observed_at": "2026-11-13T15:07:32.000Z",
+      "fetched_at": "2026-11-13T15:07:32.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -93,16 +91,17 @@
         "token_in": "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "56957986",
-        "block_hash": "0xbb638f20203e267a30187765b38efa8a31808bebb1c4046d466754345c516996",
+        "block_number": "56960385",
+        "block_hash": "0x798fe33f9fc534601299c7a27aafabf512eb08fa1e1611f339ce2fe4a702b23e",
         "rpc_url": "https://base-rpc.publicnode.com",
         "exchanges": [
           "aerocl",
+          "aerodromeslipstream",
           "hydrex",
           "uniswapv3",
           "uniswapv4"
         ],
-        "response_sha256": "62a3385e72f6eeb5bd2ce07abfd428566061a3a819ee6f39abba82e831d2967d"
+        "response_sha256": "28f958cde036f892b588927edd46b9d49baaa10851659c2fbd86ee705b27cf49"
       }
     }
   ]
