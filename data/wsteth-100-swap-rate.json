@@ -5,16 +5,16 @@
   "base": "wstETH",
   "quote": "ETH",
   "base_amount": "100",
-  "amount": "124.877176242890539250",
+  "amount": "124.881111631754459636",
   "amount_in_wei": "100000000000000000000",
-  "amount_out_wei": "124877176242890539250",
-  "unit_rate": "1.248771762428905392",
+  "amount_out_wei": "124881111631754459636",
+  "unit_rate": "1.248811116317544596",
   "chain": "ethereum",
   "chain_id": 1,
-  "observed_at": "2026-11-13T03:14:17.000Z",
-  "fetched_at": "2026-11-13T03:14:17.000Z",
-  "generated_at": "2026-11-13T03:14:17.000Z",
-  "valid_until": "2026-11-13T03:29:17.000Z",
+  "observed_at": "2026-11-13T03:22:18.000Z",
+  "fetched_at": "2026-11-13T03:22:18.000Z",
+  "generated_at": "2026-11-13T03:22:18.000Z",
+  "valid_until": "2026-11-13T03:37:18.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -39,9 +39,10 @@
       "etherfi-vampire",
       "fluid-dex-t1",
       "lido",
-      "uniswapv3"
+      "taurusfi-prop",
+      "uniswap-v4"
     ],
-    "response_sha256": "5fe994397cbf79fe4ce2e18072833bd59167e8dc095a62da84c98420ed845d9d"
+    "response_sha256": "3bd903b4714f69cdba93f70f95cbdc65dadafaefadbafab209de83bac45a138d"
   },
   "coverage": {
     "available": 2,
@@ -53,12 +54,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124877176242890539250",
-      "amount": "124.877176242890539250",
-      "amount_before_aggregator_fee": "124.877176242890539250",
+      "amount_out_wei": "124881111631754459636",
+      "amount": "124.881111631754459636",
+      "amount_before_aggregator_fee": "124.881111631754459636",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-13T03:14:17.000Z",
-      "fetched_at": "2026-11-13T03:14:17.000Z",
+      "observed_at": "2026-11-13T03:22:18.000Z",
+      "fetched_at": "2026-11-13T03:22:18.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -76,21 +77,22 @@
           "etherfi-vampire",
           "fluid-dex-t1",
           "lido",
-          "uniswapv3"
+          "taurusfi-prop",
+          "uniswap-v4"
         ],
-        "response_sha256": "5fe994397cbf79fe4ce2e18072833bd59167e8dc095a62da84c98420ed845d9d"
+        "response_sha256": "3bd903b4714f69cdba93f70f95cbdc65dadafaefadbafab209de83bac45a138d"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124864601648646255843",
-      "amount": "124.864601648646255843",
-      "amount_before_aggregator_fee": "124.877089357582014044",
-      "aggregator_fee_amount_wei": "12487708935758201",
-      "observed_at": "2026-11-13T03:14:11.000Z",
-      "fetched_at": "2026-11-13T03:14:17.000Z",
+      "amount_out_wei": "124862377393500143930",
+      "amount": "124.862377393500143930",
+      "amount_before_aggregator_fee": "124.874864879988142744",
+      "aggregator_fee_amount_wei": "12487486487998814",
+      "observed_at": "2026-11-13T03:22:11.000Z",
+      "fetched_at": "2026-11-13T03:22:18.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -99,16 +101,15 @@
         "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "26403279",
-        "block_hash": "0x5209724ca5fc2bf1f4db47481ed47d078af0c544e48a1e131d247251c9ef48fb",
+        "block_number": "26403319",
+        "block_hash": "0x536b768c5401f12d2b58c8e66c258d3235d0aa4a427e5e97d895d99c89d7d86a",
         "rpc_url": "https://ethereum-rpc.publicnode.com",
         "exchanges": [
           "CurveV1",
           "fluiddex",
-          "uniswapv3",
           "wsteth"
         ],
-        "response_sha256": "50c81cc80327a5b679d0658304bb266977509832f532bb4687d5de9d2fdc7c2c"
+        "response_sha256": "c9b7a279c7aa85c2cb6b7b499bd5ead525873e2623227f9c15b2fdb12f74b0c1"
       }
     }
   ]
