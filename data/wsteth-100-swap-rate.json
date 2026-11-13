@@ -5,16 +5,16 @@
   "base": "wstETH",
   "quote": "ETH",
   "base_amount": "100",
-  "amount": "124.868878315058364161",
+  "amount": "124.868022000503572027",
   "amount_in_wei": "100000000000000000000",
-  "amount_out_wei": "124868878315058364161",
-  "unit_rate": "1.248688783150583641",
+  "amount_out_wei": "124868022000503572027",
+  "unit_rate": "1.248680220005035720",
   "chain": "ethereum",
   "chain_id": 1,
-  "observed_at": "2026-11-13T03:56:18.000Z",
-  "fetched_at": "2026-11-13T03:56:18.000Z",
-  "generated_at": "2026-11-13T03:56:18.000Z",
-  "valid_until": "2026-11-13T04:11:18.000Z",
+  "observed_at": "2026-11-13T04:02:18.000Z",
+  "fetched_at": "2026-11-13T04:02:18.000Z",
+  "generated_at": "2026-11-13T04:02:18.000Z",
+  "valid_until": "2026-11-13T04:17:18.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -38,7 +38,7 @@
       "etherfi-vampire",
       "fluid-dex-t1"
     ],
-    "response_sha256": "6594ae020ac82637b9fd6c73553dcb87b171be9b1c000ab671f569a9286647bf"
+    "response_sha256": "b85aa720f72c2d7c65e05ff3b968e0ff2c3afe45a02c20ba1e5002481d8cae03"
   },
   "coverage": {
     "available": 2,
@@ -50,12 +50,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124868878315058364161",
-      "amount": "124.868878315058364161",
-      "amount_before_aggregator_fee": "124.868878315058364161",
+      "amount_out_wei": "124868022000503572027",
+      "amount": "124.868022000503572027",
+      "amount_before_aggregator_fee": "124.868022000503572027",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-13T03:56:18.000Z",
-      "fetched_at": "2026-11-13T03:56:18.000Z",
+      "observed_at": "2026-11-13T04:02:18.000Z",
+      "fetched_at": "2026-11-13T04:02:18.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -72,19 +72,19 @@
           "etherfi-vampire",
           "fluid-dex-t1"
         ],
-        "response_sha256": "6594ae020ac82637b9fd6c73553dcb87b171be9b1c000ab671f569a9286647bf"
+        "response_sha256": "b85aa720f72c2d7c65e05ff3b968e0ff2c3afe45a02c20ba1e5002481d8cae03"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124839219125227281278",
-      "amount": "124.839219125227281278",
-      "amount_before_aggregator_fee": "124.851704295656846963",
-      "aggregator_fee_amount_wei": "12485170429565685",
-      "observed_at": "2026-11-13T03:56:11.000Z",
-      "fetched_at": "2026-11-13T03:56:18.000Z",
+      "amount_out_wei": "124847596083717551453",
+      "amount": "124.847596083717551453",
+      "amount_before_aggregator_fee": "124.860082091926744127",
+      "aggregator_fee_amount_wei": "12486008209192674",
+      "observed_at": "2026-11-13T04:02:11.000Z",
+      "fetched_at": "2026-11-13T04:02:18.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -93,15 +93,16 @@
         "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "26403489",
-        "block_hash": "0x29d8b4fa9bf4d66e84abe21681ddb8fdc6eb847d5b4ac5bcf54274f2433d9c29",
+        "block_number": "26403519",
+        "block_hash": "0x9ce9bff8bb492d236a3213d279fef63cf7892e624556ffc0624537460cc2db26",
         "rpc_url": "https://ethereum-rpc.publicnode.com",
         "exchanges": [
-          "fluiddex",
+          "CurveV1",
+          "CurveV1Factory",
           "metric-v1",
-          "uniswapv4"
+          "wsteth"
         ],
-        "response_sha256": "a7ec4202f21fbe377f1948c3a9e1c89ecc5abb5c08d4a874d7853aecf08f6301"
+        "response_sha256": "a47fd408ccf2287756f6431c9223a21e3a6f0a9081614bebfdbe9c048ffc425a"
       }
     }
   ]
