@@ -5,16 +5,16 @@
   "base": "wstETH",
   "quote": "ETH",
   "base_amount": "100",
-  "amount": "124.823055336727156396",
+  "amount": "124.822514740674729710",
   "amount_in_wei": "100000000000000000000",
-  "amount_out_wei": "124823055336727156396",
-  "unit_rate": "1.248230553367271563",
+  "amount_out_wei": "124822514740674729710",
+  "unit_rate": "1.248225147406747297",
   "chain": "ethereum",
   "chain_id": 1,
-  "observed_at": "2026-11-13T10:06:53.000Z",
-  "fetched_at": "2026-11-13T10:06:53.000Z",
-  "generated_at": "2026-11-13T10:06:53.000Z",
-  "valid_until": "2026-11-13T10:21:53.000Z",
+  "observed_at": "2026-11-13T10:14:54.000Z",
+  "fetched_at": "2026-11-13T10:14:54.000Z",
+  "generated_at": "2026-11-13T10:14:54.000Z",
+  "valid_until": "2026-11-13T10:29:54.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -34,13 +34,11 @@
     "block_hash": null,
     "rpc_url": null,
     "exchanges": [
-      "curve-stable-ng",
       "curve-stable-plain",
-      "etherfi-vampire",
-      "lido",
-      "uniswapv3"
+      "fluid-dex-t1",
+      "lido"
     ],
-    "response_sha256": "a9dab42f52cf73a6861fafa683357206663b24a7167a2a77b3b87da4f691948b"
+    "response_sha256": "a23788761f997f79493e8374fcbe3330f0e3a790af9e93b53b8263ba6a4e7a1b"
   },
   "coverage": {
     "available": 2,
@@ -52,12 +50,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124823055336727156396",
-      "amount": "124.823055336727156396",
-      "amount_before_aggregator_fee": "124.823055336727156396",
+      "amount_out_wei": "124822514740674729710",
+      "amount": "124.822514740674729710",
+      "amount_before_aggregator_fee": "124.822514740674729710",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-13T10:06:53.000Z",
-      "fetched_at": "2026-11-13T10:06:53.000Z",
+      "observed_at": "2026-11-13T10:14:54.000Z",
+      "fetched_at": "2026-11-13T10:14:54.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -70,25 +68,23 @@
         "block_hash": null,
         "rpc_url": null,
         "exchanges": [
-          "curve-stable-ng",
           "curve-stable-plain",
-          "etherfi-vampire",
-          "lido",
-          "uniswapv3"
+          "fluid-dex-t1",
+          "lido"
         ],
-        "response_sha256": "a9dab42f52cf73a6861fafa683357206663b24a7167a2a77b3b87da4f691948b"
+        "response_sha256": "a23788761f997f79493e8374fcbe3330f0e3a790af9e93b53b8263ba6a4e7a1b"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124808036545260760920",
-      "amount": "124.808036545260760920",
-      "amount_before_aggregator_fee": "124.820518597120472967",
-      "aggregator_fee_amount_wei": "12482051859712047",
-      "observed_at": "2026-11-13T10:06:47.000Z",
-      "fetched_at": "2026-11-13T10:06:53.000Z",
+      "amount_out_wei": "124809445511542708651",
+      "amount": "124.809445511542708651",
+      "amount_before_aggregator_fee": "124.821927704313139965",
+      "aggregator_fee_amount_wei": "12482192770431314",
+      "observed_at": "2026-11-13T10:14:47.000Z",
+      "fetched_at": "2026-11-13T10:14:54.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -97,16 +93,15 @@
         "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "26405337",
-        "block_hash": "0x56d5bf4e221cc40f5bfcb860d0b80f27e8a0ff5b233c80cbe21bd89e1b5a850b",
+        "block_number": "26405377",
+        "block_hash": "0xc3a100d701f40df4090343e759ef93aa68c5533518828a6e5e2c75ab45952912",
         "rpc_url": "https://ethereum-rpc.publicnode.com",
         "exchanges": [
           "CurveV1Factory",
           "fluiddex",
-          "uniswapv3",
           "wsteth"
         ],
-        "response_sha256": "c3eb6c8b0530392cabe2ead5a2c0df1755c8de4662fb90c5fd4050f01720e687"
+        "response_sha256": "806cb52c7a5d966a555cfcd5a4c2348ed127bf83e5c2877493bc7870ce528e81"
       }
     }
   ]
