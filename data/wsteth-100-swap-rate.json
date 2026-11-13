@@ -5,16 +5,16 @@
   "base": "wstETH",
   "quote": "ETH",
   "base_amount": "100",
-  "amount": "124.821104017871133940",
+  "amount": "124.823448581454706260",
   "amount_in_wei": "100000000000000000000",
-  "amount_out_wei": "124821104017871133940",
-  "unit_rate": "1.248211040178711339",
+  "amount_out_wei": "124823448581454706260",
+  "unit_rate": "1.248234485814547062",
   "chain": "ethereum",
   "chain_id": 1,
-  "observed_at": "2026-11-13T10:30:54.000Z",
-  "fetched_at": "2026-11-13T10:30:54.000Z",
-  "generated_at": "2026-11-13T10:30:54.000Z",
-  "valid_until": "2026-11-13T10:45:54.000Z",
+  "observed_at": "2026-11-13T10:38:53.000Z",
+  "fetched_at": "2026-11-13T10:38:53.000Z",
+  "generated_at": "2026-11-13T10:38:54.000Z",
+  "valid_until": "2026-11-13T10:53:53.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -36,10 +36,9 @@
     "exchanges": [
       "curve-stable-plain",
       "fluid-dex-t1",
-      "lido",
-      "uniswapv3"
+      "lido"
     ],
-    "response_sha256": "d3983a1b9ea348eb36d9f71f67cafad5ecc0c74e41933afa6792e88ef323d3cf"
+    "response_sha256": "b92cd920c8a47df3a813e8c5da798a3b27f3ffa43c87fc89cbe21bf82d549a34"
   },
   "coverage": {
     "available": 2,
@@ -51,12 +50,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124821104017871133940",
-      "amount": "124.821104017871133940",
-      "amount_before_aggregator_fee": "124.821104017871133940",
+      "amount_out_wei": "124823448581454706260",
+      "amount": "124.823448581454706260",
+      "amount_before_aggregator_fee": "124.823448581454706260",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-13T10:30:54.000Z",
-      "fetched_at": "2026-11-13T10:30:54.000Z",
+      "observed_at": "2026-11-13T10:38:53.000Z",
+      "fetched_at": "2026-11-13T10:38:53.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -71,22 +70,21 @@
         "exchanges": [
           "curve-stable-plain",
           "fluid-dex-t1",
-          "lido",
-          "uniswapv3"
+          "lido"
         ],
-        "response_sha256": "d3983a1b9ea348eb36d9f71f67cafad5ecc0c74e41933afa6792e88ef323d3cf"
+        "response_sha256": "b92cd920c8a47df3a813e8c5da798a3b27f3ffa43c87fc89cbe21bf82d549a34"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124808285812406906090",
-      "amount": "124.808285812406906090",
-      "amount_before_aggregator_fee": "124.820767889195825673",
-      "aggregator_fee_amount_wei": "12482076788919583",
-      "observed_at": "2026-11-13T10:30:47.000Z",
-      "fetched_at": "2026-11-13T10:30:53.000Z",
+      "amount_out_wei": "124810700732687199550",
+      "amount": "124.810700732687199550",
+      "amount_before_aggregator_fee": "124.823183050992298780",
+      "aggregator_fee_amount_wei": "12482318305099230",
+      "observed_at": "2026-11-13T10:38:47.000Z",
+      "fetched_at": "2026-11-13T10:38:54.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -95,16 +93,15 @@
         "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "26405456",
-        "block_hash": "0x631a3b2f27eaea3766c1b4e66df68c3d83c505e4ebadb6d1147b4a56ad1b08dd",
+        "block_number": "26405496",
+        "block_hash": "0x40114075afee3401a7bed6ca039194f389dafdd78c1d129f3d2be79339a915fc",
         "rpc_url": "https://ethereum-rpc.publicnode.com",
         "exchanges": [
-          "CurveV1",
+          "CurveV1Factory",
           "fluiddex",
-          "uniswapv3",
           "wsteth"
         ],
-        "response_sha256": "af2e9ee6cb584d19b4d6d093117e83bee21b89f732c24c57ec2c2a87f2892205"
+        "response_sha256": "539535bab521945a85ce868fcb7deaeb90e9322e7d46003172b846044154e964"
       }
     }
   ]
