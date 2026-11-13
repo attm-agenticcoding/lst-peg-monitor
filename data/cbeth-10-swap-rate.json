@@ -5,16 +5,16 @@
   "base": "cbETH",
   "quote": "ETH",
   "base_amount": "10",
-  "amount": "11.436523586499804800",
+  "amount": "11.435547991077260928",
   "amount_in_wei": "10000000000000000000",
-  "amount_out_wei": "11436523586499804800",
-  "unit_rate": "1.143652358649980480",
+  "amount_out_wei": "11435547991077260928",
+  "unit_rate": "1.143554799107726092",
   "chain": "base",
   "chain_id": 8453,
-  "observed_at": "2026-11-13T03:46:17.000Z",
-  "fetched_at": "2026-11-13T03:46:17.000Z",
-  "generated_at": "2026-11-13T03:46:17.000Z",
-  "valid_until": "2026-11-13T04:01:17.000Z",
+  "observed_at": "2026-11-13T03:54:18.000Z",
+  "fetched_at": "2026-11-13T03:54:18.000Z",
+  "generated_at": "2026-11-13T03:54:19.000Z",
+  "valid_until": "2026-11-13T04:09:18.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -36,9 +36,11 @@
     "exchanges": [
       "aero-cl",
       "hydrex-v4",
-      "solidly-v3"
+      "solidly-v3",
+      "spire-prop",
+      "uniswap-v4"
     ],
-    "response_sha256": "788e5955984f0154dfd72795bf22da5ef101b95c075b4cacc0f0ca5c4e91af3c"
+    "response_sha256": "70d703b3383f27a411cf63061920f028f17c929e8e29f3b977272026234d545a"
   },
   "coverage": {
     "available": 2,
@@ -50,12 +52,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11436523586499804800",
-      "amount": "11.436523586499804800",
-      "amount_before_aggregator_fee": "11.436523586499804800",
+      "amount_out_wei": "11435547991077260928",
+      "amount": "11.435547991077260928",
+      "amount_before_aggregator_fee": "11.435547991077260928",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-13T03:46:17.000Z",
-      "fetched_at": "2026-11-13T03:46:17.000Z",
+      "observed_at": "2026-11-13T03:54:18.000Z",
+      "fetched_at": "2026-11-13T03:54:18.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -70,21 +72,23 @@
         "exchanges": [
           "aero-cl",
           "hydrex-v4",
-          "solidly-v3"
+          "solidly-v3",
+          "spire-prop",
+          "uniswap-v4"
         ],
-        "response_sha256": "788e5955984f0154dfd72795bf22da5ef101b95c075b4cacc0f0ca5c4e91af3c"
+        "response_sha256": "70d703b3383f27a411cf63061920f028f17c929e8e29f3b977272026234d545a"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11435104950417186589",
-      "amount": "11.435104950417186589",
-      "amount_before_aggregator_fee": "11.436248575274714060",
-      "aggregator_fee_amount_wei": "1143624857527471",
-      "observed_at": "2026-11-13T03:46:17.000Z",
-      "fetched_at": "2026-11-13T03:46:17.000Z",
+      "amount_out_wei": "11435163776988953498",
+      "amount": "11.435163776988953498",
+      "amount_before_aggregator_fee": "11.436307407729726471",
+      "aggregator_fee_amount_wei": "1143630740772973",
+      "observed_at": "2026-11-13T03:54:17.000Z",
+      "fetched_at": "2026-11-13T03:54:17.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -93,14 +97,15 @@
         "token_in": "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "56756009",
-        "block_hash": "0x625dc84dcb6103f4a10265f27eb2d1273f125a29b19d3a9ffcb19684e8ca0c24",
+        "block_number": "56758410",
+        "block_hash": "0xef82816608da5c11a5817a6056b920b4ea4e50c9ce0815745bd23ae50eebb600",
         "rpc_url": "https://base-rpc.publicnode.com",
         "exchanges": [
           "aerocl",
-          "hydrex"
+          "hydrex",
+          "uniswapv4"
         ],
-        "response_sha256": "479a398a1f19348ca60fe55a687b285d9adf7e9b400b276003d27dedcc7e8abf"
+        "response_sha256": "60a75b6222842ea604aae51e678293d9682e901d35120dfc1bbede49eed224b6"
       }
     }
   ]
