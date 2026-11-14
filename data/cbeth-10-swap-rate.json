@@ -5,16 +5,16 @@
   "base": "cbETH",
   "quote": "ETH",
   "base_amount": "10",
-  "amount": "11.438720842366519104",
+  "amount": "11.438820987676321152",
   "amount_in_wei": "10000000000000000000",
-  "amount_out_wei": "11438720842366519104",
-  "unit_rate": "1.143872084236651910",
+  "amount_out_wei": "11438820987676321152",
+  "unit_rate": "1.143882098767632115",
   "chain": "base",
   "chain_id": 8453,
-  "observed_at": "2026-11-14T21:38:47.000Z",
-  "fetched_at": "2026-11-14T21:38:47.000Z",
-  "generated_at": "2026-11-14T21:38:47.000Z",
-  "valid_until": "2026-11-14T21:53:47.000Z",
+  "observed_at": "2026-11-14T21:46:46.000Z",
+  "fetched_at": "2026-11-14T21:46:46.000Z",
+  "generated_at": "2026-11-14T21:46:47.000Z",
+  "valid_until": "2026-11-14T22:01:46.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -34,29 +34,28 @@
     "block_hash": null,
     "rpc_url": null,
     "exchanges": [
-      "aero-cl",
       "hydrex-v4",
       "maverick-v2",
       "solidly-v3"
     ],
-    "response_sha256": "8799525b1fb5d96a204ed0eddf42dc7fd1d06b0f5fec987bb002a1e83963a5d6"
+    "response_sha256": "a99c1de759d639d095fee308a08c677ad08a4ca3ee683ae41e694931262e0ec4"
   },
   "coverage": {
-    "available": 2,
+    "available": 1,
     "expected": 2,
-    "partial": false
+    "partial": true
   },
   "quotes": [
     {
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11438720842366519104",
-      "amount": "11.438720842366519104",
-      "amount_before_aggregator_fee": "11.438720842366519104",
+      "amount_out_wei": "11438820987676321152",
+      "amount": "11.438820987676321152",
+      "amount_before_aggregator_fee": "11.438820987676321152",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-14T21:38:47.000Z",
-      "fetched_at": "2026-11-14T21:38:47.000Z",
+      "observed_at": "2026-11-14T21:46:46.000Z",
+      "fetched_at": "2026-11-14T21:46:46.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -69,44 +68,17 @@
         "block_hash": null,
         "rpc_url": null,
         "exchanges": [
-          "aero-cl",
           "hydrex-v4",
           "maverick-v2",
           "solidly-v3"
         ],
-        "response_sha256": "8799525b1fb5d96a204ed0eddf42dc7fd1d06b0f5fec987bb002a1e83963a5d6"
+        "response_sha256": "a99c1de759d639d095fee308a08c677ad08a4ca3ee683ae41e694931262e0ec4"
       }
     },
     {
       "provider": "velora",
-      "status": "ok",
-      "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11437385192821161042",
-      "amount": "11.437385192821161042",
-      "amount_before_aggregator_fee": "11.438529045725733615",
-      "aggregator_fee_amount_wei": "1143852904572573",
-      "observed_at": "2026-11-14T21:38:47.000Z",
-      "fetched_at": "2026-11-14T21:38:47.000Z",
-      "source": {
-        "type": "dex_aggregator",
-        "provider": "velora",
-        "chain_id": 8453,
-        "endpoint": "https://api.velora.xyz/prices?srcToken=0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22&destToken=0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee&amount=10000000000000000000&srcDecimals=18&destDecimals=18&side=SELL&network=8453&version=6.2",
-        "token_in": "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22",
-        "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-        "source_time_basis": "source_block_timestamp",
-        "block_number": "57509757",
-        "block_hash": "0x2a0770ab1ff2505dec2a311306c00dddc25a55fdf0cdcdf4024559e9d1b70d54",
-        "rpc_url": "https://base-rpc.publicnode.com",
-        "exchanges": [
-          "aerocl",
-          "aerodromeslipstreamfactory3",
-          "aerodromeslipstreamnewfactory",
-          "hydrex",
-          "maverickv2"
-        ],
-        "response_sha256": "a5512c20350a506201f2e4af29229cf5480aaf0d1d92642df425359d195eb067"
-      }
+      "status": "unavailable",
+      "error": "source_stale_or_future"
     }
   ]
 }
