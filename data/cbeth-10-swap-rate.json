@@ -5,16 +5,16 @@
   "base": "cbETH",
   "quote": "ETH",
   "base_amount": "10",
-  "amount": "11.438417298576411648",
+  "amount": "11.438372235422964632",
   "amount_in_wei": "10000000000000000000",
-  "amount_out_wei": "11438417298576411648",
-  "unit_rate": "1.143841729857641164",
+  "amount_out_wei": "11438372235422964632",
+  "unit_rate": "1.143837223542296463",
   "chain": "base",
   "chain_id": 8453,
-  "observed_at": "2026-11-15T09:12:00.000Z",
-  "fetched_at": "2026-11-15T09:12:00.000Z",
-  "generated_at": "2026-11-15T09:12:00.000Z",
-  "valid_until": "2026-11-15T09:27:00.000Z",
+  "observed_at": "2026-11-15T09:20:01.000Z",
+  "fetched_at": "2026-11-15T09:20:01.000Z",
+  "generated_at": "2026-11-15T09:20:01.000Z",
+  "valid_until": "2026-11-15T09:35:01.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -35,9 +35,11 @@
     "rpc_url": null,
     "exchanges": [
       "aero-cl",
-      "solidly-v3"
+      "aerodrome-cl-2",
+      "kipseli-prop",
+      "pancake-v3"
     ],
-    "response_sha256": "8dee65efaa960a71bd998bd27963a64ca4f4a67a6931fe37c0d8d286824a9a12"
+    "response_sha256": "60343f6a85ba9370c1e073e19c98f668e0041cbded221f9353b1d1c169f49121"
   },
   "coverage": {
     "available": 2,
@@ -49,12 +51,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11438417298576411648",
-      "amount": "11.438417298576411648",
-      "amount_before_aggregator_fee": "11.438417298576411648",
+      "amount_out_wei": "11438372235422964632",
+      "amount": "11.438372235422964632",
+      "amount_before_aggregator_fee": "11.438372235422964632",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-15T09:12:00.000Z",
-      "fetched_at": "2026-11-15T09:12:00.000Z",
+      "observed_at": "2026-11-15T09:20:01.000Z",
+      "fetched_at": "2026-11-15T09:20:01.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -68,21 +70,23 @@
         "rpc_url": null,
         "exchanges": [
           "aero-cl",
-          "solidly-v3"
+          "aerodrome-cl-2",
+          "kipseli-prop",
+          "pancake-v3"
         ],
-        "response_sha256": "8dee65efaa960a71bd998bd27963a64ca4f4a67a6931fe37c0d8d286824a9a12"
+        "response_sha256": "60343f6a85ba9370c1e073e19c98f668e0041cbded221f9353b1d1c169f49121"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11437078604021185185",
-      "amount": "11.437078604021185185",
-      "amount_before_aggregator_fee": "11.438222426263811566",
-      "aggregator_fee_amount_wei": "1143822242626381",
-      "observed_at": "2026-11-15T09:12:00.000Z",
-      "fetched_at": "2026-11-15T09:12:00.000Z",
+      "amount_out_wei": "11437068981141853876",
+      "amount": "11.437068981141853876",
+      "amount_before_aggregator_fee": "11.438212802422096086",
+      "aggregator_fee_amount_wei": "1143821280242210",
+      "observed_at": "2026-11-15T09:20:01.000Z",
+      "fetched_at": "2026-11-15T09:20:01.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -91,13 +95,13 @@
         "token_in": "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "57717724",
-        "block_hash": "0x7ee6c24bdfc0007f36f8f1aaf00da40f44ed7cce5f747fa75f77a8c7f30f114b",
+        "block_number": "57720128",
+        "block_hash": "0xd194f0c7531536a97d9557f5bd2bb39a85eda3bfb58207de1af0c02d83057e10",
         "rpc_url": "https://base-rpc.publicnode.com",
         "exchanges": [
           "aerocl"
         ],
-        "response_sha256": "b8ad8c6ee41541f5a05d3e4cf0cd87c2d05c38dca4f58f39a94a7ef30a4bb98f"
+        "response_sha256": "08e3d7ae5f3cd57b356840a2e3539e3264cbe2b8314c9b653a03e94f1799c1ac"
       }
     }
   ]
