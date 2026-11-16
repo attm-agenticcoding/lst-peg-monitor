@@ -1,15 +1,15 @@
 {
   "schema": 1,
-  "id": "lido-26423776-known-state-v2",
-  "asOf": "2026-11-15T23:44:23Z",
-  "blockNumber": 26423776,
-  "blockHash": "0x4aa0fd40c51a4e84d14adfef5ef77b41cb1a59abaa3d2c6629e0b3ce3e7ef234",
-  "beaconSlot": 15663520,
-  "beaconStateRoot": "0x0f022ff8e1c1e6830b3b9aad50603f8f603de95a8a6a063dffec7a388cbfcb44",
-  "pendingRequests": 200,
-  "pendingSteth": "38096.993289279599773366",
-  "physicalCashEth": "741.578865007739698713",
-  "scenarioAvailableCashEth": "741.578865007739698713",
+  "id": "lido-26427388-known-state-v2",
+  "asOf": "2026-11-16T11:47:35Z",
+  "blockNumber": 26427388,
+  "blockHash": "0x4a0a03b40e1e1ac6269734643037ca888b675f648e69be97396e5f000b972c47",
+  "beaconSlot": 15667136,
+  "beaconStateRoot": "0x0a0e60ca9bf8d816cc2368c75740b506cf8123abcc96f946a51c09b7d0dac9dd",
+  "pendingRequests": 252,
+  "pendingSteth": "40838.657962560918357374",
+  "physicalCashEth": "1532.134919337330067646",
+  "scenarioAvailableCashEth": "1532.134919337330067646",
   "maxEconomicAgeSeconds": 300,
   "live": false,
   "calibrated": false,
@@ -217,33 +217,33 @@
       "core_buffer_reconciles": true,
       "configuration_quality": "conditional_unpinned_seed",
       "conditional": true,
-      "event_count": 3837,
-      "header_count": 95,
+      "event_count": 2330,
+      "header_count": 68,
       "finality_wait": {
-        "polls": 6,
-        "wait_seconds": 154.322902653
+        "polls": 10,
+        "wait_seconds": 274.960593263
       },
       "log_integrity": "provider-attested logs with seed/target/child header rechecks; no receipt-trie proof",
       "coverage": [
         {
-          "from_block": 26420202,
-          "to_block": 26421201,
-          "count": 1444
+          "from_block": 26423777,
+          "to_block": 26424776,
+          "count": 688
         },
         {
-          "from_block": 26421202,
-          "to_block": 26422201,
-          "count": 896
+          "from_block": 26424777,
+          "to_block": 26425776,
+          "count": 577
         },
         {
-          "from_block": 26422202,
-          "to_block": 26423201,
-          "count": 948
+          "from_block": 26425777,
+          "to_block": 26426776,
+          "count": 603
         },
         {
-          "from_block": 26423202,
-          "to_block": 26423776,
-          "count": 549
+          "from_block": 26426777,
+          "to_block": 26427388,
+          "count": 462
         }
       ],
       "blockers": []
@@ -260,9 +260,9 @@
         "child_timestamp_after_state": true,
         "finalized_head_covers_child": true
       },
-      "child_execution_block_number": 26423777,
-      "child_execution_block_hash": "0x9d66baf3cd757f4e8a2925761cddc3081ee5761ae1dca89a7fc933b2f5deefd6",
-      "finalized_execution_block_number": 26423808,
+      "child_execution_block_number": 26427389,
+      "child_execution_block_hash": "0x647f8b002a7c524abb431da540586874310945b7ed2dcf3f3958c879262cd64a",
+      "finalized_execution_block_number": 26427420,
       "method": "Recomputed SSZ state and same-slot BeaconBlockHeader anchored in immediate EL child EIP-4788 parentBeaconBlockRoot.",
       "limitations": "Provider-attested canonical/finalized EL headers; no local BLS finality or full chain-ancestry verification. Child header is integrity-only, never a future cash predictor.",
       "model_checks": {
@@ -278,14 +278,14 @@
     "historicalRegressionFixture": "2026-10-04T16:16:23Z"
   },
   "sourceDigests": {
-    "executionState": "8d309afe7b09ced3eb202f210d04c5cc6895e5075104b9649063fe61ccfe21d2",
-    "beaconStateSsz": "a4d797726b56545991edfdfb599a6cdab64fffb320ba3f2a2f4b1cbd4316434d",
-    "scenarioAudit": "8c5b5bc1252ab0333b06816e38b064d5af6c11c466ccf0522818170703198151",
-    "acquisition": "ac5cd4b520199a2fec70b21eb5a52b4e65d9898a760ba26844938d7646ced407"
+    "executionState": "021cf86cbbb3787d98031d0d52cca0bebee5ccb7299af660598898c00903cd61",
+    "beaconStateSsz": "1964d650e9531e680fc9c94037b804812649340274e9c7c806866e677d93d22c",
+    "scenarioAudit": "1d18946043a017f1c2d1ac794059920a1d281c4231b4c387ec7b70eff2adf152",
+    "acquisition": "f64d8baecba25793ca17c54ea7dc774af98a8759d0a295101f1d762538f1467a"
   },
   "refresh": {
     "mode": "twice-daily",
-    "state": "running",
+    "state": "ok",
     "scheduleUtc": [
       "00:00",
       "12:00"
@@ -293,20 +293,13 @@
     "expectedIntervalSeconds": 43200,
     "maxSourceAgeSeconds": 5400,
     "maxOperationalAgeSeconds": 48600,
-    "lastSuccessAt": "2026-11-16T00:07:33Z",
-    "lease": {
-      "runId": "c9821bb2-825f-4565-97e1-7476997c7a3c",
-      "acquiredAtEpoch": 1794830513,
-      "expiresAtEpoch": 1794832613,
-      "trigger": "relay-dispatch",
-      "rpcCallBudget": 256,
-      "requestKey": "2026-11-16T12:00:00Z"
-    },
+    "lastSuccessAt": "2026-11-16T12:09:52Z",
+    "lease": null,
     "error": null,
     "attemptAt": "2026-11-16T12:01:53Z",
     "trigger": "relay-dispatch",
     "attemptDay": "2026-10-08",
-    "finishedAt": "2026-11-16T00:07:33Z",
+    "finishedAt": "2026-11-16T12:09:52Z",
     "accessBlocked": false,
     "manualAttemptIds": [
       "manual-20261007-diagnostic-fb355c4d",
@@ -324,8 +317,8 @@
       "manual-20261022-pruned-catchup-04"
     ],
     "lastManualRequestId": "manual-20261022-pruned-catchup-04",
-    "lastSuccessSnapshotAsOf": "2026-11-15T23:44:23Z",
-    "runId": "759fd761-a042-404d-abed-58d30cd6b0a5",
+    "lastSuccessSnapshotAsOf": "2026-11-16T11:47:35Z",
+    "runId": "c9821bb2-825f-4565-97e1-7476997c7a3c",
     "attemptSlot": "2026-11-16T12:00:00Z"
   }
 }
