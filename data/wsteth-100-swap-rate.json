@@ -5,16 +5,16 @@
   "base": "wstETH",
   "quote": "ETH",
   "base_amount": "100",
-  "amount": "124.858962458921774297",
+  "amount": "124.856398355183745700",
   "amount_in_wei": "100000000000000000000",
-  "amount_out_wei": "124858962458921774297",
-  "unit_rate": "1.248589624589217742",
+  "amount_out_wei": "124856398355183745700",
+  "unit_rate": "1.248563983551837457",
   "chain": "ethereum",
   "chain_id": 1,
-  "observed_at": "2026-11-17T10:37:48.000Z",
-  "fetched_at": "2026-11-17T10:37:49.000Z",
-  "generated_at": "2026-11-17T10:37:49.000Z",
-  "valid_until": "2026-11-17T10:52:48.000Z",
+  "observed_at": "2026-11-17T10:45:48.000Z",
+  "fetched_at": "2026-11-17T10:45:48.000Z",
+  "generated_at": "2026-11-17T10:45:49.000Z",
+  "valid_until": "2026-11-17T11:00:48.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -34,15 +34,12 @@
     "block_hash": null,
     "rpc_url": null,
     "exchanges": [
-      "curve-stable-ng",
       "curve-stable-plain",
-      "etherfi-vampire",
-      "fermi",
+      "fluid-dex-t1",
       "lido",
-      "uniswap-v4",
       "uniswapv3"
     ],
-    "response_sha256": "14ccd56a57dc724a32b957a4b2ce1bafb42be474d678f5911846b582550c0fb9"
+    "response_sha256": "562dcf1f1de2118d44c3b0a859ff7e6d1302e8bd974b674f71ece4d60d72863c"
   },
   "coverage": {
     "available": 2,
@@ -54,12 +51,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124858962458921774297",
-      "amount": "124.858962458921774297",
-      "amount_before_aggregator_fee": "124.858962458921774297",
+      "amount_out_wei": "124856398355183745700",
+      "amount": "124.856398355183745700",
+      "amount_before_aggregator_fee": "124.856398355183745700",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-17T10:37:48.000Z",
-      "fetched_at": "2026-11-17T10:37:49.000Z",
+      "observed_at": "2026-11-17T10:45:48.000Z",
+      "fetched_at": "2026-11-17T10:45:48.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -72,27 +69,24 @@
         "block_hash": null,
         "rpc_url": null,
         "exchanges": [
-          "curve-stable-ng",
           "curve-stable-plain",
-          "etherfi-vampire",
-          "fermi",
+          "fluid-dex-t1",
           "lido",
-          "uniswap-v4",
           "uniswapv3"
         ],
-        "response_sha256": "14ccd56a57dc724a32b957a4b2ce1bafb42be474d678f5911846b582550c0fb9"
+        "response_sha256": "562dcf1f1de2118d44c3b0a859ff7e6d1302e8bd974b674f71ece4d60d72863c"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124844166300450127897",
-      "amount": "124.844166300450127897",
-      "amount_before_aggregator_fee": "124.856651965646692566",
-      "aggregator_fee_amount_wei": "12485665196564669",
-      "observed_at": "2026-11-17T10:37:47.000Z",
-      "fetched_at": "2026-11-17T10:37:49.000Z",
+      "amount_out_wei": "124843894926293308765",
+      "amount": "124.843894926293308765",
+      "amount_before_aggregator_fee": "124.856380564349743739",
+      "aggregator_fee_amount_wei": "12485638056434974",
+      "observed_at": "2026-11-17T10:45:35.000Z",
+      "fetched_at": "2026-11-17T10:45:49.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -101,8 +95,8 @@
         "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "26434215",
-        "block_hash": "0x5910bb4a8a817ddaa1d894b37fc60f5d22fc680464e6ff8bca368beee1e10054",
+        "block_number": "26434254",
+        "block_hash": "0x7031c9a6ed888e03e4631742bba66c3bf61620d6b71cf312eac70b18eafe4f7e",
         "rpc_url": "https://ethereum-rpc.publicnode.com",
         "exchanges": [
           "CurveV1Factory",
@@ -111,7 +105,7 @@
           "uniswapv3",
           "wsteth"
         ],
-        "response_sha256": "bda5a09c0a962165e2ed8605c196a05311f14edbb92a412090a6459dc6ec5079"
+        "response_sha256": "1b336a0cbff0f8468eb194c18637b440629d7735dbbb5c9b58090d1539c60b5c"
       }
     }
   ]
