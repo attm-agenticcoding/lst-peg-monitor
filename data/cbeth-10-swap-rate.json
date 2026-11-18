@@ -5,16 +5,16 @@
   "base": "cbETH",
   "quote": "ETH",
   "base_amount": "10",
-  "amount": "11.439710263429093760",
+  "amount": "11.439606289921877696",
   "amount_in_wei": "10000000000000000000",
-  "amount_out_wei": "11439710263429093760",
-  "unit_rate": "1.143971026342909376",
+  "amount_out_wei": "11439606289921877696",
+  "unit_rate": "1.143960628992187769",
   "chain": "base",
   "chain_id": 8453,
-  "observed_at": "2026-11-18T20:50:31.000Z",
-  "fetched_at": "2026-11-18T20:50:31.000Z",
-  "generated_at": "2026-11-18T20:50:32.000Z",
-  "valid_until": "2026-11-18T21:05:31.000Z",
+  "observed_at": "2026-11-18T20:58:31.000Z",
+  "fetched_at": "2026-11-18T20:58:31.000Z",
+  "generated_at": "2026-11-18T20:58:31.000Z",
+  "valid_until": "2026-11-18T21:13:31.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -37,9 +37,10 @@
       "aero-cl",
       "hydrex-v4",
       "maverick-v2",
-      "solidly-v3"
+      "solidly-v3",
+      "uniswapv3"
     ],
-    "response_sha256": "9282cb2db4a696db55df36cefe6d02b6c599ac077557bef56c7170a86603f2b1"
+    "response_sha256": "77f744d2e3c54b9711d9aca8bc6c48d62282a4c22c0e5942de6108a9e96551e9"
   },
   "coverage": {
     "available": 2,
@@ -51,12 +52,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11439710263429093760",
-      "amount": "11.439710263429093760",
-      "amount_before_aggregator_fee": "11.439710263429093760",
+      "amount_out_wei": "11439606289921877696",
+      "amount": "11.439606289921877696",
+      "amount_before_aggregator_fee": "11.439606289921877696",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-18T20:50:31.000Z",
-      "fetched_at": "2026-11-18T20:50:31.000Z",
+      "observed_at": "2026-11-18T20:58:31.000Z",
+      "fetched_at": "2026-11-18T20:58:31.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -72,21 +73,22 @@
           "aero-cl",
           "hydrex-v4",
           "maverick-v2",
-          "solidly-v3"
+          "solidly-v3",
+          "uniswapv3"
         ],
-        "response_sha256": "9282cb2db4a696db55df36cefe6d02b6c599ac077557bef56c7170a86603f2b1"
+        "response_sha256": "77f744d2e3c54b9711d9aca8bc6c48d62282a4c22c0e5942de6108a9e96551e9"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11438442187414805646",
-      "amount": "11.438442187414805646",
-      "amount_before_aggregator_fee": "11.439586146029408587",
-      "aggregator_fee_amount_wei": "1143958614602941",
-      "observed_at": "2026-11-18T20:50:31.000Z",
-      "fetched_at": "2026-11-18T20:50:31.000Z",
+      "amount_out_wei": "11438327894424946687",
+      "amount": "11.438327894424946687",
+      "amount_before_aggregator_fee": "11.439471841609107598",
+      "aggregator_fee_amount_wei": "1143947184160911",
+      "observed_at": "2026-11-18T20:58:31.000Z",
+      "fetched_at": "2026-11-18T20:58:31.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -95,16 +97,18 @@
         "token_in": "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "59223279",
-        "block_hash": "0xb53682f5f3c671cbdd552702dd79dee78553c680803bbbbe81ce43641d9bf7e3",
+        "block_number": "59225678",
+        "block_hash": "0x22a49c97528b6cfb73aa2839a1f46dfec5db1c7fbf22a61e403feb7442106177",
         "rpc_url": "https://base-rpc.publicnode.com",
         "exchanges": [
           "aerocl",
           "hydrex",
           "maverickv2",
-          "solidlyv3"
+          "solidlyv3",
+          "uniswapv3",
+          "uniswapv4"
         ],
-        "response_sha256": "b1b000ea4d0fc824a6237a18e2132c53219d30563b87e5d5b536732b031b571e"
+        "response_sha256": "4f89fb7f2aa4dace15a66d18adb67d6984eb6e5dbec644daa4ca9f84af6e6ea8"
       }
     }
   ]
