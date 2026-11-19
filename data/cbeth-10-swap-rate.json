@@ -5,16 +5,16 @@
   "base": "cbETH",
   "quote": "ETH",
   "base_amount": "10",
-  "amount": "11.439823902651758592",
+  "amount": "11.439627524177461376",
   "amount_in_wei": "10000000000000000000",
-  "amount_out_wei": "11439823902651758592",
-  "unit_rate": "1.143982390265175859",
+  "amount_out_wei": "11439627524177461376",
+  "unit_rate": "1.143962752417746137",
   "chain": "base",
   "chain_id": 8453,
-  "observed_at": "2026-11-19T09:31:44.000Z",
-  "fetched_at": "2026-11-19T09:31:44.000Z",
-  "generated_at": "2026-11-19T09:31:44.000Z",
-  "valid_until": "2026-11-19T09:46:44.000Z",
+  "observed_at": "2026-11-19T09:39:44.000Z",
+  "fetched_at": "2026-11-19T09:39:44.000Z",
+  "generated_at": "2026-11-19T09:39:44.000Z",
+  "valid_until": "2026-11-19T09:54:44.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -34,10 +34,12 @@
     "block_hash": null,
     "rpc_url": null,
     "exchanges": [
+      "aero-cl",
+      "hydrex-v4",
       "maverick-v2",
       "solidly-v3"
     ],
-    "response_sha256": "922a37c100588470ad2214da296d795d86e0dd216e9212dda50f2b4832480df3"
+    "response_sha256": "d95bc715f4cc028b044b5c79864ecd51aa1db547c196c247a7c19c552fa1531a"
   },
   "coverage": {
     "available": 2,
@@ -49,12 +51,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11439823902651758592",
-      "amount": "11.439823902651758592",
-      "amount_before_aggregator_fee": "11.439823902651758592",
+      "amount_out_wei": "11439627524177461376",
+      "amount": "11.439627524177461376",
+      "amount_before_aggregator_fee": "11.439627524177461376",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-19T09:31:44.000Z",
-      "fetched_at": "2026-11-19T09:31:44.000Z",
+      "observed_at": "2026-11-19T09:39:44.000Z",
+      "fetched_at": "2026-11-19T09:39:44.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -67,22 +69,24 @@
         "block_hash": null,
         "rpc_url": null,
         "exchanges": [
+          "aero-cl",
+          "hydrex-v4",
           "maverick-v2",
           "solidly-v3"
         ],
-        "response_sha256": "922a37c100588470ad2214da296d795d86e0dd216e9212dda50f2b4832480df3"
+        "response_sha256": "d95bc715f4cc028b044b5c79864ecd51aa1db547c196c247a7c19c552fa1531a"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11438564576731466071",
-      "amount": "11.438564576731466071",
-      "amount_before_aggregator_fee": "11.439708547586224693",
-      "aggregator_fee_amount_wei": "1143970854758622",
-      "observed_at": "2026-11-19T09:31:44.000Z",
-      "fetched_at": "2026-11-19T09:31:44.000Z",
+      "amount_out_wei": "11438366915004596877",
+      "amount": "11.438366915004596877",
+      "amount_before_aggregator_fee": "11.439510866091205998",
+      "aggregator_fee_amount_wei": "1143951086609121",
+      "observed_at": "2026-11-19T09:39:44.000Z",
+      "fetched_at": "2026-11-19T09:39:44.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -91,14 +95,15 @@
         "token_in": "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "59451643",
-        "block_hash": "0x778d6f046ff71aeb4d88ffeca235014221b5f310eef956b5c2faf7949b574524",
+        "block_number": "59454043",
+        "block_hash": "0x6e5e27292aa5681d495ab7784d34b9109551bdc8fc2c6b676888c40af0245bae",
         "rpc_url": "https://base-rpc.publicnode.com",
         "exchanges": [
+          "aerocl",
           "maverickv2",
           "solidlyv3"
         ],
-        "response_sha256": "d31a92bd6f74fb09d322da03817d34b66a9b09295ba29db2d8c4d78f02fec336"
+        "response_sha256": "a9eee09bf373a482156e4357729704980a28983b7cfd7bc5519ab2c430c25e02"
       }
     }
   ]
