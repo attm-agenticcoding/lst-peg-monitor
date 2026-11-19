@@ -5,16 +5,16 @@
   "base": "wstETH",
   "quote": "ETH",
   "base_amount": "100",
-  "amount": "124.927070934523198914",
+  "amount": "124.926639768706515526",
   "amount_in_wei": "100000000000000000000",
-  "amount_out_wei": "124927070934523198914",
-  "unit_rate": "1.249270709345231989",
+  "amount_out_wei": "124926639768706515526",
+  "unit_rate": "1.249266397687065155",
   "chain": "ethereum",
   "chain_id": 1,
-  "observed_at": "2026-11-19T03:07:04.000Z",
-  "fetched_at": "2026-11-19T03:07:04.000Z",
-  "generated_at": "2026-11-19T03:07:04.000Z",
-  "valid_until": "2026-11-19T03:22:04.000Z",
+  "observed_at": "2026-11-19T03:15:05.000Z",
+  "fetched_at": "2026-11-19T03:15:05.000Z",
+  "generated_at": "2026-11-19T03:15:05.000Z",
+  "valid_until": "2026-11-19T03:30:05.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -35,10 +35,11 @@
     "rpc_url": null,
     "exchanges": [
       "curve-stable-plain",
+      "fluid-dex-t1",
       "lido",
       "uniswapv3"
     ],
-    "response_sha256": "e6151eeb1e5bdc7f092b9032acf2009f4ab4b70ebe350c3e4c383e3d1614de3c"
+    "response_sha256": "b461b9ffbe88ee95b790ddfc12e5f10778465a81c9a46b2d8085d425adc5ca8e"
   },
   "coverage": {
     "available": 2,
@@ -50,12 +51,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124927070934523198914",
-      "amount": "124.927070934523198914",
-      "amount_before_aggregator_fee": "124.927070934523198914",
+      "amount_out_wei": "124926639768706515526",
+      "amount": "124.926639768706515526",
+      "amount_before_aggregator_fee": "124.926639768706515526",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-19T03:07:04.000Z",
-      "fetched_at": "2026-11-19T03:07:04.000Z",
+      "observed_at": "2026-11-19T03:15:05.000Z",
+      "fetched_at": "2026-11-19T03:15:05.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -69,22 +70,23 @@
         "rpc_url": null,
         "exchanges": [
           "curve-stable-plain",
+          "fluid-dex-t1",
           "lido",
           "uniswapv3"
         ],
-        "response_sha256": "e6151eeb1e5bdc7f092b9032acf2009f4ab4b70ebe350c3e4c383e3d1614de3c"
+        "response_sha256": "b461b9ffbe88ee95b790ddfc12e5f10778465a81c9a46b2d8085d425adc5ca8e"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124914576275818920927",
-      "amount": "124.914576275818920927",
-      "amount_before_aggregator_fee": "124.927068982717192646",
-      "aggregator_fee_amount_wei": "12492706898271719",
-      "observed_at": "2026-11-19T03:06:59.000Z",
-      "fetched_at": "2026-11-19T03:07:04.000Z",
+      "amount_out_wei": "124914142215581342194",
+      "amount": "124.914142215581342194",
+      "amount_before_aggregator_fee": "124.926634879069249119",
+      "aggregator_fee_amount_wei": "12492663487906925",
+      "observed_at": "2026-11-19T03:14:59.000Z",
+      "fetched_at": "2026-11-19T03:15:05.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -93,8 +95,8 @@
         "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "26446332",
-        "block_hash": "0x1b3d8d1114f2e7a269e6a3379c9c6621218c7da16d168e3c87bcf829cc02555f",
+        "block_number": "26446372",
+        "block_hash": "0x491b44ac6754dbe683eb986e138013440ea129ed49b88e71841603cbe2752433",
         "rpc_url": "https://ethereum-rpc.publicnode.com",
         "exchanges": [
           "CurveV1Factory",
@@ -103,7 +105,7 @@
           "uniswapv3",
           "wsteth"
         ],
-        "response_sha256": "8afb514689ef4629e1d8d46a98776cd7d5bb46440ed82390cb1d9997d962e7c9"
+        "response_sha256": "05bb170df18a78541a8319b0f59f2e35571cbdb1932a0c69da1699400ec1651d"
       }
     }
   ]
