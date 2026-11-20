@@ -5,16 +5,16 @@
   "base": "wstETH",
   "quote": "ETH",
   "base_amount": "100",
-  "amount": "124.917858766656456131",
+  "amount": "124.916475913266331749",
   "amount_in_wei": "100000000000000000000",
-  "amount_out_wei": "124917858766656456131",
-  "unit_rate": "1.249178587666564561",
+  "amount_out_wei": "124916475913266331749",
+  "unit_rate": "1.249164759132663317",
   "chain": "ethereum",
   "chain_id": 1,
-  "observed_at": "2026-11-20T06:37:58.000Z",
-  "fetched_at": "2026-11-20T06:37:58.000Z",
-  "generated_at": "2026-11-20T06:37:58.000Z",
-  "valid_until": "2026-11-20T06:52:58.000Z",
+  "observed_at": "2026-11-20T06:45:59.000Z",
+  "fetched_at": "2026-11-20T06:45:59.000Z",
+  "generated_at": "2026-11-20T06:45:59.000Z",
+  "valid_until": "2026-11-20T07:00:59.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -36,9 +36,10 @@
     "exchanges": [
       "aero-cl",
       "curve-stable-plain",
-      "lido"
+      "lido",
+      "uniswapv3"
     ],
-    "response_sha256": "5dbe60dccd8c704e7df9e4735fea8ba4736f3a28c66252a60607276e9d9ba187"
+    "response_sha256": "8b0d1aa58912e61ba0e5ca73adaed206b9cbcf8187acafceeed2108a426c7c87"
   },
   "coverage": {
     "available": 2,
@@ -50,12 +51,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124917858766656456131",
-      "amount": "124.917858766656456131",
-      "amount_before_aggregator_fee": "124.917858766656456131",
+      "amount_out_wei": "124916475913266331749",
+      "amount": "124.916475913266331749",
+      "amount_before_aggregator_fee": "124.916475913266331749",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-20T06:37:58.000Z",
-      "fetched_at": "2026-11-20T06:37:58.000Z",
+      "observed_at": "2026-11-20T06:45:59.000Z",
+      "fetched_at": "2026-11-20T06:45:59.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -70,21 +71,22 @@
         "exchanges": [
           "aero-cl",
           "curve-stable-plain",
-          "lido"
+          "lido",
+          "uniswapv3"
         ],
-        "response_sha256": "5dbe60dccd8c704e7df9e4735fea8ba4736f3a28c66252a60607276e9d9ba187"
+        "response_sha256": "8b0d1aa58912e61ba0e5ca73adaed206b9cbcf8187acafceeed2108a426c7c87"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124905357576185526104",
-      "amount": "124.905357576185526104",
-      "amount_before_aggregator_fee": "124.917849361121638268",
-      "aggregator_fee_amount_wei": "12491784936112164",
-      "observed_at": "2026-11-20T06:37:47.000Z",
-      "fetched_at": "2026-11-20T06:37:58.000Z",
+      "amount_out_wei": "124903942741936562268",
+      "amount": "124.903942741936562268",
+      "amount_before_aggregator_fee": "124.916434385375099778",
+      "aggregator_fee_amount_wei": "12491643438537510",
+      "observed_at": "2026-11-20T06:45:47.000Z",
+      "fetched_at": "2026-11-20T06:45:59.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -93,8 +95,8 @@
         "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "26454561",
-        "block_hash": "0x53d0eff4e5e4bce192fb79c59fb25ebeeb91165ae115fa3275a9a00c5ea28770",
+        "block_number": "26454601",
+        "block_hash": "0xc7e4c1c23ea125567daacb61622f6ac956a33b76d6082089f3c78d841e820517",
         "rpc_url": "https://ethereum-rpc.publicnode.com",
         "exchanges": [
           "aerocl",
@@ -102,7 +104,7 @@
           "metric-v1",
           "wsteth"
         ],
-        "response_sha256": "9b3bcf7121f4b3e6528b552ffa7b9f18ed6d9cad016f76b39fbd7e7a6358e2a3"
+        "response_sha256": "a420bf0d43be0cfe4cf7f34562a4cba05d7cfe24e8f9ead6a79d13d3f475dbeb"
       }
     }
   ]
