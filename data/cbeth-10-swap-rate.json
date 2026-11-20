@@ -5,16 +5,16 @@
   "base": "cbETH",
   "quote": "ETH",
   "base_amount": "10",
-  "amount": "11.440515521634212960",
+  "amount": "11.440502293811938368",
   "amount_in_wei": "10000000000000000000",
-  "amount_out_wei": "11440515521634212960",
-  "unit_rate": "1.144051552163421296",
+  "amount_out_wei": "11440502293811938368",
+  "unit_rate": "1.144050229381193836",
   "chain": "base",
   "chain_id": 8453,
-  "observed_at": "2026-11-20T14:06:26.000Z",
-  "fetched_at": "2026-11-20T14:06:26.000Z",
-  "generated_at": "2026-11-20T14:06:26.000Z",
-  "valid_until": "2026-11-20T14:21:26.000Z",
+  "observed_at": "2026-11-20T14:14:26.000Z",
+  "fetched_at": "2026-11-20T14:14:26.000Z",
+  "generated_at": "2026-11-20T14:14:27.000Z",
+  "valid_until": "2026-11-20T14:29:26.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -36,29 +36,27 @@
     "exchanges": [
       "aero-cl",
       "hydrex-v4",
-      "maverick-v2",
-      "pancake-v3",
       "quickswap-v4",
       "solidly-v3"
     ],
-    "response_sha256": "34ed9febfe3a7f6d5df0a3370e11ef9b0af3629146c7fa761bd493f8b835267c"
+    "response_sha256": "85c00ab9c0d016e66088f3a8d2b191800d639d9aa5b65df535e9c9b854e4082c"
   },
   "coverage": {
-    "available": 2,
+    "available": 1,
     "expected": 2,
-    "partial": false
+    "partial": true
   },
   "quotes": [
     {
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11440515521634212960",
-      "amount": "11.440515521634212960",
-      "amount_before_aggregator_fee": "11.440515521634212960",
+      "amount_out_wei": "11440502293811938368",
+      "amount": "11.440502293811938368",
+      "amount_before_aggregator_fee": "11.440502293811938368",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-20T14:06:26.000Z",
-      "fetched_at": "2026-11-20T14:06:26.000Z",
+      "observed_at": "2026-11-20T14:14:26.000Z",
+      "fetched_at": "2026-11-20T14:14:26.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -73,47 +71,16 @@
         "exchanges": [
           "aero-cl",
           "hydrex-v4",
-          "maverick-v2",
-          "pancake-v3",
           "quickswap-v4",
           "solidly-v3"
         ],
-        "response_sha256": "34ed9febfe3a7f6d5df0a3370e11ef9b0af3629146c7fa761bd493f8b835267c"
+        "response_sha256": "85c00ab9c0d016e66088f3a8d2b191800d639d9aa5b65df535e9c9b854e4082c"
       }
     },
     {
       "provider": "velora",
-      "status": "ok",
-      "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11439257148519032767",
-      "amount": "11.439257148519032767",
-      "amount_before_aggregator_fee": "11.440401188637896557",
-      "aggregator_fee_amount_wei": "1144040118863790",
-      "observed_at": "2026-11-20T14:06:26.000Z",
-      "fetched_at": "2026-11-20T14:06:26.000Z",
-      "source": {
-        "type": "dex_aggregator",
-        "provider": "velora",
-        "chain_id": 8453,
-        "endpoint": "https://api.velora.xyz/prices?srcToken=0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22&destToken=0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee&amount=10000000000000000000&srcDecimals=18&destDecimals=18&side=SELL&network=8453&version=6.2",
-        "token_in": "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22",
-        "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-        "source_time_basis": "source_block_timestamp",
-        "block_number": "59966054",
-        "block_hash": "0xc6bb1595825235251f79ed82c3e1edec0d9f967d5bd4cd9ba6fe43bc73bab837",
-        "rpc_url": "https://base-rpc.publicnode.com",
-        "exchanges": [
-          "aerocl",
-          "aerodromeslipstreamnewfactory",
-          "hydrex",
-          "maverickv2",
-          "pancakeswapv3",
-          "quickswapv4",
-          "solidlyv3",
-          "uniswapv4"
-        ],
-        "response_sha256": "c94253b25e93069ddea08a82d201577e31c6812e15a7900b30c1131568a6611d"
-      }
+      "status": "unavailable",
+      "error": "source_stale_or_future"
     }
   ]
 }
