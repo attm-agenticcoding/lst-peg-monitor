@@ -5,16 +5,16 @@
   "base": "cbETH",
   "quote": "ETH",
   "base_amount": "10",
-  "amount": "11.438042255962744832",
+  "amount": "11.438135059514800832",
   "amount_in_wei": "10000000000000000000",
-  "amount_out_wei": "11438042255962744832",
-  "unit_rate": "1.143804225596274483",
+  "amount_out_wei": "11438135059514800832",
+  "unit_rate": "1.143813505951480083",
   "chain": "base",
   "chain_id": 8453,
-  "observed_at": "2026-11-21T07:04:01.000Z",
-  "fetched_at": "2026-11-21T07:04:01.000Z",
-  "generated_at": "2026-11-21T07:04:01.000Z",
-  "valid_until": "2026-11-21T07:19:01.000Z",
+  "observed_at": "2026-11-21T07:12:01.000Z",
+  "fetched_at": "2026-11-21T07:12:01.000Z",
+  "generated_at": "2026-11-21T07:12:01.000Z",
+  "valid_until": "2026-11-21T07:27:01.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -34,9 +34,11 @@
     "block_hash": null,
     "rpc_url": null,
     "exchanges": [
-      "aero-cl"
+      "aero-cl",
+      "hydrex-v4",
+      "uniswapv3"
     ],
-    "response_sha256": "aae60ca1bc7662489b2a084d726e8dba590a5f732716bc4ff77f1b9a6bcfcd25"
+    "response_sha256": "13b292469117fc32033c8fc27ceafb7a1189d25656de448f3974e34bc18f5d5f"
   },
   "coverage": {
     "available": 2,
@@ -48,12 +50,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11438042255962744832",
-      "amount": "11.438042255962744832",
-      "amount_before_aggregator_fee": "11.438042255962744832",
+      "amount_out_wei": "11438135059514800832",
+      "amount": "11.438135059514800832",
+      "amount_before_aggregator_fee": "11.438135059514800832",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-21T07:04:01.000Z",
-      "fetched_at": "2026-11-21T07:04:01.000Z",
+      "observed_at": "2026-11-21T07:12:01.000Z",
+      "fetched_at": "2026-11-21T07:12:01.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -66,21 +68,23 @@
         "block_hash": null,
         "rpc_url": null,
         "exchanges": [
-          "aero-cl"
+          "aero-cl",
+          "hydrex-v4",
+          "uniswapv3"
         ],
-        "response_sha256": "aae60ca1bc7662489b2a084d726e8dba590a5f732716bc4ff77f1b9a6bcfcd25"
+        "response_sha256": "13b292469117fc32033c8fc27ceafb7a1189d25656de448f3974e34bc18f5d5f"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11436761359522360508",
-      "amount": "11.436761359522360508",
-      "amount_before_aggregator_fee": "11.437905150037364244",
-      "aggregator_fee_amount_wei": "1143790515003736",
-      "observed_at": "2026-11-21T07:04:01.000Z",
-      "fetched_at": "2026-11-21T07:04:01.000Z",
+      "amount_out_wei": "11436883128528384999",
+      "amount": "11.436883128528384999",
+      "amount_before_aggregator_fee": "11.438026931221507150",
+      "aggregator_fee_amount_wei": "1143802693122151",
+      "observed_at": "2026-11-21T07:12:01.000Z",
+      "fetched_at": "2026-11-21T07:12:01.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -89,13 +93,15 @@
         "token_in": "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "60271328",
-        "block_hash": "0xbf8d7bdcb279ccedaaaa1d7bd4e867a0112ef4c675038355ebedefa1f153bfb0",
+        "block_number": "60273727",
+        "block_hash": "0xb37f741c108a34fd4247cb3db6c19090315da424e1da70a6c8fc423441de7866",
         "rpc_url": "https://base-rpc.publicnode.com",
         "exchanges": [
-          "aerocl"
+          "aerocl",
+          "hydrex",
+          "uniswapv3"
         ],
-        "response_sha256": "2d27ce6b6a4fdcef14039890ecd69fca6f1c16da748bfc5c4bf6b9a6d0a8e4f7"
+        "response_sha256": "cb7c5375403921e3dd01ccc1498e1923d7c990dca237b08bea9bd123b1cd9911"
       }
     }
   ]
