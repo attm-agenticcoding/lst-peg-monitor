@@ -5,16 +5,16 @@
   "base": "cbETH",
   "quote": "ETH",
   "base_amount": "10",
-  "amount": "11.438145826846068864",
+  "amount": "11.437272235722771520",
   "amount_in_wei": "10000000000000000000",
-  "amount_out_wei": "11438145826846068864",
-  "unit_rate": "1.143814582684606886",
+  "amount_out_wei": "11437272235722771520",
+  "unit_rate": "1.143727223572277152",
   "chain": "base",
   "chain_id": 8453,
-  "observed_at": "2026-11-21T07:20:01.000Z",
-  "fetched_at": "2026-11-21T07:20:01.000Z",
-  "generated_at": "2026-11-21T07:20:01.000Z",
-  "valid_until": "2026-11-21T07:35:01.000Z",
+  "observed_at": "2026-11-21T07:28:01.000Z",
+  "fetched_at": "2026-11-21T07:28:01.000Z",
+  "generated_at": "2026-11-21T07:28:01.000Z",
+  "valid_until": "2026-11-21T07:43:01.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -35,26 +35,31 @@
     "rpc_url": null,
     "exchanges": [
       "aero-cl",
-      "hydrex-v4"
+      "aerodrome-cl",
+      "hydrex-v4",
+      "maverick-v2",
+      "pancake-v3",
+      "quickswap-v4",
+      "uniswapv3"
     ],
-    "response_sha256": "c8d3177437f4558394130421981edc4b63c5ffb5125531ddb9949f9e39f72b66"
+    "response_sha256": "8e2442158a0ed116b28ec317cad24e4368dfefe3723cb896ef5a4ff06dfba007"
   },
   "coverage": {
-    "available": 2,
+    "available": 1,
     "expected": 2,
-    "partial": false
+    "partial": true
   },
   "quotes": [
     {
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11438145826846068864",
-      "amount": "11.438145826846068864",
-      "amount_before_aggregator_fee": "11.438145826846068864",
+      "amount_out_wei": "11437272235722771520",
+      "amount": "11.437272235722771520",
+      "amount_before_aggregator_fee": "11.437272235722771520",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-21T07:20:01.000Z",
-      "fetched_at": "2026-11-21T07:20:01.000Z",
+      "observed_at": "2026-11-21T07:28:01.000Z",
+      "fetched_at": "2026-11-21T07:28:01.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -68,38 +73,20 @@
         "rpc_url": null,
         "exchanges": [
           "aero-cl",
-          "hydrex-v4"
+          "aerodrome-cl",
+          "hydrex-v4",
+          "maverick-v2",
+          "pancake-v3",
+          "quickswap-v4",
+          "uniswapv3"
         ],
-        "response_sha256": "c8d3177437f4558394130421981edc4b63c5ffb5125531ddb9949f9e39f72b66"
+        "response_sha256": "8e2442158a0ed116b28ec317cad24e4368dfefe3723cb896ef5a4ff06dfba007"
       }
     },
     {
       "provider": "velora",
-      "status": "ok",
-      "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11436867236689454231",
-      "amount": "11.436867236689454231",
-      "amount_before_aggregator_fee": "11.438011037793233554",
-      "aggregator_fee_amount_wei": "1143801103779323",
-      "observed_at": "2026-11-21T07:20:01.000Z",
-      "fetched_at": "2026-11-21T07:20:01.000Z",
-      "source": {
-        "type": "dex_aggregator",
-        "provider": "velora",
-        "chain_id": 8453,
-        "endpoint": "https://api.velora.xyz/prices?srcToken=0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22&destToken=0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee&amount=10000000000000000000&srcDecimals=18&destDecimals=18&side=SELL&network=8453&version=6.2",
-        "token_in": "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22",
-        "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-        "source_time_basis": "source_block_timestamp",
-        "block_number": "60276127",
-        "block_hash": "0x1b3657ecbc3c8a35530119af889dad11e36bb86dfd2614cd8ca324bbb0241e98",
-        "rpc_url": "https://base-rpc.publicnode.com",
-        "exchanges": [
-          "aerocl",
-          "hydrex"
-        ],
-        "response_sha256": "54c451e48521ed7bf39239446e1b125f52ec62209ddf92eada204b45b49f9fea"
-      }
+      "status": "unavailable",
+      "error": "source_stale_or_future"
     }
   ]
 }
