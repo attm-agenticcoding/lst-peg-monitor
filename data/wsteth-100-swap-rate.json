@@ -5,16 +5,16 @@
   "base": "wstETH",
   "quote": "ETH",
   "base_amount": "100",
-  "amount": "124.866910231059907413",
+  "amount": "124.853090534354605347",
   "amount_in_wei": "100000000000000000000",
-  "amount_out_wei": "124866910231059907413",
-  "unit_rate": "1.248669102310599074",
+  "amount_out_wei": "124853090534354605347",
+  "unit_rate": "1.248530905343546053",
   "chain": "ethereum",
   "chain_id": 1,
-  "observed_at": "2026-11-21T04:16:03.000Z",
-  "fetched_at": "2026-11-21T04:16:03.000Z",
-  "generated_at": "2026-11-21T04:16:03.000Z",
-  "valid_until": "2026-11-21T04:31:03.000Z",
+  "observed_at": "2026-11-21T04:24:01.000Z",
+  "fetched_at": "2026-11-21T04:24:01.000Z",
+  "generated_at": "2026-11-21T04:24:01.000Z",
+  "valid_until": "2026-11-21T04:39:01.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -34,14 +34,15 @@
     "block_hash": null,
     "rpc_url": null,
     "exchanges": [
-      "aero-cl",
+      "curve-stable-ng",
       "curve-stable-plain",
       "etherfi-vampire",
       "fluid-dex-t1",
       "lido",
-      "uniswap-v4"
+      "uniswap-v4",
+      "uniswapv3"
     ],
-    "response_sha256": "cf4d261c4b57254e1dc5e424ec3e8cc26c1d35b2057629a5f76961a032b774e8"
+    "response_sha256": "b2e50e0e08b98aaa8ab26ebeb7e1ff4c029947c3625ccbea263379bb23f1c947"
   },
   "coverage": {
     "available": 2,
@@ -53,12 +54,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124866910231059907413",
-      "amount": "124.866910231059907413",
-      "amount_before_aggregator_fee": "124.866910231059907413",
+      "amount_out_wei": "124853090534354605347",
+      "amount": "124.853090534354605347",
+      "amount_before_aggregator_fee": "124.853090534354605347",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-21T04:16:03.000Z",
-      "fetched_at": "2026-11-21T04:16:03.000Z",
+      "observed_at": "2026-11-21T04:24:01.000Z",
+      "fetched_at": "2026-11-21T04:24:01.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -71,26 +72,27 @@
         "block_hash": null,
         "rpc_url": null,
         "exchanges": [
-          "aero-cl",
+          "curve-stable-ng",
           "curve-stable-plain",
           "etherfi-vampire",
           "fluid-dex-t1",
           "lido",
-          "uniswap-v4"
+          "uniswap-v4",
+          "uniswapv3"
         ],
-        "response_sha256": "cf4d261c4b57254e1dc5e424ec3e8cc26c1d35b2057629a5f76961a032b774e8"
+        "response_sha256": "b2e50e0e08b98aaa8ab26ebeb7e1ff4c029947c3625ccbea263379bb23f1c947"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124853866552133041388",
-      "amount": "124.853866552133041388",
-      "amount_before_aggregator_fee": "124.866353187451786567",
-      "aggregator_fee_amount_wei": "12486635318745179",
-      "observed_at": "2026-11-21T04:15:47.000Z",
-      "fetched_at": "2026-11-21T04:16:00.000Z",
+      "amount_out_wei": "124840183527489563100",
+      "amount": "124.840183527489563100",
+      "amount_before_aggregator_fee": "124.852668794369000000",
+      "aggregator_fee_amount_wei": "12485266879436900",
+      "observed_at": "2026-11-21T04:23:59.000Z",
+      "fetched_at": "2026-11-21T04:24:01.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -99,14 +101,13 @@
         "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "26461023",
-        "block_hash": "0x87244355ddb24c00088f2d0953199b9855a31af13c8783951b6e65d046a8a3aa",
+        "block_number": "26461063",
+        "block_hash": "0x6bd6752e2903f157f7c62a5a8e543531631e069d7c2d3b3a3d05abb7a799a7b3",
         "rpc_url": "https://ethereum-rpc.publicnode.com",
         "exchanges": [
-          "aerocl",
           "fluiddex"
         ],
-        "response_sha256": "d4e9962b7898622d82d12f778a63cf3eb3f0137c321be60bbb6f1fbe935d046c"
+        "response_sha256": "3808b262227d8676237c27819030dcc4ed1a9a64c4172ba0b0a502a9ae800e76"
       }
     }
   ]
