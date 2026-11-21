@@ -5,16 +5,16 @@
   "base": "wstETH",
   "quote": "ETH",
   "base_amount": "100",
-  "amount": "124.925651613946138815",
+  "amount": "124.925901639919726128",
   "amount_in_wei": "100000000000000000000",
-  "amount_out_wei": "124925651613946138815",
-  "unit_rate": "1.249256516139461388",
+  "amount_out_wei": "124925901639919726128",
+  "unit_rate": "1.249259016399197261",
   "chain": "ethereum",
   "chain_id": 1,
-  "observed_at": "2026-11-21T19:53:54.000Z",
-  "fetched_at": "2026-11-21T19:53:54.000Z",
-  "generated_at": "2026-11-21T19:53:54.000Z",
-  "valid_until": "2026-11-21T20:08:54.000Z",
+  "observed_at": "2026-11-21T20:01:54.000Z",
+  "fetched_at": "2026-11-21T20:01:54.000Z",
+  "generated_at": "2026-11-21T20:01:59.000Z",
+  "valid_until": "2026-11-21T20:16:54.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -35,30 +35,28 @@
     "rpc_url": null,
     "exchanges": [
       "curve-stable-ng",
-      "curve-stable-plain",
       "etherfi-vampire",
       "fluid-dex-t1",
-      "lido",
       "uniswapv3"
     ],
-    "response_sha256": "7ebb068c75058ffa4d8012e2cc8fba06e2d6a59dba04d7d5b68dc3958ff7cb7d"
+    "response_sha256": "22f58220566093ba28085628b48b6b99f9569a3363d2b08837de32484ce090a6"
   },
   "coverage": {
-    "available": 2,
+    "available": 1,
     "expected": 2,
-    "partial": false
+    "partial": true
   },
   "quotes": [
     {
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124925651613946138815",
-      "amount": "124.925651613946138815",
-      "amount_before_aggregator_fee": "124.925651613946138815",
+      "amount_out_wei": "124925901639919726128",
+      "amount": "124.925901639919726128",
+      "amount_before_aggregator_fee": "124.925901639919726128",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-21T19:53:54.000Z",
-      "fetched_at": "2026-11-21T19:53:54.000Z",
+      "observed_at": "2026-11-21T20:01:54.000Z",
+      "fetched_at": "2026-11-21T20:01:54.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -72,45 +70,17 @@
         "rpc_url": null,
         "exchanges": [
           "curve-stable-ng",
-          "curve-stable-plain",
           "etherfi-vampire",
           "fluid-dex-t1",
-          "lido",
           "uniswapv3"
         ],
-        "response_sha256": "7ebb068c75058ffa4d8012e2cc8fba06e2d6a59dba04d7d5b68dc3958ff7cb7d"
+        "response_sha256": "22f58220566093ba28085628b48b6b99f9569a3363d2b08837de32484ce090a6"
       }
     },
     {
       "provider": "velora",
-      "status": "ok",
-      "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124913023334095811529",
-      "amount": "124.913023334095811529",
-      "amount_before_aggregator_fee": "124.925515885684379967",
-      "aggregator_fee_amount_wei": "12492551588568438",
-      "observed_at": "2026-11-21T19:53:47.000Z",
-      "fetched_at": "2026-11-21T19:53:54.000Z",
-      "source": {
-        "type": "dex_aggregator",
-        "provider": "velora",
-        "chain_id": 1,
-        "endpoint": "https://api.velora.xyz/prices?srcToken=0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0&destToken=0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee&amount=100000000000000000000&srcDecimals=18&destDecimals=18&side=SELL&network=1&version=6.2",
-        "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
-        "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-        "source_time_basis": "source_block_timestamp",
-        "block_number": "26465696",
-        "block_hash": "0x907941c84d6e02da532525fb8a918dc2e8290ddc57ad88dc3240ffd614aa0d78",
-        "rpc_url": "https://ethereum-rpc.publicnode.com",
-        "exchanges": [
-          "curvestablefactory",
-          "fluiddex",
-          "metric-v1",
-          "uniswapv3",
-          "wsteth"
-        ],
-        "response_sha256": "1e639360333402106b76c775a7a79015e7735365898303ab7810d7f729fa9447"
-      }
+      "status": "unavailable",
+      "error": "quote_unavailable"
     }
   ]
 }
