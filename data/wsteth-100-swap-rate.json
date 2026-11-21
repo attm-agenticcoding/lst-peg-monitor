@@ -5,16 +5,16 @@
   "base": "wstETH",
   "quote": "ETH",
   "base_amount": "100",
-  "amount": "124.931530030565244231",
+  "amount": "124.929636314685255639",
   "amount_in_wei": "100000000000000000000",
-  "amount_out_wei": "124931530030565244231",
-  "unit_rate": "1.249315300305652442",
+  "amount_out_wei": "124929636314685255639",
+  "unit_rate": "1.249296363146852556",
   "chain": "ethereum",
   "chain_id": 1,
-  "observed_at": "2026-11-21T23:35:53.000Z",
-  "fetched_at": "2026-11-21T23:35:53.000Z",
-  "generated_at": "2026-11-21T23:35:53.000Z",
-  "valid_until": "2026-11-21T23:50:53.000Z",
+  "observed_at": "2026-11-21T23:43:54.000Z",
+  "fetched_at": "2026-11-21T23:43:54.000Z",
+  "generated_at": "2026-11-21T23:43:54.000Z",
+  "valid_until": "2026-11-21T23:58:54.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -35,9 +35,10 @@
     "rpc_url": null,
     "exchanges": [
       "curve-stable-plain",
-      "lido"
+      "lido",
+      "uniswapv3"
     ],
-    "response_sha256": "bf6c96e6bb1cab91c61f4b8625a1e09db14fc3265d3e98ea394f01eb21c260bc"
+    "response_sha256": "325e82828d6229095a967573ead8825cae066fb8f47f0d56c1ae6f1c0e7a4be7"
   },
   "coverage": {
     "available": 2,
@@ -49,12 +50,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124931530030565244231",
-      "amount": "124.931530030565244231",
-      "amount_before_aggregator_fee": "124.931530030565244231",
+      "amount_out_wei": "124929636314685255639",
+      "amount": "124.929636314685255639",
+      "amount_before_aggregator_fee": "124.929636314685255639",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-21T23:35:53.000Z",
-      "fetched_at": "2026-11-21T23:35:53.000Z",
+      "observed_at": "2026-11-21T23:43:54.000Z",
+      "fetched_at": "2026-11-21T23:43:54.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -68,21 +69,22 @@
         "rpc_url": null,
         "exchanges": [
           "curve-stable-plain",
-          "lido"
+          "lido",
+          "uniswapv3"
         ],
-        "response_sha256": "bf6c96e6bb1cab91c61f4b8625a1e09db14fc3265d3e98ea394f01eb21c260bc"
+        "response_sha256": "325e82828d6229095a967573ead8825cae066fb8f47f0d56c1ae6f1c0e7a4be7"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124918969457196644479",
-      "amount": "124.918969457196644479",
-      "amount_before_aggregator_fee": "124.931462603456990178",
-      "aggregator_fee_amount_wei": "12493146260345699",
-      "observed_at": "2026-11-21T23:35:47.000Z",
-      "fetched_at": "2026-11-21T23:35:53.000Z",
+      "amount_out_wei": "124917043848183373429",
+      "amount": "124.917043848183373429",
+      "amount_before_aggregator_fee": "124.929536801863559785",
+      "aggregator_fee_amount_wei": "12492953680186356",
+      "observed_at": "2026-11-21T23:43:47.000Z",
+      "fetched_at": "2026-11-21T23:43:54.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -91,15 +93,16 @@
         "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "26466803",
-        "block_hash": "0xd8cbe167ba2c976963486300c2ad9bd7e450d99e79dcf3e26019fb2af5e5b147",
+        "block_number": "26466843",
+        "block_hash": "0x7edb73bd3730831911a28406d394bff4bad8e353ccb0a86bda4b05bb32f712a9",
         "rpc_url": "https://ethereum-rpc.publicnode.com",
         "exchanges": [
           "curvestablefactory",
           "metric-v1",
+          "uniswapv3",
           "wsteth"
         ],
-        "response_sha256": "6eff36a4219f0024e8cde1514aef3ec4ecb143d11a2db074773e8a1d8932d37d"
+        "response_sha256": "ceaeb88e386e28472e3ab6b80d00bb46425b92db20b9e87de4ee920930b4f656"
       }
     }
   ]
