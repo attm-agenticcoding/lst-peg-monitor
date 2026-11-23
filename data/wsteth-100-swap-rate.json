@@ -5,16 +5,16 @@
   "base": "wstETH",
   "quote": "ETH",
   "base_amount": "100",
-  "amount": "124.935815637847528999",
+  "amount": "124.956360782546526592",
   "amount_in_wei": "100000000000000000000",
-  "amount_out_wei": "124935815637847528999",
-  "unit_rate": "1.249358156378475289",
+  "amount_out_wei": "124956360782546526592",
+  "unit_rate": "1.249563607825465265",
   "chain": "ethereum",
   "chain_id": 1,
-  "observed_at": "2026-11-23T02:05:01.000Z",
-  "fetched_at": "2026-11-23T02:05:01.000Z",
-  "generated_at": "2026-11-23T02:05:01.000Z",
-  "valid_until": "2026-11-23T02:20:01.000Z",
+  "observed_at": "2026-11-23T02:13:01.000Z",
+  "fetched_at": "2026-11-23T02:13:01.000Z",
+  "generated_at": "2026-11-23T02:13:01.000Z",
+  "valid_until": "2026-11-23T02:28:01.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -35,10 +35,9 @@
     "rpc_url": null,
     "exchanges": [
       "curve-stable-plain",
-      "fluid-dex-t1",
       "lido"
     ],
-    "response_sha256": "22949dc38686f1eb4c9bc484d888279c9897b6fe5bf1c3f48a5b16ab055978b5"
+    "response_sha256": "2eaece94fb3a46de6130fff4c699c2a1ce9c732704170f10653b6c6fbbf58055"
   },
   "coverage": {
     "available": 2,
@@ -50,12 +49,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124935815637847528999",
-      "amount": "124.935815637847528999",
-      "amount_before_aggregator_fee": "124.935815637847528999",
+      "amount_out_wei": "124956360782546526592",
+      "amount": "124.956360782546526592",
+      "amount_before_aggregator_fee": "124.956360782546526592",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-23T02:05:01.000Z",
-      "fetched_at": "2026-11-23T02:05:01.000Z",
+      "observed_at": "2026-11-23T02:13:01.000Z",
+      "fetched_at": "2026-11-23T02:13:01.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -69,22 +68,21 @@
         "rpc_url": null,
         "exchanges": [
           "curve-stable-plain",
-          "fluid-dex-t1",
           "lido"
         ],
-        "response_sha256": "22949dc38686f1eb4c9bc484d888279c9897b6fe5bf1c3f48a5b16ab055978b5"
+        "response_sha256": "2eaece94fb3a46de6130fff4c699c2a1ce9c732704170f10653b6c6fbbf58055"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124923303792907719948",
-      "amount": "124.923303792907719948",
-      "amount_before_aggregator_fee": "124.935797372644984446",
-      "aggregator_fee_amount_wei": "12493579737264498",
-      "observed_at": "2026-11-23T02:04:59.000Z",
-      "fetched_at": "2026-11-23T02:05:01.000Z",
+      "amount_out_wei": "124943864558133871816",
+      "amount": "124.943864558133871816",
+      "amount_before_aggregator_fee": "124.956360194153287145",
+      "aggregator_fee_amount_wei": "12495636019415329",
+      "observed_at": "2026-11-23T02:12:59.000Z",
+      "fetched_at": "2026-11-23T02:13:01.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -93,17 +91,15 @@
         "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "26474727",
-        "block_hash": "0xfdbf9389371157be067e98ddb125890e159efc1ab7a2948bfd55462dbff609ad",
+        "block_number": "26474767",
+        "block_hash": "0x4f2cdc6df7c254dc1021f0c37408bf5a7c4dc19ab77fdcf138bcb7cb983c876a",
         "rpc_url": "https://ethereum-rpc.publicnode.com",
         "exchanges": [
           "curvestablefactory",
-          "curvestableplain",
-          "fluiddex",
           "metric-v1",
           "wsteth"
         ],
-        "response_sha256": "bd18b35d664df31744ed12b69dd17704f1f47a7f738f07667f9f0f8289f1ed0c"
+        "response_sha256": "e5ef44dd7949a571db7a47aaaec8a0e6289ceb981ca27af00e0d33670b4307cd"
       }
     }
   ]
