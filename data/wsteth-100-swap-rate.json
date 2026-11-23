@@ -5,16 +5,16 @@
   "base": "wstETH",
   "quote": "ETH",
   "base_amount": "100",
-  "amount": "124.963182828102121152",
+  "amount": "124.979365571689638702",
   "amount_in_wei": "100000000000000000000",
-  "amount_out_wei": "124963182828102121152",
-  "unit_rate": "1.249631828281021211",
+  "amount_out_wei": "124979365571689638702",
+  "unit_rate": "1.249793655716896387",
   "chain": "ethereum",
   "chain_id": 1,
-  "observed_at": "2026-11-23T14:38:17.000Z",
-  "fetched_at": "2026-11-23T14:38:17.000Z",
-  "generated_at": "2026-11-23T14:38:18.000Z",
-  "valid_until": "2026-11-23T14:53:17.000Z",
+  "observed_at": "2026-11-23T14:47:03.000Z",
+  "fetched_at": "2026-11-23T14:47:03.000Z",
+  "generated_at": "2026-11-23T14:47:03.000Z",
+  "valid_until": "2026-11-23T15:02:03.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -34,10 +34,15 @@
     "block_hash": null,
     "rpc_url": null,
     "exchanges": [
+      "balancer-v3-stable",
       "curve-stable-ng",
-      "etherfi-vampire"
+      "etherfi-vampire",
+      "fermi",
+      "stelaxis-prop",
+      "uniswap-v4",
+      "uniswapv3"
     ],
-    "response_sha256": "e268b91fac9bfafa46e277159fd01aad2ffa2d52c9c4c9aca8a4a1f79cc8b5fa"
+    "response_sha256": "abfe38310e4b90e441bb883d2a29ccc1955032ce8db80d1f5d369ebde3684566"
   },
   "coverage": {
     "available": 2,
@@ -49,12 +54,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124963182828102121152",
-      "amount": "124.963182828102121152",
-      "amount_before_aggregator_fee": "124.963182828102121152",
+      "amount_out_wei": "124979365571689638702",
+      "amount": "124.979365571689638702",
+      "amount_before_aggregator_fee": "124.979365571689638702",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-23T14:38:17.000Z",
-      "fetched_at": "2026-11-23T14:38:17.000Z",
+      "observed_at": "2026-11-23T14:47:03.000Z",
+      "fetched_at": "2026-11-23T14:47:03.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -67,22 +72,27 @@
         "block_hash": null,
         "rpc_url": null,
         "exchanges": [
+          "balancer-v3-stable",
           "curve-stable-ng",
-          "etherfi-vampire"
+          "etherfi-vampire",
+          "fermi",
+          "stelaxis-prop",
+          "uniswap-v4",
+          "uniswapv3"
         ],
-        "response_sha256": "e268b91fac9bfafa46e277159fd01aad2ffa2d52c9c4c9aca8a4a1f79cc8b5fa"
+        "response_sha256": "abfe38310e4b90e441bb883d2a29ccc1955032ce8db80d1f5d369ebde3684566"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124948747580542253051",
-      "amount": "124.948747580542253051",
-      "amount_before_aggregator_fee": "124.961243704912744325",
-      "aggregator_fee_amount_wei": "12496124370491274",
-      "observed_at": "2026-11-23T14:38:11.000Z",
-      "fetched_at": "2026-11-23T14:38:18.000Z",
+      "amount_out_wei": "124935109405021805739",
+      "amount": "124.935109405021805739",
+      "amount_before_aggregator_fee": "124.947604165438349574",
+      "aggregator_fee_amount_wei": "12494760416543835",
+      "observed_at": "2026-11-23T14:46:59.000Z",
+      "fetched_at": "2026-11-23T14:47:03.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -91,14 +101,15 @@
         "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "26478479",
-        "block_hash": "0xd84e5b50e343fd8e3fafca57084e47ebe574d30e64735223ecb8d5f2e73d19ea",
+        "block_number": "26478523",
+        "block_hash": "0x6ebb7db9d29b2170e61327cafc07565313694c13f2cab9a3238182cc2f131a01",
         "rpc_url": "https://ethereum-rpc.publicnode.com",
         "exchanges": [
+          "curvestablefactory",
           "metric-v1",
-          "uniswapv3"
+          "wsteth"
         ],
-        "response_sha256": "fafa33f7cd4649c6f4c1a9cec78d9320bcabea5f53ab0445475621a93d078cf6"
+        "response_sha256": "468c1316e2f60e45342e91d9473a6d4562739288cbd54e55c027249b394bed16"
       }
     }
   ]
