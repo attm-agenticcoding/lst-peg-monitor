@@ -5,16 +5,16 @@
   "base": "cbETH",
   "quote": "ETH",
   "base_amount": "10",
-  "amount": "11.445462709493858304",
+  "amount": "11.445481902796579808",
   "amount_in_wei": "10000000000000000000",
-  "amount_out_wei": "11445462709493858304",
-  "unit_rate": "1.144546270949385830",
+  "amount_out_wei": "11445481902796579808",
+  "unit_rate": "1.144548190279657980",
   "chain": "base",
   "chain_id": 8453,
-  "observed_at": "2026-11-24T16:33:32.000Z",
-  "fetched_at": "2026-11-24T16:33:32.000Z",
-  "generated_at": "2026-11-24T16:33:33.000Z",
-  "valid_until": "2026-11-24T16:48:32.000Z",
+  "observed_at": "2026-11-24T16:41:32.000Z",
+  "fetched_at": "2026-11-24T16:41:32.000Z",
+  "generated_at": "2026-11-24T16:41:33.000Z",
+  "valid_until": "2026-11-24T16:56:32.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -34,9 +34,11 @@
     "block_hash": null,
     "rpc_url": null,
     "exchanges": [
-      "aero-cl"
+      "aero-cl",
+      "maverick-v2",
+      "solidly-v3"
     ],
-    "response_sha256": "ab0c3c3810ffe09428c5dad7edbf09eb804634d568de4385b26626419df87e48"
+    "response_sha256": "22aa920ec220ba9d127410094487684e1a0cd4734a8f42f56db5835bf4b82842"
   },
   "coverage": {
     "available": 2,
@@ -48,12 +50,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11445462709493858304",
-      "amount": "11.445462709493858304",
-      "amount_before_aggregator_fee": "11.445462709493858304",
+      "amount_out_wei": "11445481902796579808",
+      "amount": "11.445481902796579808",
+      "amount_before_aggregator_fee": "11.445481902796579808",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-24T16:33:32.000Z",
-      "fetched_at": "2026-11-24T16:33:32.000Z",
+      "observed_at": "2026-11-24T16:41:32.000Z",
+      "fetched_at": "2026-11-24T16:41:32.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -66,21 +68,23 @@
         "block_hash": null,
         "rpc_url": null,
         "exchanges": [
-          "aero-cl"
+          "aero-cl",
+          "maverick-v2",
+          "solidly-v3"
         ],
-        "response_sha256": "ab0c3c3810ffe09428c5dad7edbf09eb804634d568de4385b26626419df87e48"
+        "response_sha256": "22aa920ec220ba9d127410094487684e1a0cd4734a8f42f56db5835bf4b82842"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11444197473431551246",
-      "amount": "11.444197473431551246",
-      "amount_before_aggregator_fee": "11.445342007632314477",
-      "aggregator_fee_amount_wei": "1144534200763231",
-      "observed_at": "2026-11-24T16:33:32.000Z",
-      "fetched_at": "2026-11-24T16:33:32.000Z",
+      "amount_out_wei": "11444202868625913599",
+      "amount": "11.444202868625913599",
+      "amount_before_aggregator_fee": "11.445347403366250224",
+      "aggregator_fee_amount_wei": "1144534740336625",
+      "observed_at": "2026-11-24T16:41:32.000Z",
+      "fetched_at": "2026-11-24T16:41:32.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -89,13 +93,15 @@
         "token_in": "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "61738186",
-        "block_hash": "0x7b7ff5f53153a4b1173751294b519b3c8a69654bb8ad302e2a8fbc06cd30cb81",
+        "block_number": "61740585",
+        "block_hash": "0xcab386fc5f669661ad012c48248e4c9088d560ca002da9462d9911741db5a7ae",
         "rpc_url": "https://base-rpc.publicnode.com",
         "exchanges": [
-          "aerocl"
+          "aerocl",
+          "maverickv2",
+          "solidlyv3"
         ],
-        "response_sha256": "50ce22286f2fbc7e7de7e57605288742fe7a07bb6257f3d471a4b9639e5cb2c5"
+        "response_sha256": "399c89e70676e1193f37126839c20ee1aa0efcf216aa86046223662d42725530"
       }
     }
   ]
