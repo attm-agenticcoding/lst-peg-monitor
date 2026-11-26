@@ -5,16 +5,16 @@
   "base": "wstETH",
   "quote": "ETH",
   "base_amount": "100",
-  "amount": "124.943930179743830967",
+  "amount": "124.944350392020611717",
   "amount_in_wei": "100000000000000000000",
-  "amount_out_wei": "124943930179743830967",
-  "unit_rate": "1.249439301797438309",
+  "amount_out_wei": "124944350392020611717",
+  "unit_rate": "1.249443503920206117",
   "chain": "ethereum",
   "chain_id": 1,
-  "observed_at": "2026-11-26T21:11:51.000Z",
-  "fetched_at": "2026-11-26T21:11:51.000Z",
-  "generated_at": "2026-11-26T21:11:51.000Z",
-  "valid_until": "2026-11-26T21:26:51.000Z",
+  "observed_at": "2026-11-26T21:19:50.000Z",
+  "fetched_at": "2026-11-26T21:19:50.000Z",
+  "generated_at": "2026-11-26T21:19:51.000Z",
+  "valid_until": "2026-11-26T21:34:50.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -39,9 +39,10 @@
       "curve-stable-plain",
       "etherfi-vampire",
       "lido",
+      "uniswap-v4",
       "uniswapv3"
     ],
-    "response_sha256": "1a06558920b89c3f3f4090ba0cfde62a435cf908d74f4499fcff6dae6266e151"
+    "response_sha256": "a0ac425c7553cadccc0afba100b6e42f30fd59daec797fceb85851dbcd3e95ee"
   },
   "coverage": {
     "available": 2,
@@ -53,12 +54,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124943930179743830967",
-      "amount": "124.943930179743830967",
-      "amount_before_aggregator_fee": "124.943930179743830967",
+      "amount_out_wei": "124944350392020611717",
+      "amount": "124.944350392020611717",
+      "amount_before_aggregator_fee": "124.944350392020611717",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-26T21:11:51.000Z",
-      "fetched_at": "2026-11-26T21:11:51.000Z",
+      "observed_at": "2026-11-26T21:19:50.000Z",
+      "fetched_at": "2026-11-26T21:19:50.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -76,21 +77,22 @@
           "curve-stable-plain",
           "etherfi-vampire",
           "lido",
+          "uniswap-v4",
           "uniswapv3"
         ],
-        "response_sha256": "1a06558920b89c3f3f4090ba0cfde62a435cf908d74f4499fcff6dae6266e151"
+        "response_sha256": "a0ac425c7553cadccc0afba100b6e42f30fd59daec797fceb85851dbcd3e95ee"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124931253328644562939",
-      "amount": "124.931253328644562939",
-      "amount_before_aggregator_fee": "124.943747703414904429",
-      "aggregator_fee_amount_wei": "12494374770341490",
-      "observed_at": "2026-11-26T21:11:47.000Z",
-      "fetched_at": "2026-11-26T21:11:51.000Z",
+      "amount_out_wei": "124931568524131914951",
+      "amount": "124.931568524131914951",
+      "amount_before_aggregator_fee": "124.944062930424957447",
+      "aggregator_fee_amount_wei": "12494406293042496",
+      "observed_at": "2026-11-26T21:19:47.000Z",
+      "fetched_at": "2026-11-26T21:19:50.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -99,17 +101,16 @@
         "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "26501979",
-        "block_hash": "0xbe81f5cf05a56b421aa4e8bd4f6e3e573f1dea7710417baa2e710d5fb8dc3200",
+        "block_number": "26502019",
+        "block_hash": "0x92a0074573b08b61d591493c21c2ce11c551334d1f7bfaef984d5a5f80b5eecb",
         "rpc_url": "https://ethereum-rpc.publicnode.com",
         "exchanges": [
           "aerocl",
           "curvestablefactory",
-          "curvestableplain",
           "uniswapv3",
           "wsteth"
         ],
-        "response_sha256": "7c168becfcca33b09ec97a4cf683ea740e222489a6d19aec563ab16021556f8f"
+        "response_sha256": "593534d8bbcc3d603f037ff30b8e3308a95cee093efc7b77307d3d56f251ea61"
       }
     }
   ]
