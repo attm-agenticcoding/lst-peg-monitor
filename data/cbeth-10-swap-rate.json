@@ -5,16 +5,16 @@
   "base": "cbETH",
   "quote": "ETH",
   "base_amount": "10",
-  "amount": "11.445420543375409344",
+  "amount": "11.445590855333898560",
   "amount_in_wei": "10000000000000000000",
-  "amount_out_wei": "11445420543375409344",
-  "unit_rate": "1.144542054337540934",
+  "amount_out_wei": "11445590855333898560",
+  "unit_rate": "1.144559085533389856",
   "chain": "base",
   "chain_id": 8453,
-  "observed_at": "2026-11-26T21:03:50.000Z",
-  "fetched_at": "2026-11-26T21:03:50.000Z",
-  "generated_at": "2026-11-26T21:03:52.000Z",
-  "valid_until": "2026-11-26T21:18:50.000Z",
+  "observed_at": "2026-11-26T21:11:51.000Z",
+  "fetched_at": "2026-11-26T21:11:51.000Z",
+  "generated_at": "2026-11-26T21:11:51.000Z",
+  "valid_until": "2026-11-26T21:26:51.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -35,10 +35,15 @@
     "rpc_url": null,
     "exchanges": [
       "aero-cl",
+      "aerodrome-cl-2",
+      "hanji",
+      "hydrex-v4",
+      "kipseli-prop",
       "maverick-v2",
-      "solidly-v3"
+      "solidly-v3",
+      "spire-prop"
     ],
-    "response_sha256": "b1d13ff063f2b9dce4162c17c2446be291104a1c26969fb9588874a53d3f1abe"
+    "response_sha256": "82d64fce38bb6d31796a72061cc802813db09a3255dd4404411011e1334b6dff"
   },
   "coverage": {
     "available": 2,
@@ -50,12 +55,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11445420543375409344",
-      "amount": "11.445420543375409344",
-      "amount_before_aggregator_fee": "11.445420543375409344",
+      "amount_out_wei": "11445590855333898560",
+      "amount": "11.445590855333898560",
+      "amount_before_aggregator_fee": "11.445590855333898560",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-26T21:03:50.000Z",
-      "fetched_at": "2026-11-26T21:03:50.000Z",
+      "observed_at": "2026-11-26T21:11:51.000Z",
+      "fetched_at": "2026-11-26T21:11:51.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -69,22 +74,27 @@
         "rpc_url": null,
         "exchanges": [
           "aero-cl",
+          "aerodrome-cl-2",
+          "hanji",
+          "hydrex-v4",
+          "kipseli-prop",
           "maverick-v2",
-          "solidly-v3"
+          "solidly-v3",
+          "spire-prop"
         ],
-        "response_sha256": "b1d13ff063f2b9dce4162c17c2446be291104a1c26969fb9588874a53d3f1abe"
+        "response_sha256": "82d64fce38bb6d31796a72061cc802813db09a3255dd4404411011e1334b6dff"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11444154023503386282",
-      "amount": "11.444154023503386282",
-      "amount_before_aggregator_fee": "11.445298553358722154",
-      "aggregator_fee_amount_wei": "1144529855335872",
-      "observed_at": "2026-11-26T21:03:51.000Z",
-      "fetched_at": "2026-11-26T21:03:51.000Z",
+      "amount_out_wei": "11444215192591726518",
+      "amount": "11.444215192591726518",
+      "amount_before_aggregator_fee": "11.445359728564582976",
+      "aggregator_fee_amount_wei": "1144535972856458",
+      "observed_at": "2026-11-26T21:11:51.000Z",
+      "fetched_at": "2026-11-26T21:11:51.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -93,15 +103,17 @@
         "token_in": "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "62683278",
-        "block_hash": "0x856b4d877400a1d3476a4ad636cab09e73ca638447b1d901bcfd12af3bffb2d1",
+        "block_number": "62685677",
+        "block_hash": "0x631cc32053bc40c2dbd48ca5600d967bdc6effa4b23518446e18aa12f3bbd572",
         "rpc_url": "https://base-rpc.publicnode.com",
         "exchanges": [
           "aerocl",
+          "aerodromeslipstreamnewfactory",
           "maverickv2",
+          "metric-v1",
           "solidlyv3"
         ],
-        "response_sha256": "579e610948c0c8920fb122e4c85c3915750b460c0db278c4a0ef666b8f350415"
+        "response_sha256": "92c9b36a40d82b0db76ddf2ff8f7aacd57ebce2fce49986b66c5287cf08d14e6"
       }
     }
   ]
