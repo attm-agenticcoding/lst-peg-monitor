@@ -5,16 +5,16 @@
   "base": "wstETH",
   "quote": "ETH",
   "base_amount": "100",
-  "amount": "124.956439741071191857",
+  "amount": "124.954988661862084140",
   "amount_in_wei": "100000000000000000000",
-  "amount_out_wei": "124956439741071191857",
-  "unit_rate": "1.249564397410711918",
+  "amount_out_wei": "124954988661862084140",
+  "unit_rate": "1.249549886618620841",
   "chain": "ethereum",
   "chain_id": 1,
-  "observed_at": "2026-11-26T21:43:50.000Z",
-  "fetched_at": "2026-11-26T21:43:50.000Z",
-  "generated_at": "2026-11-26T21:43:51.000Z",
-  "valid_until": "2026-11-26T21:58:50.000Z",
+  "observed_at": "2026-11-26T21:51:50.000Z",
+  "fetched_at": "2026-11-26T21:51:50.000Z",
+  "generated_at": "2026-11-26T21:51:51.000Z",
+  "valid_until": "2026-11-26T22:06:50.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -38,9 +38,10 @@
       "curve-stable-ng",
       "curve-stable-plain",
       "etherfi-vampire",
-      "lido"
+      "lido",
+      "uniswapv3"
     ],
-    "response_sha256": "73b55f223b079b76890e5e00af10ecd03fae9e389d574bee40df00a2337aba3f"
+    "response_sha256": "8e1d9963e83c735fff1eb1d24a780c6f7ba4dcc81833429dcde54273456f9a67"
   },
   "coverage": {
     "available": 2,
@@ -52,12 +53,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124956439741071191857",
-      "amount": "124.956439741071191857",
-      "amount_before_aggregator_fee": "124.956439741071191857",
+      "amount_out_wei": "124954988661862084140",
+      "amount": "124.954988661862084140",
+      "amount_before_aggregator_fee": "124.954988661862084140",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-26T21:43:50.000Z",
-      "fetched_at": "2026-11-26T21:43:50.000Z",
+      "observed_at": "2026-11-26T21:51:50.000Z",
+      "fetched_at": "2026-11-26T21:51:50.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -74,21 +75,22 @@
           "curve-stable-ng",
           "curve-stable-plain",
           "etherfi-vampire",
-          "lido"
+          "lido",
+          "uniswapv3"
         ],
-        "response_sha256": "73b55f223b079b76890e5e00af10ecd03fae9e389d574bee40df00a2337aba3f"
+        "response_sha256": "8e1d9963e83c735fff1eb1d24a780c6f7ba4dcc81833429dcde54273456f9a67"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "100000000000000000000",
-      "amount_out_wei": "124942124861037084443",
-      "amount": "124.942124861037084443",
-      "amount_before_aggregator_fee": "124.954620323069391382",
-      "aggregator_fee_amount_wei": "12495462032306939",
-      "observed_at": "2026-11-26T21:43:47.000Z",
-      "fetched_at": "2026-11-26T21:43:50.000Z",
+      "amount_out_wei": "124941639898788443320",
+      "amount": "124.941639898788443320",
+      "amount_before_aggregator_fee": "124.954135312319675288",
+      "aggregator_fee_amount_wei": "12495413531231968",
+      "observed_at": "2026-11-26T21:51:47.000Z",
+      "fetched_at": "2026-11-26T21:51:50.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -97,8 +99,8 @@
         "token_in": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "26502139",
-        "block_hash": "0xf1ded6900d24e9fb3e1445a9ac086b576fff0e44be0e3dd9c2ee96e5ca5195ad",
+        "block_number": "26502179",
+        "block_hash": "0x2275c6e1373272c9974d9a9b55fff80f50d949673848a960e30378451973f0ca",
         "rpc_url": "https://ethereum-rpc.publicnode.com",
         "exchanges": [
           "aerocl",
@@ -107,7 +109,7 @@
           "uniswapv3",
           "wsteth"
         ],
-        "response_sha256": "41d0918bc399a564ab3b73601da1305fec28ec7ef4eed5c001bb33f2496af736"
+        "response_sha256": "47cc699a1561f8892a310cbd50a4a2b41575a8f071128d28c2b376fa9c18e89b"
       }
     }
   ]
