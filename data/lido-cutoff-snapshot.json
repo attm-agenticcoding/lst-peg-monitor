@@ -1,15 +1,15 @@
 {
   "schema": 1,
-  "id": "lido-26502739-known-state-v2",
-  "asOf": "2026-11-26T23:44:23Z",
-  "blockNumber": 26502739,
-  "blockHash": "0x0687b5ecabfc1bf41e38b4c4e66d62510b9114f0fc32cecf17466a1fcd584989",
-  "beaconSlot": 15742720,
-  "beaconStateRoot": "0xbfa0bf42b6a4bc201123adc54f04b036256a9d1bcbe1dc7b8c2cc4f980a47373",
-  "pendingRequests": 225,
-  "pendingSteth": "44733.096681112743262748",
-  "physicalCashEth": "2842.815563094560618198",
-  "scenarioAvailableCashEth": "2840.815563094560618198",
+  "id": "lido-26506690-known-state-v2",
+  "asOf": "2026-11-27T12:57:59Z",
+  "blockNumber": 26506690,
+  "blockHash": "0x22b81eee3bcde0c3e6d47cf82f922ec4a170bc3eec4727d36a49240af884db52",
+  "beaconSlot": 15746688,
+  "beaconStateRoot": "0x3030125e82fd5ba993b3895d60882189f60090472da1267b2f98cad828cbf0f5",
+  "pendingRequests": 94,
+  "pendingSteth": "21035.234693187724084542",
+  "physicalCashEth": "6.685929142157615247",
+  "scenarioAvailableCashEth": "6.685929142157615247",
   "maxEconomicAgeSeconds": 300,
   "live": false,
   "calibrated": false,
@@ -19,40 +19,80 @@
       "split": [
         100
       ],
-      "main": null,
-      "stress": null
+      "main": {
+        "eligible_report_index": 3,
+        "reference_time_utc": "2026-11-30T12:00:11Z",
+        "elapsed_to_reference_seconds": 255732
+      },
+      "stress": {
+        "eligible_report_index": 6,
+        "reference_time_utc": "2026-12-03T12:00:11Z",
+        "elapsed_to_reference_seconds": 514932
+      }
     },
     {
       "steth": 200,
       "split": [
         200
       ],
-      "main": null,
-      "stress": null
+      "main": {
+        "eligible_report_index": 3,
+        "reference_time_utc": "2026-11-30T12:00:11Z",
+        "elapsed_to_reference_seconds": 255732
+      },
+      "stress": {
+        "eligible_report_index": 6,
+        "reference_time_utc": "2026-12-03T12:00:11Z",
+        "elapsed_to_reference_seconds": 514932
+      }
     },
     {
       "steth": 300,
       "split": [
         300
       ],
-      "main": null,
-      "stress": null
+      "main": {
+        "eligible_report_index": 3,
+        "reference_time_utc": "2026-11-30T12:00:11Z",
+        "elapsed_to_reference_seconds": 255732
+      },
+      "stress": {
+        "eligible_report_index": 6,
+        "reference_time_utc": "2026-12-03T12:00:11Z",
+        "elapsed_to_reference_seconds": 514932
+      }
     },
     {
       "steth": 500,
       "split": [
         500
       ],
-      "main": null,
-      "stress": null
+      "main": {
+        "eligible_report_index": 3,
+        "reference_time_utc": "2026-11-30T12:00:11Z",
+        "elapsed_to_reference_seconds": 255732
+      },
+      "stress": {
+        "eligible_report_index": 6,
+        "reference_time_utc": "2026-12-03T12:00:11Z",
+        "elapsed_to_reference_seconds": 514932
+      }
     },
     {
       "steth": 1000,
       "split": [
         1000
       ],
-      "main": null,
-      "stress": null
+      "main": {
+        "eligible_report_index": 3,
+        "reference_time_utc": "2026-11-30T12:00:11Z",
+        "elapsed_to_reference_seconds": 255732
+      },
+      "stress": {
+        "eligible_report_index": 6,
+        "reference_time_utc": "2026-12-03T12:00:11Z",
+        "elapsed_to_reference_seconds": 514932
+      }
     },
     {
       "steth": 1500,
@@ -60,16 +100,19 @@
         1000,
         500
       ],
-      "main": null,
-      "stress": null
+      "main": {
+        "eligible_report_index": 4,
+        "reference_time_utc": "2026-12-01T12:00:11Z",
+        "elapsed_to_reference_seconds": 342132
+      },
+      "stress": {
+        "eligible_report_index": 7,
+        "reference_time_utc": "2026-12-04T12:00:11Z",
+        "elapsed_to_reference_seconds": 601332
+      }
     }
   ],
   "dailyCutoffs": [
-    {
-      "referenceTime": "2026-11-27T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
-    },
     {
       "referenceTime": "2026-11-28T12:00:11Z",
       "mainSteth": "0.000000000000000000",
@@ -82,61 +125,66 @@
     },
     {
       "referenceTime": "2026-11-30T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
+      "mainSteth": "1015.522237735433530705",
       "stressSteth": "0.000000000000000000"
     },
     {
       "referenceTime": "2026-12-01T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
+      "mainSteth": "14805.445606423433530705",
       "stressSteth": "0.000000000000000000"
     },
     {
       "referenceTime": "2026-12-02T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
+      "mainSteth": "15117.250320045433530705",
       "stressSteth": "0.000000000000000000"
     },
     {
       "referenceTime": "2026-12-03T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "19366.999862714433530705",
+      "stressSteth": "1024.584858600433530705"
     },
     {
       "referenceTime": "2026-12-04T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "19752.768723274433530705",
+      "stressSteth": "10821.800100938433530705"
     },
     {
       "referenceTime": "2026-12-05T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "19752.768723274433530705",
+      "stressSteth": "14844.941287190433530705"
     },
     {
       "referenceTime": "2026-12-06T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "19752.768723274433530705",
+      "stressSteth": "15022.683713277433530705"
     },
     {
       "referenceTime": "2026-12-07T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "19752.768723274433530705",
+      "stressSteth": "15118.016189415433530705"
     },
     {
       "referenceTime": "2026-12-08T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "19752.768723274433530705",
+      "stressSteth": "19352.812835121433530705"
     },
     {
       "referenceTime": "2026-12-09T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "19752.768723274433530705",
+      "stressSteth": "19367.608695402433530705"
     },
     {
       "referenceTime": "2026-12-10T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
+      "mainSteth": "19752.768723274433530705",
+      "stressSteth": "19752.768723274433530705"
+    },
+    {
+      "referenceTime": "2026-12-11T12:00:11Z",
+      "mainSteth": "19752.768723274433530705",
+      "stressSteth": "19752.768723274433530705"
     }
   ],
-  "horizonEnd": "2026-12-10T12:00:11Z",
+  "horizonEnd": "2026-12-11T12:00:11Z",
   "assumptions": [
     "Known-state, nominal no-haircut scenarios; future cash is assumed fully report-admissible.",
     "No unknown future deposits, exits, rewards, losses, missed blocks or report interruptions.",
@@ -217,33 +265,33 @@
       "core_buffer_reconciles": true,
       "configuration_quality": "conditional_unpinned_seed",
       "conditional": true,
-      "event_count": 3120,
-      "header_count": 57,
+      "event_count": 2991,
+      "header_count": 40,
       "finality_wait": {
-        "polls": 6,
-        "wait_seconds": 153.536934471
+        "polls": 5,
+        "wait_seconds": 123.35432547899998
       },
       "log_integrity": "provider-attested logs with seed/target/child header rechecks; no receipt-trie proof",
       "coverage": [
         {
-          "from_block": 26499172,
-          "to_block": 26500171,
-          "count": 1399
+          "from_block": 26502740,
+          "to_block": 26503739,
+          "count": 842
         },
         {
-          "from_block": 26500172,
-          "to_block": 26501171,
-          "count": 691
+          "from_block": 26503740,
+          "to_block": 26504739,
+          "count": 694
         },
         {
-          "from_block": 26501172,
-          "to_block": 26502171,
-          "count": 714
+          "from_block": 26504740,
+          "to_block": 26505739,
+          "count": 597
         },
         {
-          "from_block": 26502172,
-          "to_block": 26502739,
-          "count": 316
+          "from_block": 26505740,
+          "to_block": 26506690,
+          "count": 858
         }
       ],
       "blockers": []
@@ -260,9 +308,9 @@
         "child_timestamp_after_state": true,
         "finalized_head_covers_child": true
       },
-      "child_execution_block_number": 26502740,
-      "child_execution_block_hash": "0xf8646faf5841425b6f6255b2cca4dc9c965bd2a60344077ea349dc1183e7dcb3",
-      "finalized_execution_block_number": 26502771,
+      "child_execution_block_number": 26506691,
+      "child_execution_block_hash": "0x4accfdae6667b63c4782dcd10a363ef508798812cbd66f1fab09b8a41e6e2e4f",
+      "finalized_execution_block_number": 26506722,
       "method": "Recomputed SSZ state and same-slot BeaconBlockHeader anchored in immediate EL child EIP-4788 parentBeaconBlockRoot.",
       "limitations": "Provider-attested canonical/finalized EL headers; no local BLS finality or full chain-ancestry verification. Child header is integrity-only, never a future cash predictor.",
       "model_checks": {
@@ -278,14 +326,14 @@
     "historicalRegressionFixture": "2026-10-04T16:16:23Z"
   },
   "sourceDigests": {
-    "executionState": "7b5a7441f3c7b1c52faa1ec4735bd2f39ce19de1c0496833aa8bea31284ce9e8",
-    "beaconStateSsz": "7ff2d861bd62b1b5085877980858a5927a26e90add2d39fae479b51a956ed500",
-    "scenarioAudit": "47322f4399fca47820c6be13a793d67221eaf7ba9005ab60dcfb34106f3ac74d",
-    "acquisition": "ab55e32ef681f3d34c5ea7db739fd9886394981dbaca8657660e676720ed70d4"
+    "executionState": "487ace4bc56f0e2fe0529a86d5b2506d8f0eedc35d86774c9abc37cadb45fb0d",
+    "beaconStateSsz": "d6784c793b49a2dd0bcbdb1d093edda38ec4f5b935bc9939204f789e3893ea3b",
+    "scenarioAudit": "f09a79d8efcf48be7feda118018ccfc4121c0ba3b5f9b085837b95ddc3d88080",
+    "acquisition": "b88456b9644c7b4ae4bc3b235f5a8d70744f9e86b20c24e29857ba7a032671ac"
   },
   "refresh": {
     "mode": "twice-daily",
-    "state": "running",
+    "state": "ok",
     "scheduleUtc": [
       "00:00",
       "12:00"
@@ -293,20 +341,13 @@
     "expectedIntervalSeconds": 43200,
     "maxSourceAgeSeconds": 5400,
     "maxOperationalAgeSeconds": 48600,
-    "lastSuccessAt": "2026-11-27T00:06:24Z",
-    "lease": {
-      "runId": "32a60b66-6f9d-441d-9fef-98fbe8bd0fa8",
-      "acquiredAtEpoch": 1795785259,
-      "expiresAtEpoch": 1795787359,
-      "trigger": "relay-dispatch",
-      "rpcCallBudget": 256,
-      "requestKey": "2026-11-27T12:00:00Z"
-    },
+    "lastSuccessAt": "2026-11-27T13:19:19Z",
+    "lease": null,
     "error": null,
     "attemptAt": "2026-11-27T13:14:19Z",
     "trigger": "relay-dispatch",
     "attemptDay": "2026-10-08",
-    "finishedAt": "2026-11-27T00:06:24Z",
+    "finishedAt": "2026-11-27T13:19:19Z",
     "accessBlocked": false,
     "manualAttemptIds": [
       "manual-20261007-diagnostic-fb355c4d",
@@ -324,8 +365,8 @@
       "manual-20261022-pruned-catchup-04"
     ],
     "lastManualRequestId": "manual-20261022-pruned-catchup-04",
-    "lastSuccessSnapshotAsOf": "2026-11-26T23:44:23Z",
-    "runId": "63696285-b28b-42cb-b149-9d415a4a7245",
+    "lastSuccessSnapshotAsOf": "2026-11-27T12:57:59Z",
+    "runId": "32a60b66-6f9d-441d-9fef-98fbe8bd0fa8",
     "attemptSlot": "2026-11-27T12:00:00Z"
   }
 }
