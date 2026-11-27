@@ -5,16 +5,16 @@
   "base": "cbETH",
   "quote": "ETH",
   "base_amount": "10",
-  "amount": "11.445460168395509760",
+  "amount": "11.445564654547970816",
   "amount_in_wei": "10000000000000000000",
-  "amount_out_wei": "11445460168395509760",
-  "unit_rate": "1.144546016839550976",
+  "amount_out_wei": "11445564654547970816",
+  "unit_rate": "1.144556465454797081",
   "chain": "base",
   "chain_id": 8453,
-  "observed_at": "2026-11-27T13:21:39.000Z",
-  "fetched_at": "2026-11-27T13:21:39.000Z",
-  "generated_at": "2026-11-27T13:21:39.000Z",
-  "valid_until": "2026-11-27T13:36:39.000Z",
+  "observed_at": "2026-11-27T13:29:39.000Z",
+  "fetched_at": "2026-11-27T13:29:39.000Z",
+  "generated_at": "2026-11-27T13:29:39.000Z",
+  "valid_until": "2026-11-27T13:44:39.000Z",
   "max_age_seconds": 900,
   "max_source_age_at_generation_seconds": 180,
   "comparison_window_seconds": 120,
@@ -34,9 +34,12 @@
     "block_hash": null,
     "rpc_url": null,
     "exchanges": [
-      "aero-cl"
+      "aero-cl",
+      "aerodrome-cl-2",
+      "hanji",
+      "maverick-v2"
     ],
-    "response_sha256": "c665f0c54a7dcff7489ea62af6beea2ad12e72f2c5e54d88460c3faa9987c900"
+    "response_sha256": "c820e38c3ab4bab2fdd40a8d60cb7cbd43ba12fb3d5943ca9faf0a89cd2098d8"
   },
   "coverage": {
     "available": 2,
@@ -48,12 +51,12 @@
       "provider": "kyberswap",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11445460168395509760",
-      "amount": "11.445460168395509760",
-      "amount_before_aggregator_fee": "11.445460168395509760",
+      "amount_out_wei": "11445564654547970816",
+      "amount": "11.445564654547970816",
+      "amount_before_aggregator_fee": "11.445564654547970816",
       "aggregator_fee_amount_wei": "0",
-      "observed_at": "2026-11-27T13:21:39.000Z",
-      "fetched_at": "2026-11-27T13:21:39.000Z",
+      "observed_at": "2026-11-27T13:29:39.000Z",
+      "fetched_at": "2026-11-27T13:29:39.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "kyberswap",
@@ -66,21 +69,24 @@
         "block_hash": null,
         "rpc_url": null,
         "exchanges": [
-          "aero-cl"
+          "aero-cl",
+          "aerodrome-cl-2",
+          "hanji",
+          "maverick-v2"
         ],
-        "response_sha256": "c665f0c54a7dcff7489ea62af6beea2ad12e72f2c5e54d88460c3faa9987c900"
+        "response_sha256": "c820e38c3ab4bab2fdd40a8d60cb7cbd43ba12fb3d5943ca9faf0a89cd2098d8"
       }
     },
     {
       "provider": "velora",
       "status": "ok",
       "amount_in_wei": "10000000000000000000",
-      "amount_out_wei": "11444190438994859451",
-      "amount": "11.444190438994859451",
-      "amount_before_aggregator_fee": "11.445334972492108662",
-      "aggregator_fee_amount_wei": "1144533497249211",
-      "observed_at": "2026-11-27T13:21:39.000Z",
-      "fetched_at": "2026-11-27T13:21:39.000Z",
+      "amount_out_wei": "11444229864961348639",
+      "amount": "11.444229864961348639",
+      "amount_before_aggregator_fee": "11.445374402401588798",
+      "aggregator_fee_amount_wei": "1144537440240159",
+      "observed_at": "2026-11-27T13:29:39.000Z",
+      "fetched_at": "2026-11-27T13:29:39.000Z",
       "source": {
         "type": "dex_aggregator",
         "provider": "velora",
@@ -89,14 +95,15 @@
         "token_in": "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22",
         "token_out": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "source_time_basis": "source_block_timestamp",
-        "block_number": "62976618",
-        "block_hash": "0x4890d11410c703dc679245b6c37331bf8074476bc488add4675ba6845a81b5b0",
+        "block_number": "62979019",
+        "block_hash": "0x9b184e3148c5d2df4791d6a7872d1002252ad1ee7916df5152b96233182ad537",
         "rpc_url": "https://base-rpc.publicnode.com",
         "exchanges": [
           "aerocl",
+          "aerodromeslipstreamnewfactory",
           "maverickv2"
         ],
-        "response_sha256": "abd1cfe112fc39f1230ea47b4a1bf1e712034b90925ad98ad550bb1d54dc4791"
+        "response_sha256": "d74de691759fff1c7bf761b98c3a5c7f56b714134d1af874387637b611346f78"
       }
     }
   ]
