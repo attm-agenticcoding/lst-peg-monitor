@@ -1,15 +1,15 @@
 {
   "schema": 1,
-  "id": "lido-26499171-known-state-v2",
-  "asOf": "2026-11-26T11:47:35Z",
-  "blockNumber": 26499171,
-  "blockHash": "0xa26c4f1d0fef58f52eadbbf3ca86cf92a1b933b52a5a17eed1368776ab4b14e6",
-  "beaconSlot": 15739136,
-  "beaconStateRoot": "0xbf0fc376748816e9b5af1d3bab8999e788b8b74bd6f64c349dcf202ddbf48cd9",
-  "pendingRequests": 311,
-  "pendingSteth": "48216.979219834470674541",
-  "physicalCashEth": "18891.618986250607443681",
-  "scenarioAvailableCashEth": "18891.618986250607443681",
+  "id": "lido-26502739-known-state-v2",
+  "asOf": "2026-11-26T23:44:23Z",
+  "blockNumber": 26502739,
+  "blockHash": "0x0687b5ecabfc1bf41e38b4c4e66d62510b9114f0fc32cecf17466a1fcd584989",
+  "beaconSlot": 15742720,
+  "beaconStateRoot": "0xbfa0bf42b6a4bc201123adc54f04b036256a9d1bcbe1dc7b8c2cc4f980a47373",
+  "pendingRequests": 225,
+  "pendingSteth": "44733.096681112743262748",
+  "physicalCashEth": "2842.815563094560618198",
+  "scenarioAvailableCashEth": "2840.815563094560618198",
   "maxEconomicAgeSeconds": 300,
   "live": false,
   "calibrated": false,
@@ -65,11 +65,6 @@
     }
   ],
   "dailyCutoffs": [
-    {
-      "referenceTime": "2026-11-26T12:00:11Z",
-      "mainSteth": "0.000000000000000000",
-      "stressSteth": "0.000000000000000000"
-    },
     {
       "referenceTime": "2026-11-27T12:00:11Z",
       "mainSteth": "0.000000000000000000",
@@ -134,9 +129,14 @@
       "referenceTime": "2026-12-09T12:00:11Z",
       "mainSteth": "0.000000000000000000",
       "stressSteth": "0.000000000000000000"
+    },
+    {
+      "referenceTime": "2026-12-10T12:00:11Z",
+      "mainSteth": "0.000000000000000000",
+      "stressSteth": "0.000000000000000000"
     }
   ],
-  "horizonEnd": "2026-12-09T12:00:11Z",
+  "horizonEnd": "2026-12-10T12:00:11Z",
   "assumptions": [
     "Known-state, nominal no-haircut scenarios; future cash is assumed fully report-admissible.",
     "No unknown future deposits, exits, rewards, losses, missed blocks or report interruptions.",
@@ -217,28 +217,33 @@
       "core_buffer_reconciles": true,
       "configuration_quality": "conditional_unpinned_seed",
       "conditional": true,
-      "event_count": 2165,
-      "header_count": 43,
+      "event_count": 3120,
+      "header_count": 57,
       "finality_wait": {
-        "polls": 11,
-        "wait_seconds": 306.26098173
+        "polls": 6,
+        "wait_seconds": 153.536934471
       },
       "log_integrity": "provider-attested logs with seed/target/child header rechecks; no receipt-trie proof",
       "coverage": [
         {
-          "from_block": 26496873,
-          "to_block": 26497872,
-          "count": 1010
+          "from_block": 26499172,
+          "to_block": 26500171,
+          "count": 1399
         },
         {
-          "from_block": 26497873,
-          "to_block": 26498872,
-          "count": 974
+          "from_block": 26500172,
+          "to_block": 26501171,
+          "count": 691
         },
         {
-          "from_block": 26498873,
-          "to_block": 26499171,
-          "count": 181
+          "from_block": 26501172,
+          "to_block": 26502171,
+          "count": 714
+        },
+        {
+          "from_block": 26502172,
+          "to_block": 26502739,
+          "count": 316
         }
       ],
       "blockers": []
@@ -255,9 +260,9 @@
         "child_timestamp_after_state": true,
         "finalized_head_covers_child": true
       },
-      "child_execution_block_number": 26499172,
-      "child_execution_block_hash": "0xdcb81f0828ad4b08e9b563fb0396573df49ce3e2842049489924e4f920cf534f",
-      "finalized_execution_block_number": 26499203,
+      "child_execution_block_number": 26502740,
+      "child_execution_block_hash": "0xf8646faf5841425b6f6255b2cca4dc9c965bd2a60344077ea349dc1183e7dcb3",
+      "finalized_execution_block_number": 26502771,
       "method": "Recomputed SSZ state and same-slot BeaconBlockHeader anchored in immediate EL child EIP-4788 parentBeaconBlockRoot.",
       "limitations": "Provider-attested canonical/finalized EL headers; no local BLS finality or full chain-ancestry verification. Child header is integrity-only, never a future cash predictor.",
       "model_checks": {
@@ -273,14 +278,14 @@
     "historicalRegressionFixture": "2026-10-04T16:16:23Z"
   },
   "sourceDigests": {
-    "executionState": "bb378dbd594577a7c03963d831371a15765ecb15eb77932c9f071e91b0a1d596",
-    "beaconStateSsz": "2445aaac8cc089ee84eb0fc6672cb250261870cc8251fd5df7833f2129802c77",
-    "scenarioAudit": "5133af2d9d6ba4c8f848af8513a70d0eff8417fa51a1b4c5e8df82f76886b7a5",
-    "acquisition": "0f6cc32f51a8a26a9d5ed906700d4564a41dbc6daefeb82839b8da16b4d8a1ee"
+    "executionState": "7b5a7441f3c7b1c52faa1ec4735bd2f39ce19de1c0496833aa8bea31284ce9e8",
+    "beaconStateSsz": "7ff2d861bd62b1b5085877980858a5927a26e90add2d39fae479b51a956ed500",
+    "scenarioAudit": "47322f4399fca47820c6be13a793d67221eaf7ba9005ab60dcfb34106f3ac74d",
+    "acquisition": "ab55e32ef681f3d34c5ea7db739fd9886394981dbaca8657660e676720ed70d4"
   },
   "refresh": {
     "mode": "twice-daily",
-    "state": "running",
+    "state": "ok",
     "scheduleUtc": [
       "00:00",
       "12:00"
@@ -288,20 +293,13 @@
     "expectedIntervalSeconds": 43200,
     "maxSourceAgeSeconds": 5400,
     "maxOperationalAgeSeconds": 48600,
-    "lastSuccessAt": "2026-11-26T12:08:45Z",
-    "lease": {
-      "runId": "63696285-b28b-42cb-b149-9d415a4a7245",
-      "acquiredAtEpoch": 1795737632,
-      "expiresAtEpoch": 1795739732,
-      "trigger": "relay-dispatch",
-      "rpcCallBudget": 256,
-      "requestKey": "2026-11-27T00:00:00Z"
-    },
+    "lastSuccessAt": "2026-11-27T00:06:24Z",
+    "lease": null,
     "error": null,
     "attemptAt": "2026-11-27T00:00:32Z",
     "trigger": "relay-dispatch",
     "attemptDay": "2026-10-08",
-    "finishedAt": "2026-11-26T12:08:45Z",
+    "finishedAt": "2026-11-27T00:06:24Z",
     "accessBlocked": false,
     "manualAttemptIds": [
       "manual-20261007-diagnostic-fb355c4d",
@@ -319,8 +317,8 @@
       "manual-20261022-pruned-catchup-04"
     ],
     "lastManualRequestId": "manual-20261022-pruned-catchup-04",
-    "lastSuccessSnapshotAsOf": "2026-11-26T11:47:35Z",
-    "runId": "62883426-7050-462d-8511-18aeb65cd646",
+    "lastSuccessSnapshotAsOf": "2026-11-26T23:44:23Z",
+    "runId": "63696285-b28b-42cb-b149-9d415a4a7245",
     "attemptSlot": "2026-11-27T00:00:00Z"
   }
 }
